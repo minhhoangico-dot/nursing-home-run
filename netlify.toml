@@ -1,0 +1,15 @@
+# Deployment Config - Env Vars Triggered
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Supabase anon key is designed to be public (Row Level Security protects data)
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_ANON_KEY,VITE_SUPABASE_URL"
+
+
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
