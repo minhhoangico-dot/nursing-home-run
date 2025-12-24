@@ -17,8 +17,8 @@ const NutritionPage = React.lazy(() => import('../features/nutrition/pages/Nutri
 const VisitorsPage = React.lazy(() => import('../features/visitors/pages/VisitorsPage').then(module => ({ default: module.VisitorsPage })));
 const MaintenancePage = React.lazy(() => import('../features/maintenance/pages/MaintenancePage').then(module => ({ default: module.MaintenancePage })));
 const PrintFormsPage = React.lazy(() => import('../features/print-forms/pages/PrintFormsPage').then(module => ({ default: module.PrintFormsPage })));
+const FinancePage = React.lazy(() => import('../features/finance/pages/FinancePage').then(module => ({ default: module.FinancePage })));
 const StockPage = React.lazy(() => import('../features/inventory/pages/StockPage').then(module => ({ default: module.StockPage })));
-const ReportsPage = React.lazy(() => import('../features/reports/pages/ReportsPage').then(module => ({ default: module.ReportsPage })));
 const SettingsPage = React.lazy(() => import('../features/settings/pages/SettingsPage').then(module => ({ default: module.SettingsPage })));
 const ActivitiesPage = React.lazy(() => import('../features/activities/pages/ActivitiesPage').then(module => ({ default: module.ActivitiesPage })));
 
@@ -94,6 +94,11 @@ export const AppRoutes = () => {
 
                             <Route path="/forms" element={<PrintFormsPage />} />
 
+                            <Route path="/finance" element={
+                                <RoleBasedRoute allowedRoles={['ADMIN', 'ACCOUNTANT']}>
+                                    <FinancePage />
+                                </RoleBasedRoute>
+                            } />
 
                             <Route path="/inventory" element={
                                 <RoleBasedRoute allowedRoles={['ADMIN', 'ACCOUNTANT', 'SUPERVISOR']}>
@@ -101,11 +106,6 @@ export const AppRoutes = () => {
                                 </RoleBasedRoute>
                             } />
 
-                            <Route path="/reports" element={
-                                <RoleBasedRoute allowedRoles={['ADMIN', 'ACCOUNTANT', 'SUPERVISOR']}>
-                                    <ReportsPage />
-                                </RoleBasedRoute>
-                            } />
 
                             <Route path="/settings" element={
                                 <RoleBasedRoute allowedRoles={['ADMIN']}>

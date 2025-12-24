@@ -28,8 +28,8 @@ export const Sidebar = () => {
     { id: 'maintenance', label: 'Bảo trì', path: '/maintenance', icon: Wrench, roles: ['ADMIN', 'SUPERVISOR', 'ACCOUNTANT', 'DOCTOR'] },
     { id: 'incidents', label: 'Sự cố & An toàn', path: '/incidents', icon: AlertTriangle, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE', 'CAREGIVER'] },
     { id: 'forms', label: 'In biểu mẫu', path: '/forms', icon: Printer, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE'] },
+    { id: 'finance', label: 'Tài chính', path: '/finance', icon: CreditCard, roles: ['ADMIN', 'ACCOUNTANT', 'DOCTOR'] },
     { id: 'inventory', label: 'Kho & Vật tư', path: '/inventory', icon: Package, roles: ['ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'DOCTOR'] },
-    { id: 'reports', label: 'Báo cáo', path: '/reports', icon: BarChart3, roles: ['ADMIN', 'ACCOUNTANT', 'DOCTOR', 'SUPERVISOR'] },
     { id: 'settings', label: 'Cài đặt', path: '/settings', icon: SettingsIcon, roles: ['ADMIN', 'ACCOUNTANT', 'SUPERVISOR'] },
   ];
 
