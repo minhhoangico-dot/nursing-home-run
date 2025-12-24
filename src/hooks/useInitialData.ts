@@ -6,10 +6,9 @@ import { useInventoryStore } from '../stores/inventoryStore';
 import { useIncidentsStore } from '../stores/incidentsStore';
 import { useAuthStore } from '../stores/authStore';
 import { useActivitiesStore } from '../stores/activitiesStore';
-import { useMedicationStore } from '../stores/medicationStore';
 import { useScheduleStore } from '../stores/scheduleStore';
 import { useVisitorsStore } from '../stores/visitorsStore';
-import { useHandoverStore } from '../stores/handoverStore';
+
 
 export const useInitialData = () => {
     const [isLoading, setIsLoading] = useState(true);
@@ -22,10 +21,8 @@ export const useInitialData = () => {
     const { fetchIncidents } = useIncidentsStore();
     const { fetchUsers, user } = useAuthStore();
     const { fetchActivities } = useActivitiesStore();
-    const { fetchLogs } = useMedicationStore();
     const { fetchSchedules } = useScheduleStore();
     const { fetchVisitors } = useVisitorsStore();
-    const { fetchHandovers } = useHandoverStore();
 
     useEffect(() => {
         const initData = async () => {
@@ -40,10 +37,8 @@ export const useInitialData = () => {
                         fetchInventoryData(),
                         fetchIncidents(),
                         fetchActivities(),
-                        fetchLogs(),
                         fetchSchedules(),
                         fetchVisitors(),
-                        fetchHandovers()
                     ]);
                 }
             } catch (err) {

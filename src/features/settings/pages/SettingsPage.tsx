@@ -13,10 +13,10 @@ import { useInventoryStore } from '../../../stores/inventoryStore';
 import { useRoomsStore } from '../../../stores/roomsStore';
 import { useIncidentsStore } from '../../../stores/incidentsStore';
 import { useActivitiesStore } from '../../../stores/activitiesStore';
-import { useMedicationStore } from '../../../stores/medicationStore';
+
 import { useScheduleStore } from '../../../stores/scheduleStore';
 import { useVisitorsStore } from '../../../stores/visitorsStore';
-import { useHandoverStore } from '../../../stores/handoverStore';
+
 
 export const SettingsPage = () => {
    const [view, setView] = useState<'menu' | 'users' | 'facility' | 'prices' | 'migration'>('menu');
@@ -35,10 +35,9 @@ export const SettingsPage = () => {
    const roomsStore = useRoomsStore();
    const incidentsStore = useIncidentsStore();
    const activitiesStore = useActivitiesStore();
-   const medicationStore = useMedicationStore();
    const scheduleStore = useScheduleStore();
    const visitorsStore = useVisitorsStore();
-   const handoverStore = useHandoverStore();
+
 
    const handleAddUser = async (user: User) => {
       try {
@@ -69,13 +68,7 @@ export const SettingsPage = () => {
          const allUsers = users;
          const allFinanceTrx = financeStore.transactions;
          const allPrices = financeStore.servicePrices;
-         const allHandovers = handoverStore.handovers;
-         const allVisitors = visitorsStore.visitors;
-         const allMaintenance = roomsStore.maintenanceRequests;
-         const allActivities = activitiesStore.activities;
-         const allIncidents = incidentsStore.incidents;
          const allSchedules = scheduleStore.schedules;
-         const allMedLogs = medicationStore.logs;
 
          const syncTasks = [
             { name: 'Residents', task: db.residents.bulkUpsert(allResidents) },
@@ -83,13 +76,7 @@ export const SettingsPage = () => {
             { name: 'Users', task: db.users.bulkUpsert(allUsers) },
             { name: 'Finance Trx', task: db.finance.bulkUpsertTransactions(allFinanceTrx) },
             { name: 'Prices', task: db.finance.bulkUpsertPrices(allPrices) },
-            { name: 'Handovers', task: db.handovers.bulkUpsert(allHandovers) },
-            { name: 'Visitors', task: db.visitors.bulkUpsert(allVisitors) },
-            { name: 'Maintenance', task: db.maintenance.bulkUpsert(allMaintenance) },
-            { name: 'Activities', task: db.activities.bulkUpsert(allActivities) },
-            { name: 'Incidents', task: db.incidents.bulkUpsert(allIncidents) },
             { name: 'Schedules', task: db.schedules.bulkUpsert(allSchedules) },
-            { name: 'Medication Logs', task: db.medication.bulkUpsertLogs(allMedLogs) }
          ];
 
          await Promise.all(syncTasks.map(t => t.task.then(() => console.log(`✓ Sync: ${t.name}`))));
@@ -132,9 +119,9 @@ export const SettingsPage = () => {
                         <td className="px-6 py-4">{u.username}</td>
                         <td className="px-6 py-4">
                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.role === 'ADMIN' ? 'bg-slate-800 text-white' :
-                                 u.role === 'DOCTOR' ? 'bg-blue-100 text-blue-700' :
-                                    u.role === 'SUPERVISOR' ? 'bg-green-100 text-green-700' :
-                                       'bg-purple-100 text-purple-700'
+                              u.role === 'DOCTOR' ? 'bg-blue-100 text-blue-700' :
+                                 u.role === 'SUPERVISOR' ? 'bg-green-100 text-green-700' :
+                                    'bg-purple-100 text-purple-700'
                               }`}>
                               {u.role === 'ADMIN' ? 'Quản trị viên' :
                                  u.role === 'DOCTOR' ? 'Bác sĩ' :
@@ -170,11 +157,6 @@ export const SettingsPage = () => {
                   <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-3 text-sm text-slate-600">
                      <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> {residents.length} Hồ sơ NCT</li>
                      <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> {inventoryStore.inventory.length} Vật tư kho</li>
-                     <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> {medicationStore.logs.length} Bản ghi phát thuốc</li>
-                     <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> {incidentsStore.incidents.length} Bản ghi sự cố</li>
-                     <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> {handoverStore.handovers.length} Sổ giao ban</li>
-                     <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> {activitiesStore.activities.length} Hoạt động</li>
-                     <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> {visitorsStore.visitors.length} Khách thăm</li>
                      <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> {roomsStore.maintenanceRequests.length} Bảo trì</li>
                   </div>
                </div>
