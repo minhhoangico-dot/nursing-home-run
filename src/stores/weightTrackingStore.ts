@@ -7,6 +7,7 @@ interface WeightTrackingState {
     isLoading: boolean;
     error: string | null;
     fetchRecords: (residentId: string) => Promise<void>;
+    fetchAllRecords: (month: string) => Promise<void>; // month in YYYY-MM format
     addRecord: (record: Omit<WeightRecord, 'id' | 'createdAt'>) => Promise<void>;
 }
 
@@ -43,6 +44,33 @@ export const useWeightTrackingStore = create<WeightTrackingState>((set) => ({
         }
     },
 
+    fetchAllRecords: async (month) => {
+        set({ isLoading: true, error: null });
+        try {
+            const { data, error } = await supabase
+                .from('weight_records')
+                .select('*')
+                .eq('record_month', month);
+
+            if (error) throw error;
+
+            set({
+                records: (data || []).map((d: any) => ({
+                    id: d.id,
+                    residentId: d.resident_id,
+                    recordMonth: d.record_month,
+                    weightKg: Number(d.weight_kg),
+                    notes: d.notes,
+                    recordedBy: d.recorded_by,
+                    createdAt: d.created_at
+                })),
+                isLoading: false
+            });
+        } catch (error: any) {
+            set({ error: error.message, isLoading: false });
+        }
+    },
+
     addRecord: async (record) => {
         set({ isLoading: true });
         try {
@@ -58,8 +86,8 @@ export const useWeightTrackingStore = create<WeightTrackingState>((set) => ({
 
             if (error) throw error;
 
-            const store = useWeightTrackingStore.getState();
-            store.fetchRecords(record.residentId);
+            // const store = useWeightTrackingStore.getState();
+            // store.fetchRecords(record.residentId);
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
             throw error;

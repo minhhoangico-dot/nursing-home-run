@@ -8,4 +8,5 @@ export * from './Badge';
 export * from './Toast';
 export * from './Loading';
 export * from './Tabs';
+export * from './ErrorBoundary';
 // StatCard is moved to features/dashboard/components/StatCard.tsx

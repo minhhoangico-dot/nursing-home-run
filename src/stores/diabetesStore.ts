@@ -9,6 +9,7 @@ interface DiabetesState {
     fetchRecords: (residentId: string) => Promise<void>;
     addRecord: (record: Omit<BloodSugarRecord, 'id' | 'createdAt'>) => Promise<void>;
     updateRecord: (id: string, updates: Partial<BloodSugarRecord>) => Promise<void>;
+    fetchAllRecords: (month: string) => Promise<void>;
 }
 
 export const useDiabetesStore = create<DiabetesState>((set) => ({
@@ -23,6 +24,47 @@ export const useDiabetesStore = create<DiabetesState>((set) => ({
                 .from('blood_sugar_records')
                 .select('*')
                 .eq('resident_id', residentId)
+                .order('record_date', { ascending: false });
+
+            if (error) throw error;
+
+            set({
+                records: (data || []).map((d: any) => ({
+                    id: d.id,
+                    residentId: d.resident_id,
+                    recordDate: d.record_date,
+                    morningBeforeMeal: d.morning_before_meal,
+                    morningAfterMeal: d.morning_after_meal,
+                    lunchBeforeMeal: d.lunch_before_meal,
+                    lunchAfterMeal: d.lunch_after_meal,
+                    dinnerBeforeMeal: d.dinner_before_meal,
+                    dinnerAfterMeal: d.dinner_after_meal,
+                    insulinUnits: d.insulin_units,
+                    insulinTime: d.insulin_time,
+                    administeredBy: d.administered_by,
+                    notes: d.notes,
+                    createdAt: d.created_at,
+                    createdBy: d.created_by
+                })),
+                isLoading: false
+            });
+        } catch (error: any) {
+            set({ error: error.message, isLoading: false });
+        }
+    },
+
+    fetchAllRecords: async (month) => {
+        set({ isLoading: true, error: null });
+        try {
+            // month is YYYY-MM
+            const start = `${month}-01`;
+            const end = `${month}-31`; // Approx
+
+            const { data, error } = await supabase
+                .from('blood_sugar_records')
+                .select('*')
+                .gte('record_date', start)
+                .lte('record_date', end)
                 .order('record_date', { ascending: false });
 
             if (error) throw error;

@@ -31,101 +31,103 @@ const DiabetesMonitoringPage = React.lazy(() => import('../features/diabetes').t
 const ProceduresPage = React.lazy(() => import('../features/procedures').then(module => ({ default: module.ProceduresPage })));
 const WeightTrackingPage = React.lazy(() => import('../features/weight-tracking').then(module => ({ default: module.WeightTrackingPage })));
 
-import { LoadingScreen } from '../components/ui';
+import { LoadingScreen, ErrorBoundary } from '../components/ui';
 
 const LoadingFallback = () => <LoadingScreen message="Đang tải..." />;
 
 export const AppRoutes = () => {
     return (
         <Suspense fallback={<LoadingFallback />}>
-            <Routes>
-                <Route path="/login" element={<LoginPage />} />
+            <ErrorBoundary>
+                <Routes>
+                    <Route path="/login" element={<LoginPage />} />
 
-                <Route element={<ProtectedRoute />}>
-                    <Route element={<MainLayout />}>
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                        <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route element={<ProtectedRoute />}>
+                        <Route element={<MainLayout />}>
+                            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                            <Route path="/dashboard" element={<DashboardPage />} />
 
-                        <Route path="/residents" element={<ResidentListPage />} />
-                        <Route path="/residents/:id" element={<ResidentDetailPage />} />
+                            <Route path="/residents" element={<ResidentListPage />} />
+                            <Route path="/residents/:id" element={<ResidentDetailPage />} />
 
-                        <Route path="/rooms" element={<RoomMapPage />} />
-                        <Route path="/activities" element={<ActivitiesPage />} />
-                        <Route path="/nutrition" element={<NutritionPage />} />
-                        <Route path="/medication" element={<MedicationPage />} />
-                        <Route path="/visitors" element={<VisitorsPage />} />
+                            <Route path="/rooms" element={<RoomMapPage />} />
+                            <Route path="/activities" element={<ActivitiesPage />} />
+                            <Route path="/nutrition" element={<NutritionPage />} />
+                            <Route path="/medication" element={<MedicationPage />} />
+                            <Route path="/visitors" element={<VisitorsPage />} />
 
-                        {/* NEW MODULES */}
-                        <Route path="/shift-handover" element={
-                            <RoleBasedRoute allowedRoles={['ADMIN', 'SUPERVISOR']}>
-                                <ShiftHandoverPage />
-                            </RoleBasedRoute>
-                        } />
+                            {/* NEW MODULES */}
+                            <Route path="/shift-handover" element={
+                                <RoleBasedRoute allowedRoles={['ADMIN', 'SUPERVISOR']}>
+                                    <ShiftHandoverPage />
+                                </RoleBasedRoute>
+                            } />
 
-                        <Route path="/diabetes-monitoring" element={
-                            <RoleBasedRoute allowedRoles={['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE']}>
-                                <DiabetesMonitoringPage />
-                            </RoleBasedRoute>
-                        } />
+                            <Route path="/diabetes-monitoring" element={
+                                <RoleBasedRoute allowedRoles={['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE']}>
+                                    <DiabetesMonitoringPage />
+                                </RoleBasedRoute>
+                            } />
 
-                        <Route path="/procedures" element={
-                            <RoleBasedRoute allowedRoles={['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE']}>
-                                <ProceduresPage />
-                            </RoleBasedRoute>
-                        } />
+                            <Route path="/procedures" element={
+                                <RoleBasedRoute allowedRoles={['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE']}>
+                                    <ProceduresPage />
+                                </RoleBasedRoute>
+                            } />
 
-                        <Route path="/weight-tracking" element={
-                            <RoleBasedRoute allowedRoles={['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE']}>
-                                <WeightTrackingPage />
-                            </RoleBasedRoute>
-                        } />
+                            <Route path="/weight-tracking" element={
+                                <RoleBasedRoute allowedRoles={['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE']}>
+                                    <WeightTrackingPage />
+                                </RoleBasedRoute>
+                            } />
 
-                        <Route path="/incidents" element={
-                            <RoleBasedRoute allowedRoles={['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE']}>
-                                <IncidentsPage />
-                            </RoleBasedRoute>
-                        } />
+                            <Route path="/incidents" element={
+                                <RoleBasedRoute allowedRoles={['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE']}>
+                                    <IncidentsPage />
+                                </RoleBasedRoute>
+                            } />
 
-                        <Route path="/schedule" element={
-                            <RoleBasedRoute allowedRoles={['ADMIN', 'SUPERVISOR']}>
-                                <SchedulePage />
-                            </RoleBasedRoute>
-                        } />
+                            <Route path="/schedule" element={
+                                <RoleBasedRoute allowedRoles={['ADMIN', 'SUPERVISOR']}>
+                                    <SchedulePage />
+                                </RoleBasedRoute>
+                            } />
 
-                        <Route path="/handover" element={<HandoverPage />} />
+                            <Route path="/handover" element={<HandoverPage />} />
 
-                        <Route path="/maintenance" element={<MaintenancePage />} />
+                            <Route path="/maintenance" element={<MaintenancePage />} />
 
-                        <Route path="/forms" element={<PrintFormsPage />} />
+                            <Route path="/forms" element={<PrintFormsPage />} />
 
-                        <Route path="/finance" element={
-                            <RoleBasedRoute allowedRoles={['ADMIN', 'ACCOUNTANT']}>
-                                <FinancePage />
-                            </RoleBasedRoute>
-                        } />
+                            <Route path="/finance" element={
+                                <RoleBasedRoute allowedRoles={['ADMIN', 'ACCOUNTANT']}>
+                                    <FinancePage />
+                                </RoleBasedRoute>
+                            } />
 
-                        <Route path="/inventory" element={
-                            <RoleBasedRoute allowedRoles={['ADMIN', 'ACCOUNTANT', 'SUPERVISOR']}>
-                                <StockPage />
-                            </RoleBasedRoute>
-                        } />
+                            <Route path="/inventory" element={
+                                <RoleBasedRoute allowedRoles={['ADMIN', 'ACCOUNTANT', 'SUPERVISOR']}>
+                                    <StockPage />
+                                </RoleBasedRoute>
+                            } />
 
-                        <Route path="/reports" element={
-                            <RoleBasedRoute allowedRoles={['ADMIN', 'ACCOUNTANT', 'SUPERVISOR']}>
-                                <ReportsPage />
-                            </RoleBasedRoute>
-                        } />
+                            <Route path="/reports" element={
+                                <RoleBasedRoute allowedRoles={['ADMIN', 'ACCOUNTANT', 'SUPERVISOR']}>
+                                    <ReportsPage />
+                                </RoleBasedRoute>
+                            } />
 
-                        <Route path="/settings" element={
-                            <RoleBasedRoute allowedRoles={['ADMIN']}>
-                                <SettingsPage />
-                            </RoleBasedRoute>
-                        } />
+                            <Route path="/settings" element={
+                                <RoleBasedRoute allowedRoles={['ADMIN']}>
+                                    <SettingsPage />
+                                </RoleBasedRoute>
+                            } />
 
-                        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                        </Route>
                     </Route>
-                </Route>
-            </Routes>
+                </Routes>
+            </ErrorBoundary>
         </Suspense>
     );
 };

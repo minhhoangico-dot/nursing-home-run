@@ -1,24 +1,57 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# FDC Nursing Home Management System (Hệ thống Quản lý Viện Dưỡng Lão)
 
-# Run and deploy your AI Studio app
+This is a comprehensive web application designed for managing a Nursing Home facility (starting with Floor 3). Ideally suited for tablet usage by nursing staff, supervisors, and administrators.
 
-This contains everything you need to run your app locally.
+## Features Implemented
 
-View your app in AI Studio: https://ai.studio/apps/drive/1aORPeZO--8spT2Fm-Nq7nTPtRF68k8ev
+### 1. Resident Management
+- **Profile**: Detailed resident profiles with demographics, room allocation, and care levels.
+- **Medical History**: Track diagnoses, allergies, and monitoring plans.
+- **Assessments**: Admission and periodic health assessments.
 
-## Run Locally
+### 2. Daily Operations
+- **Shift Handover**: Structured handover reports between shifts (Morning -> Afternoon -> Night).
+- **Incident Reporting**: Log and track incidents (falls, errors, etc.) with severity levels.
+- **Schedule Management**: Staff scheduling and task assignment.
 
-**Prerequisites:**  Node.js
+### 3. Medical Monitoring
+- **Diabetes Monitoring**: Track blood sugar levels (4 times/day + Insulin). Visual charts for trends. High glucose alerts.
+- **Vital Signs**: Regular vital sign logging (BP, HR, SpO2, Temp).
+- **Weight Tracking**: Monthly weight recording, BMI calculation, and trend analysis.
+- **Procedures**: Track medical procedures (dressing change, catheter, etc.) with billing integration.
 
+### 4. Role-Based Dashboards
+- **Doctor**: Medical alerts, recent admissions, critical care list.
+- **Supervisor (Trưởng tầng)**: Staff overview, shift status, procedures summary.
+- **Nurse**: Task lists, care logs.
+- **Accountant**: Billing reports, inventory status.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 5. Print Forms
+- Printable PDF-friendly forms for:
+  - Procedure Records (Phiếu theo dõi thủ thuật).
+  - Weight Tracking (Phiếu theo dõi cân nặng).
+  - Shift Handover (Biên bản giao ban).
 
-## Deploy
+## Technical Stack
+- **Frontend**: React (Vite), TypeScript, TailwindCSS.
+- **State Management**: Zustand.
+- **Backend/Database**: Supabase (PostgreSQL).
+- **Charts**: Recharts.
+- **Deployment**: Netlify.
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/minhhoangico-dot/nursing-home-run)
+## Installation
+
+1. Clone the repository.
+2. Install dependencies: `npm install`.
+3. Set up `.env` with Supabase URL and Key.
+4. Run locally: `npm run dev`.
+
+## Deployment
+Changes are automatically deployed to Netlify on push to the `main` branch.
+
+## Recent Updates (Dec 2024)
+- Added Diabetes Monitoring Module.
+- Added Medical Procedure Billing Grid.
+- Added Weight Tracking and BMI Analysis.
+- Enhanced Dashboard with Medical Alerts.
+- Implemented Global Error Handling.

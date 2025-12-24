@@ -4,6 +4,7 @@ import { useResidentsStore } from '@/src/stores/residentsStore';
 import { useAuthStore } from '@/src/stores/authStore';
 import { ClipboardList, Plus, Printer, Save } from 'lucide-react';
 import { LoadingScreen } from '@/src/components/ui';
+import { ShiftHandoverForm } from '../components/ShiftHandoverForm';
 
 export const ShiftHandoverPage = () => {
     const { handovers, isLoading, fetchHandovers, createHandover } = useShiftHandoverStore();
@@ -78,10 +79,11 @@ export const ShiftHandoverPage = () => {
 
             {showForm && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-xl font-bold mb-4">Tạo biên bản giao ca</h2>
-                        <p className="mb-4 text-slate-500 text-sm">Tính năng đang phát triển...</p>
-                        <button onClick={() => setShowForm(false)} className="px-4 py-2 bg-slate-200 rounded-lg">Đóng</button>
+                    <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+                        <ShiftHandoverForm
+                            onClose={() => setShowForm(false)}
+                            onSuccess={() => fetchHandovers()} // Refresh list
+                        />
                     </div>
                 </div>
             )}

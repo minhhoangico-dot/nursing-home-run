@@ -39,4 +39,5 @@ export interface Resident {
   dietType: 'Normal' | 'Porridge' | 'Soup' | 'Pureed' | 'Tube' | 'Cut'; // Cơm, Cháo, Súp, Xay, Sonde, Cắt
   dietNote?: string;
   isDiabetic: boolean;
+  height?: number; // In meters
 }

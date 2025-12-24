@@ -6,7 +6,7 @@ export const PrintShiftHandover = ({ data }: { data: ShiftHandover }) => {
         <div className="p-8 bg-white text-black print:block hidden" id="print-handover">
             <div className="text-center mb-6">
                 <h1 className="text-2xl font-bold uppercase">Biên Bản Giao Ca Trực</h1>
-                <p className="text-sm">Ngày: {new Date(data.shiftDate).toLocaleDateString('vi-VN')} - Ca: {data.shiftTime}</p>
+                <p className="text-sm">Tầng: {data.floorId} - Ngày: {new Date(data.shiftDate).toLocaleDateString('vi-VN')} - Ca: {data.shiftTime}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-8 mb-6">
