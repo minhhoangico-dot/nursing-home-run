@@ -13,13 +13,10 @@ const ResidentDetailPage = React.lazy(() => import('../features/residents/pages/
 const RoomMapPage = React.lazy(() => import('../features/rooms/pages/RoomMapPage').then(module => ({ default: module.RoomMapPage })));
 const IncidentsPage = React.lazy(() => import('../features/incidents/pages/IncidentsPage').then(module => ({ default: module.IncidentsPage })));
 const SchedulePage = React.lazy(() => import('../features/schedule/pages/SchedulePage').then(module => ({ default: module.SchedulePage })));
-const MedicationPage = React.lazy(() => import('../features/medication/pages/MedicationPage').then(module => ({ default: module.MedicationPage })));
-const HandoverPage = React.lazy(() => import('../features/handover/pages/HandoverPage').then(module => ({ default: module.HandoverPage })));
 const NutritionPage = React.lazy(() => import('../features/nutrition/pages/NutritionPage').then(module => ({ default: module.NutritionPage })));
 const VisitorsPage = React.lazy(() => import('../features/visitors/pages/VisitorsPage').then(module => ({ default: module.VisitorsPage })));
 const MaintenancePage = React.lazy(() => import('../features/maintenance/pages/MaintenancePage').then(module => ({ default: module.MaintenancePage })));
 const PrintFormsPage = React.lazy(() => import('../features/print-forms/pages/PrintFormsPage').then(module => ({ default: module.PrintFormsPage })));
-const FinancePage = React.lazy(() => import('../features/finance/pages/FinancePage').then(module => ({ default: module.FinancePage })));
 const StockPage = React.lazy(() => import('../features/inventory/pages/StockPage').then(module => ({ default: module.StockPage })));
 const ReportsPage = React.lazy(() => import('../features/reports/pages/ReportsPage').then(module => ({ default: module.ReportsPage })));
 const SettingsPage = React.lazy(() => import('../features/settings/pages/SettingsPage').then(module => ({ default: module.SettingsPage })));
@@ -53,7 +50,6 @@ export const AppRoutes = () => {
                             <Route path="/rooms" element={<RoomMapPage />} />
                             <Route path="/activities" element={<ActivitiesPage />} />
                             <Route path="/nutrition" element={<NutritionPage />} />
-                            <Route path="/medication" element={<MedicationPage />} />
                             <Route path="/visitors" element={<VisitorsPage />} />
 
                             {/* NEW MODULES */}
@@ -93,17 +89,11 @@ export const AppRoutes = () => {
                                 </RoleBasedRoute>
                             } />
 
-                            <Route path="/handover" element={<HandoverPage />} />
 
                             <Route path="/maintenance" element={<MaintenancePage />} />
 
                             <Route path="/forms" element={<PrintFormsPage />} />
 
-                            <Route path="/finance" element={
-                                <RoleBasedRoute allowedRoles={['ADMIN', 'ACCOUNTANT']}>
-                                    <FinancePage />
-                                </RoleBasedRoute>
-                            } />
 
                             <Route path="/inventory" element={
                                 <RoleBasedRoute allowedRoles={['ADMIN', 'ACCOUNTANT', 'SUPERVISOR']}>
