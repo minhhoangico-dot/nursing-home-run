@@ -40,4 +40,6 @@ export interface Resident {
   dietNote?: string;
   isDiabetic: boolean;
   height?: number; // In meters
+  locationStatus?: 'Present' | 'Home' | 'Hospital';
+  absentStartDate?: string; // ISO Date String
 }

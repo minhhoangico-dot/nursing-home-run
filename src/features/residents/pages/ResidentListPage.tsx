@@ -12,6 +12,7 @@ import { useResidentsStore } from '../../../stores/residentsStore';
 export const ResidentListPage = () => {
    const navigate = useNavigate();
    const { residents, addResident, selectResident } = useResidentsStore();
+
    const [search, setSearch] = useState('');
    const [buildingFilter, setBuildingFilter] = useState('');
    const [floorFilter, setFloorFilter] = useState('');
@@ -51,27 +52,30 @@ export const ResidentListPage = () => {
             />
          )}
 
-         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+         <div className="flex flex-col md:flex-row justify-between items-end gap-4 pb-2 border-b border-slate-200">
             <div>
-               <h2 className="text-2xl font-bold text-slate-800">Danh sách NCT</h2>
-               <p className="text-sm text-slate-500">Quản lý hồ sơ và thông tin cư trú</p>
+               <h2 className="text-3xl font-bold text-slate-800 tracking-tight">Danh sách NCT</h2>
+               <p className="text-slate-500 mt-1 flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 rounded-full bg-teal-500"></span>
+                  {filtered.length} hồ sơ đang hiển thị
+               </p>
             </div>
-            <div className="flex gap-3">
-               <div className="flex bg-white rounded-lg border border-slate-200 p-1">
+            <div className="flex gap-3 items-center">
+               <div className="flex bg-slate-100 p-1 rounded-lg">
                   <button
                      onClick={() => setViewMode('list')}
-                     className={`p-2 rounded ${viewMode === 'list' ? 'bg-slate-100 text-teal-600' : 'text-slate-400 hover:text-slate-600'}`}
+                     className={`p-2 rounded-md transition-all shadow-sm ${viewMode === 'list' ? 'bg-white text-teal-600 font-medium' : 'text-slate-400 hover:text-slate-600'}`}
                   >
                      <ListIcon className="w-4 h-4" />
                   </button>
                   <button
                      onClick={() => setViewMode('grid')}
-                     className={`p-2 rounded ${viewMode === 'grid' ? 'bg-slate-100 text-teal-600' : 'text-slate-400 hover:text-slate-600'}`}
+                     className={`p-2 rounded-md transition-all shadow-sm ${viewMode === 'grid' ? 'bg-white text-teal-600 font-medium' : 'text-slate-400 hover:text-slate-600'}`}
                   >
                      <LayoutGrid className="w-4 h-4" />
                   </button>
                </div>
-               <Button onClick={() => setShowWizard(true)} icon={<Plus className="w-4 h-4" />}>
+               <Button onClick={() => setShowWizard(true)} icon={<Plus className="w-4 h-4" />} className="bg-teal-600 hover:bg-teal-700 shadow-md shadow-teal-200">
                   Thêm NCT mới
                </Button>
             </div>

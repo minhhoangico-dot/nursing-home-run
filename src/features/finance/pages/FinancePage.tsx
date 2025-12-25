@@ -6,7 +6,7 @@ import { useFinanceStore } from '../../../stores/financeStore';
 import { FinancialTransaction, ServiceUsage, ServicePrice, Resident } from '../../../types/index';
 import { formatCurrency } from '../../../data/index';
 
-import { InvoiceGenerator } from '../components/InvoiceGenerator';
+// import { InvoiceGenerator } from '../components/InvoiceGenerator';
 import { PaymentList } from '../components/PaymentList';
 import { ServiceCatalog } from '../components/ServiceCatalog';
 import { ServiceUsageList } from '../components/ServiceUsageList';
@@ -91,7 +91,7 @@ export const FinancePage = () => {
 
    return (
       <div className="space-y-6">
-         {showInvoice && selectedResident && (
+         {/* {showInvoice && selectedResident && (
             <InvoiceGenerator
                user={user}
                resident={selectedResident}
@@ -101,7 +101,7 @@ export const FinancePage = () => {
                onPayment={(amount) => handlePayment(selectedResident, amount)}
                onMarkAsBilled={markAsBilled}
             />
-         )}
+         )} */}
 
          <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-slate-800">Quản lý Tài chính</h2>

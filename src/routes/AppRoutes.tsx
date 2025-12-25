@@ -15,6 +15,7 @@ const IncidentsPage = React.lazy(() => import('../features/incidents/pages/Incid
 const SchedulePage = React.lazy(() => import('../features/schedule/pages/SchedulePage').then(module => ({ default: module.SchedulePage })));
 const NutritionPage = React.lazy(() => import('../features/nutrition/pages/NutritionPage').then(module => ({ default: module.NutritionPage })));
 const VisitorsPage = React.lazy(() => import('../features/visitors/pages/VisitorsPage').then(module => ({ default: module.VisitorsPage })));
+const DailyMonitoringPage = React.lazy(() => import('../features/monitoring/pages/DailyMonitoringPage').then(module => ({ default: module.DailyMonitoringPage })));
 const MaintenancePage = React.lazy(() => import('../features/maintenance/pages/MaintenancePage').then(module => ({ default: module.MaintenancePage })));
 const PrintFormsPage = React.lazy(() => import('../features/print-forms/pages/PrintFormsPage').then(module => ({ default: module.PrintFormsPage })));
 const FinancePage = React.lazy(() => import('../features/finance/pages/FinancePage').then(module => ({ default: module.FinancePage })));
@@ -58,6 +59,13 @@ export const AppRoutes = () => {
                                     <ShiftHandoverPage />
                                 </RoleBasedRoute>
                             } />
+
+                            <Route path="/daily-monitoring" element={
+                                <RoleBasedRoute allowedRoles={['ADMIN', 'SUPERVISOR', 'DOCTOR', 'NURSE']}>
+                                    <DailyMonitoringPage />
+                                </RoleBasedRoute>
+                            } />
+
 
                             <Route path="/diabetes-monitoring" element={
                                 <RoleBasedRoute allowedRoles={['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE']}>

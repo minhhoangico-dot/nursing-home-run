@@ -1,85 +1,145 @@
-import React, { useState } from 'react';
-import { Activity, Heart, Thermometer, Wind, Plus, Save, X } from 'lucide-react';
-import { Resident, VitalSign, User } from '../../../types/index';
+import React, { useState, useEffect } from 'react';
+import { Activity, Heart, Thermometer, Wind, Plus, Save, X, Loader2, ChevronRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Resident, User } from '../../../types/index';
+import { useMonitoringStore } from '@/src/stores/monitoringStore';
+import { DailyMonitoringRecord, DailyMonitoringUpdate } from '@/src/types/dailyMonitoring';
+import { MetricDetailModal } from './MetricDetailModal';
 
-const VitalInputModal = ({ user, onClose, onSave }: { user: User, onClose: () => void, onSave: (v: VitalSign) => void }) => {
-   const [data, setData] = useState({
-      bpMorningSys: '', bpMorningDia: '',
-      bpNoonSys: '', bpNoonDia: '',
-      bpEveningSys: '', bpEveningDia: '',
-      pulse: '', temp: '', spo2: ''
-   });
+// --- Helper Components ---
 
-   const handleSave = () => {
-      const today = new Date().toISOString().split('T')[0];
-      onSave({
-         id: Math.random().toString(36).substr(2, 9),
-         residentId: '', // Filled by parent or context
-         recordDate: today,
-         bpMorningSystolic: data.bpMorningSys ? Number(data.bpMorningSys) : undefined,
-         bpMorningDiastolic: data.bpMorningDia ? Number(data.bpMorningDia) : undefined,
-         bpNoonSystolic: data.bpNoonSys ? Number(data.bpNoonSys) : undefined,
-         bpNoonDiastolic: data.bpNoonDia ? Number(data.bpNoonDia) : undefined,
-         bpEveningSystolic: data.bpEveningSys ? Number(data.bpEveningSys) : undefined,
-         bpEveningDiastolic: data.bpEveningDia ? Number(data.bpEveningDia) : undefined,
-         pulse: Number(data.pulse) || 0,
-         temperature: Number(data.temp) || 0,
-         spo2: Number(data.spo2) || 0,
-         recordedBy: user.id,
-         createdAt: new Date().toISOString()
-      } as any); // Type cast until full integration
+const StatusBadge = ({ label, color }: { label: string, color: string }) => (
+   <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${color}`}>
+      {label}
+   </span>
+);
+
+const TrendIcon = ({ current, previous }: { current: number, previous: number }) => {
+   if (!previous) return <Minus className="w-3 h-3 text-slate-300" />;
+   const diff = current - previous;
+   if (diff > 0) return <TrendingUp className="w-3 h-3 text-red-500" />;
+   if (diff < 0) return <TrendingDown className="w-3 h-3 text-green-500" />; // Context dependent colors? Assume lower is better generally for simplicty or mixed.
+   return <Minus className="w-3 h-3 text-slate-400" />;
+};
+
+const SummaryCard = ({
+   title,
+   value,
+   unit,
+   icon: Icon,
+   colorClass,
+   onClick,
+   status
+}: {
+   title: string,
+   value: string | number | undefined | null,
+   unit: string,
+   icon: any,
+   colorClass: string,
+   onClick: () => void,
+   status?: { label: string, color: string }
+}) => (
+   <div
+      onClick={onClick}
+      className="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:shadow-md hover:border-teal-200 transition-all group relative overflow-hidden"
+   >
+      <div className={`absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity ${colorClass.replace('bg-', 'text-')}`}>
+         <Icon className="w-16 h-16" />
+      </div>
+
+      <div className="flex justify-between items-start mb-2">
+         <div className={`p-2 rounded-lg ${colorClass}`}>
+            <Icon className="w-5 h-5" />
+         </div>
+         {status && <StatusBadge label={status.label} color={status.color} />}
+      </div>
+
+      <div>
+         <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">{title}</p>
+         <div className="flex items-baseline gap-1 mt-1">
+            <span className="text-2xl font-bold text-slate-900">{value || '--'}</span>
+            <span className="text-xs text-slate-400 font-medium">{unit}</span>
+         </div>
+      </div>
+
+      <div className="mt-3 flex items-center gap-1 text-xs text-slate-400 group-hover:text-teal-600 transition-colors">
+         Xem chi tiết <ChevronRight className="w-3 h-3" />
+      </div>
+   </div>
+);
+
+// Reusing existing modal logic from previous step, keeping it internal or imported? 
+// For cleanliness, let's keep the InputModal inline here as it's specific to data entry, 
+// but the DetailModal is imported.
+
+const VitalInputModal = ({ user, residentId, onClose, onSave }: { user: User, residentId: string, onClose: () => void, onSave: () => void }) => {
+   const { updateRecord } = useMonitoringStore();
+   const [isSubmitting, setIsSubmitting] = useState(false);
+
+   // Form state
+   const [bpMorning, setBpMorning] = useState('');
+   const [bpNoon, setBpNoon] = useState('');
+   const [bpEvening, setBpEvening] = useState('');
+   const [pulse, setPulse] = useState('');
+   const [temp, setTemp] = useState('');
+   const [spo2, setSpo2] = useState('');
+
+   const handleSave = async () => {
+      setIsSubmitting(true);
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
+      const update: DailyMonitoringUpdate = {
+         resident_id: residentId,
+         record_date: dateStr,
+         bp_morning: bpMorning,
+         bp_afternoon: bpNoon,
+         bp_evening: bpEvening,
+         pulse: pulse ? parseInt(pulse) : undefined,
+         temperature: temp ? parseFloat(temp) : undefined,
+         sp02: spo2 ? parseInt(spo2) : undefined,
+      };
+
+      await updateRecord(update);
+      setIsSubmitting(false);
+      onSave(); // Trigger reload
+      onClose();
    };
 
    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-         <div className="bg-white rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in zoom-in duration-200">
+         <div className="bg-white rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto shadow-xl">
             <div className="flex justify-between items-center mb-6">
-               <h3 className="font-bold text-lg text-slate-800">Cập nhật sinh hiệu (3 lần/ngày)</h3>
+               <h3 className="font-bold text-lg text-slate-800">Cập nhật sinh hiệu hôm nay</h3>
                <button onClick={onClose}><X className="w-5 h-5 text-slate-400" /></button>
             </div>
 
             <div className="space-y-6">
                {/* Morning */}
                <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-                  <p className="text-xs font-bold text-blue-700 mb-2 uppercase">Sáng (6:00 - 8:00)</p>
-                  <div className="flex items-center gap-2">
-                     <div className="flex-1">
-                        <label className="block text-[10px] text-slate-500 mb-1">Huyết áp</label>
-                        <div className="flex items-center gap-1">
-                           <input type="number" placeholder="120" className="w-full border rounded p-2 text-center text-sm" value={data.bpMorningSys} onChange={e => setData({ ...data, bpMorningSys: e.target.value })} />
-                           <span>/</span>
-                           <input type="number" placeholder="80" className="w-full border rounded p-2 text-center text-sm" value={data.bpMorningDia} onChange={e => setData({ ...data, bpMorningDia: e.target.value })} />
-                        </div>
-                     </div>
+                  <p className="text-xs font-bold text-blue-700 mb-2 uppercase">Sáng (Tham chiếu chính)</p>
+                  <div>
+                     <label className="block text-[10px] text-slate-500 mb-1">Huyết áp (VD: 120/80)</label>
+                     <input type="text" placeholder="120/80" className="w-full border rounded p-2 text-sm" value={bpMorning} onChange={e => setBpMorning(e.target.value)} />
                   </div>
                </div>
 
-               {/* Noon */}
-               <div className="p-3 bg-orange-50 rounded-lg border border-orange-100">
-                  <p className="text-xs font-bold text-orange-700 mb-2 uppercase">Trưa (11:00 - 12:00)</p>
-                  <div className="flex items-center gap-2">
-                     <div className="flex-1">
+               {/* Noon & Evening Group */}
+               <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-orange-50 rounded-lg border border-orange-100">
+                     <p className="text-xs font-bold text-orange-700 mb-2 uppercase">Trưa</p>
+                     <div>
                         <label className="block text-[10px] text-slate-500 mb-1">Huyết áp</label>
-                        <div className="flex items-center gap-1">
-                           <input type="number" placeholder="120" className="w-full border rounded p-2 text-center text-sm" value={data.bpNoonSys} onChange={e => setData({ ...data, bpNoonSys: e.target.value })} />
-                           <span>/</span>
-                           <input type="number" placeholder="80" className="w-full border rounded p-2 text-center text-sm" value={data.bpNoonDia} onChange={e => setData({ ...data, bpNoonDia: e.target.value })} />
-                        </div>
+                        <input type="text" placeholder="120/80" className="w-full border rounded p-2 text-sm" value={bpNoon} onChange={e => setBpNoon(e.target.value)} />
                      </div>
                   </div>
-               </div>
-
-               {/* Evening */}
-               <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
-                  <p className="text-xs font-bold text-indigo-700 mb-2 uppercase">Chiều/Tối (17:00 - 18:00)</p>
-                  <div className="flex items-center gap-2">
-                     <div className="flex-1">
+                  <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                     <p className="text-xs font-bold text-indigo-700 mb-2 uppercase">Chiều</p>
+                     <div>
                         <label className="block text-[10px] text-slate-500 mb-1">Huyết áp</label>
-                        <div className="flex items-center gap-1">
-                           <input type="number" placeholder="120" className="w-full border rounded p-2 text-center text-sm" value={data.bpEveningSys} onChange={e => setData({ ...data, bpEveningSys: e.target.value })} />
-                           <span>/</span>
-                           <input type="number" placeholder="80" className="w-full border rounded p-2 text-center text-sm" value={data.bpEveningDia} onChange={e => setData({ ...data, bpEveningDia: e.target.value })} />
-                        </div>
+                        <input type="text" placeholder="120/80" className="w-full border rounded p-2 text-sm" value={bpEvening} onChange={e => setBpEvening(e.target.value)} />
                      </div>
                   </div>
                </div>
@@ -87,21 +147,26 @@ const VitalInputModal = ({ user, onClose, onSave }: { user: User, onClose: () =>
                <div className="grid grid-cols-3 gap-3 border-t pt-4">
                   <div>
                      <label className="block text-xs font-bold text-slate-500 mb-1">Mạch (l/p)</label>
-                     <input type="number" className="w-full border rounded p-2 text-sm" value={data.pulse} onChange={e => setData({ ...data, pulse: e.target.value })} />
+                     <input type="number" className="w-full border rounded p-2 text-sm" value={pulse} onChange={e => setPulse(e.target.value)} />
                   </div>
                   <div>
                      <label className="block text-xs font-bold text-slate-500 mb-1">Nhiệt độ (°C)</label>
-                     <input type="number" className="w-full border rounded p-2 text-sm" value={data.temp} onChange={e => setData({ ...data, temp: e.target.value })} />
+                     <input type="number" className="w-full border rounded p-2 text-sm" value={temp} onChange={e => setTemp(e.target.value)} />
                   </div>
                   <div>
                      <label className="block text-xs font-bold text-slate-500 mb-1">SpO2 (%)</label>
-                     <input type="number" className="w-full border rounded p-2 text-sm" value={data.spo2} onChange={e => setData({ ...data, spo2: e.target.value })} />
+                     <input type="number" className="w-full border rounded p-2 text-sm" value={spo2} onChange={e => setSpo2(e.target.value)} />
                   </div>
                </div>
             </div>
             <div className="mt-6">
-               <button onClick={handleSave} className="w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 font-medium flex items-center justify-center gap-2">
-                  <Save className="w-4 h-4" /> Lưu chỉ số ngày hôm nay
+               <button
+                  onClick={handleSave}
+                  disabled={isSubmitting}
+                  className="w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+               >
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Lưu chỉ số
                </button>
             </div>
          </div>
@@ -109,98 +174,107 @@ const VitalInputModal = ({ user, onClose, onSave }: { user: User, onClose: () =>
    );
 };
 
-export const VitalSignsSection = ({ user, resident, onUpdate }: { user: User, resident: Resident, onUpdate: (r: Resident) => void }) => {
-   const [showModal, setShowModal] = useState(false);
-   const vitals = resident.vitalSigns || [];
+export const VitalSignsSection = ({ user, resident }: { user: User, resident: Resident }) => {
+   const [showInputModal, setShowInputModal] = useState(false);
+   const [selectedMetric, setSelectedMetric] = useState<'bp' | 'pulse' | 'sp02' | 'temp' | null>(null);
 
-   // Get latest
-   const latest = vitals.length > 0 ? vitals[0] : null;
+   const { fetchResidentRecords } = useMonitoringStore();
+   const [history, setHistory] = useState<DailyMonitoringRecord[]>([]);
+   const [loading, setLoading] = useState(false);
 
-   const handleAdd = (v: VitalSign) => {
-      onUpdate({
-         ...resident,
-         vitalSigns: [v, ...vitals]
-      });
-      setShowModal(false);
+   const loadHistory = async () => {
+      setLoading(true);
+      const data = await fetchResidentRecords(resident.id);
+      setHistory(data);
+      setLoading(false);
+   };
+
+   useEffect(() => {
+      loadHistory();
+   }, [resident.id]);
+
+   const latest = history.length > 0 ? history[0] : null;
+
+   // Simple Status Checkers (Mock logic for demonstration)
+   const getBpStatus = (val?: string) => {
+      if (!val) return null;
+      const sys = parseInt(val.split('/')[0]);
+      if (sys >= 140) return { label: 'Cao', color: 'bg-red-100 text-red-700' };
+      if (sys <= 90) return { label: 'Thấp', color: 'bg-blue-100 text-blue-700' };
+      return { label: 'Ổn định', color: 'bg-green-100 text-green-700' };
    };
 
    return (
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-         {showModal && <VitalInputModal user={user} onClose={() => setShowModal(false)} onSave={handleAdd} />}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+         {showInputModal && <VitalInputModal user={user} residentId={resident.id} onClose={() => setShowInputModal(false)} onSave={loadHistory} />}
+
+         {selectedMetric && (
+            <MetricDetailModal
+               isOpen={!!selectedMetric}
+               onClose={() => setSelectedMetric(null)}
+               type={selectedMetric}
+               data={history}
+               residentName={resident.name}
+            />
+         )}
 
          <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-            <h3 className="font-bold text-slate-800 flex items-center gap-2">
-               <Activity className="w-5 h-5 text-teal-600" /> Chỉ số sinh hiệu
-            </h3>
-            <button onClick={() => setShowModal(true)} className="text-xs bg-white border border-teal-200 text-teal-700 px-3 py-1.5 rounded hover:bg-teal-50 flex items-center gap-1 font-medium">
-               <Plus className="w-3 h-3" /> Cập nhật
+            <div>
+               <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-teal-600" /> Chỉ số sinh hiệu & Theo dõi
+               </h3>
+               {latest && <p className="text-xs text-slate-500 mt-1">Cập nhật lần cuối: {new Date(latest.record_date).toLocaleDateString('vi-VN')}</p>}
+            </div>
+
+            <button onClick={() => setShowInputModal(true)} className="text-xs bg-teal-600 text-white px-3 py-2 rounded-lg hover:bg-teal-700 flex items-center gap-1 font-medium shadow-sm active:scale-95 transition-all">
+               <Plus className="w-3 h-3" /> Cập nhật chỉ số
             </button>
          </div>
 
-         {latest ? (
-            <div className="grid grid-cols-1 divide-y divide-slate-100 border-b border-slate-100">
-               <div className="p-4 grid grid-cols-3 gap-4 text-center">
-                  <div className="bg-blue-50 p-2 rounded">
-                     <p className="text-[10px] text-blue-600 font-bold uppercase mb-1">Sáng</p>
-                     <p className="font-bold text-slate-900">{latest.bpMorningSystolic || '-'}/{latest.bpMorningDiastolic || '-'}</p>
-                  </div>
-                  <div className="bg-orange-50 p-2 rounded">
-                     <p className="text-[10px] text-orange-600 font-bold uppercase mb-1">Trưa</p>
-                     <p className="font-bold text-slate-900">{latest.bpNoonSystolic || '-'}/{latest.bpNoonDiastolic || '-'}</p>
-                  </div>
-                  <div className="bg-indigo-50 p-2 rounded">
-                     <p className="text-[10px] text-indigo-600 font-bold uppercase mb-1">Chiều</p>
-                     <p className="font-bold text-slate-900">{latest.bpEveningSystolic || '-'}/{latest.bpEveningDiastolic || '-'}</p>
-                  </div>
+         <div className="p-4">
+            {loading ? (
+               <div className="py-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-teal-500" /></div>
+            ) : (
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <SummaryCard
+                     title="Huyết áp"
+                     value={latest?.bp_morning}
+                     unit="mmHg"
+                     icon={Activity}
+                     colorClass="bg-blue-50 text-blue-600"
+                     status={getBpStatus(latest?.bp_morning) || undefined}
+                     onClick={() => setSelectedMetric('bp')}
+                  />
+                  <SummaryCard
+                     title="Nhịp tim"
+                     value={latest?.pulse}
+                     unit="lần/phút"
+                     icon={Heart}
+                     colorClass="bg-pink-50 text-pink-600"
+                     status={latest?.pulse && latest.pulse > 100 ? { label: 'Nhanh', color: 'bg-orange-100 text-orange-700' } : undefined}
+                     onClick={() => setSelectedMetric('pulse')}
+                  />
+                  <SummaryCard
+                     title="SpO2"
+                     value={latest?.sp02}
+                     unit="%"
+                     icon={Wind}
+                     colorClass="bg-sky-50 text-sky-600"
+                     status={latest?.sp02 && latest.sp02 < 95 ? { label: 'Thấp', color: 'bg-red-100 text-red-700' } : undefined}
+                     onClick={() => setSelectedMetric('sp02')}
+                  />
+                  <SummaryCard
+                     title="Nhiệt độ"
+                     value={latest?.temperature}
+                     unit="°C"
+                     icon={Thermometer}
+                     colorClass="bg-orange-50 text-orange-600"
+                     status={latest?.temperature && latest.temperature > 37.5 ? { label: 'Sốt', color: 'bg-red-100 text-red-700' } : undefined}
+                     onClick={() => setSelectedMetric('temp')}
+                  />
                </div>
-               <div className="p-4 grid grid-cols-3 gap-4 text-center">
-                  <div>
-                     <p className="text-xs text-slate-500 mb-1 flex items-center justify-center gap-1"><Heart className="w-3 h-3" /> Mạch</p>
-                     <p className="font-bold">{latest.pulse || '-'}</p>
-                  </div>
-                  <div>
-                     <p className="text-xs text-slate-500 mb-1 flex items-center justify-center gap-1"><Thermometer className="w-3 h-3" /> Nhiệt độ</p>
-                     <p className="font-bold">{latest.temperature || '-'}</p>
-                  </div>
-                  <div>
-                     <p className="text-xs text-slate-500 mb-1 flex items-center justify-center gap-1"><Wind className="w-3 h-3" /> SpO2</p>
-                     <p className="font-bold">{latest.spo2 || '-'}</p>
-                  </div>
-               </div>
-            </div>
-         ) : (
-            <div className="p-8 text-center text-slate-400 italic">Chưa có dữ liệu sinh hiệu hôm nay</div>
-         )}
-
-         {vitals.length > 0 && (
-            <div className="p-4 bg-slate-50/50">
-               <p className="text-xs font-bold text-slate-500 mb-3">LỊCH SỬ GẦN ĐÂY</p>
-               <div className="space-y-2">
-                  {vitals.slice(0, 3).map(v => (
-                     <div key={v.id} className="flex justify-between items-center text-sm p-3 bg-white rounded border border-slate-100">
-                        <div>
-                           <span className="text-slate-900 font-medium block">{new Date(v.recordDate).toLocaleDateString('vi-VN')}</span>
-                           <span className="text-xs text-slate-400">Ghi bởi: {v.recordedBy || 'N/A'}</span>
-                        </div>
-                        <div className="flex gap-4 text-xs text-slate-600">
-                           <div className="text-center">
-                              <span className="block text-slate-400">Sáng</span>
-                              <span className="font-bold">{v.bpMorningSystolic || '-'}/{v.bpMorningDiastolic || '-'}</span>
-                           </div>
-                           <div className="text-center">
-                              <span className="block text-slate-400">Trưa</span>
-                              <span className="font-bold">{v.bpNoonSystolic || '-'}/{v.bpNoonDiastolic || '-'}</span>
-                           </div>
-                           <div className="text-center">
-                              <span className="block text-slate-400">Chiều</span>
-                              <span className="font-bold">{v.bpEveningSystolic || '-'}/{v.bpEveningDiastolic || '-'}</span>
-                           </div>
-                        </div>
-                     </div>
-                  ))}
-               </div>
-            </div>
-         )}
+            )}
+         </div>
       </div>
    );
 };

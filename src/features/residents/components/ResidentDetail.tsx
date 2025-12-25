@@ -75,7 +75,8 @@ export const ResidentDetail = ({
       { id: 'info', label: 'Thông tin cá nhân' },
       // Removed care log tab
       { id: 'nutrition', label: 'Dinh dưỡng' },
-      { id: 'medical', label: 'Bệnh án & Thuốc' },
+      { id: 'medical_record', label: 'Bệnh án' },
+      { id: 'medication', label: 'Thuốc' },
       { id: 'monitoring', label: 'Theo dõi đặc biệt' },
       { id: 'assessment', label: 'Đánh giá cấp độ' },
       { id: 'finance', label: 'Tài chính' },
@@ -146,13 +147,18 @@ export const ResidentDetail = ({
 
 
 
-            {activeTab === 'medical' && (
+            {activeTab === 'medical_record' && (
                <div className="space-y-8">
                   <MedicalHistorySection user={user} resident={resident} onUpdate={onUpdateResident} />
-                  <VitalSignsSection user={user} resident={resident} onUpdate={onUpdateResident} />
+                  <VitalSignsSection user={user} resident={resident} />
                   <div className="border-t border-slate-200 my-6"></div>
-                  <PrescriptionList user={user} resident={resident} inventory={inventory} onUpdate={onUpdateResident} />
                   <MedicalVisitsSection user={user} resident={resident} onUpdate={onUpdateResident} />
+               </div>
+            )}
+
+            {activeTab === 'medication' && (
+               <div className="space-y-6">
+                  <PrescriptionList user={user} resident={resident} inventory={inventory} onUpdate={onUpdateResident} />
                </div>
             )}
 
