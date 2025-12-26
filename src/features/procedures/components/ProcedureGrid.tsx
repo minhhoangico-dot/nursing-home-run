@@ -9,24 +9,40 @@ interface ProcedureGridProps {
     records: ProcedureRecord[];
     selectedType: string | null;
     isLoading: boolean;
-    onToggle: (residentId: string, date: string, checked: boolean) => void;
+    onToggle: (residentId: string, date: string, checked: boolean, count: number) => void;
 }
 
-export const ProcedureGrid = ({ month, year, residents, records, selectedType, isLoading, onToggle }: ProcedureGridProps) => {
+export const ProcedureGrid = ({ month, year, residents, records, selectedType, isLoading, onToggle, mode = 'add' }: ProcedureGridProps & { mode?: 'add' | 'subtract' }) => {
     const daysInMonth = new Date(year, month, 0).getDate();
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
     const checkRecord = (residentId: string, day: number) => {
         const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const record = records.find(r => r.residentId === residentId && r.recordDate === dateStr);
-        if (!record || !selectedType) return false;
-        return (record as any)[selectedType] === true;
+        if (!record || !selectedType) return { checked: false, count: 0 };
+
+        const countKey = `${selectedType}Count` as keyof ProcedureRecord;
+        const count = (record as any)[countKey] as number || 0;
+        const checked = (record as any)[selectedType] === true;
+
+        return { checked, count }; // Use count as primary truth if > 0
     };
 
-    const handleCellClick = (residentId: string, day: number, currentVal: boolean) => {
+    const handleCellClick = (residentId: string, day: number, current: { checked: boolean, count: number }) => {
         if (!selectedType || isLoading) return;
         const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        onToggle(residentId, dateStr, !currentVal);
+
+        let newCount = current.count;
+        if (mode === 'add') {
+            newCount = current.count + 1;
+        } else {
+            newCount = Math.max(0, current.count - 1);
+        }
+
+        // Also toggle boolean based on count
+        const newChecked = newCount > 0;
+
+        onToggle(residentId, dateStr, newChecked, newCount);
     };
 
     if (!selectedType) {
@@ -62,20 +78,20 @@ export const ProcedureGrid = ({ month, year, residents, records, selectedType, i
                                     {idx + 1}. {r.name}
                                 </td>
                                 {days.map(d => {
-                                    const checked = checkRecord(r.id, d);
-                                    if (checked) total++;
+                                    const { checked, count } = checkRecord(r.id, d);
+                                    if (checked) total += (count > 0 ? count : 1); // Count logic: if count exist use it, otherwise 1 (legacy support)
                                     const isToday = new Date().getDate() === d && new Date().getMonth() + 1 === month && new Date().getFullYear() === year;
 
                                     return (
                                         <td
                                             key={d}
-                                            onClick={() => handleCellClick(r.id, d, checked)}
+                                            onClick={() => handleCellClick(r.id, d, { checked, count })}
                                             className={`border border-slate-200 text-center cursor-pointer select-none transition-colors
                                                 ${checked ? 'bg-blue-100 text-blue-600 font-bold' : 'hover:bg-gray-50'}
                                                 ${isToday ? 'bg-yellow-50' : ''}
                                             `}
                                         >
-                                            {checked ? '✓' : ''}
+                                            {checked ? (count > 1 ? count : '✓') : ''}
                                         </td>
                                     );
                                 })}

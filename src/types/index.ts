@@ -72,6 +72,13 @@ export interface ProcedureRecord {
     woundDressing: boolean;
     injectionCount: number;
     ivDripCount: number;
+    gastricTubeCount: number;
+    urinaryCatheterCount: number;
+    bladderWashCount: number;
+    bloodSugarTestCount: number;
+    bloodPressureCount: number;
+    oxygenTherapyCount: number;
+    woundDressingCount: number;
     performedBy?: string;
     notes?: string;
     createdAt: string;

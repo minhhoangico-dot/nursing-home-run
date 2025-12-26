@@ -7,7 +7,7 @@ export const GuardianInfo = ({ resident }: { resident: Resident }) => {
     const { addToast } = useToast();
 
     return (
-        <div className="max-w-lg">
+        <div className="w-full h-full">
             <h3 className="font-semibold text-slate-800 mb-4">Thông tin liên hệ chính</h3>
             <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
                 <div className="flex items-center gap-4 mb-6">

@@ -21,7 +21,7 @@ const formatYearMonth = (d: Date) => {
 export const DailyMonitoringPage = () => {
     const { user } = useAuthStore();
     const { residents, fetchResidents } = useResidentsStore();
-    const { records: dailyRecords, isLoading: isMonitoringLoading, fetchRecords, currentMonth, setCurrentMonth } = useMonitoringStore();
+    const { records: dailyRecords, isLoading: isMonitoringLoading, fetchDailyRecords: fetchRecords, currentMonth, setCurrentMonth } = useMonitoringStore();
     const { records: bsRecords, isLoading: isBSLoading, fetchAllRecords: fetchBSRecords } = useDiabetesStore();
 
     useEffect(() => {

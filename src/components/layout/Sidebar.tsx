@@ -19,6 +19,7 @@ export const Sidebar = () => {
     { id: 'visitors', label: 'Khách thăm', path: '/visitors', icon: UserCheck, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE', 'CAREGIVER'] },
     // { id: 'diabetes', label: 'Đường huyết', path: '/diabetes-monitoring', icon: Droplets, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE'] },
     { id: 'daily_monitoring', label: 'Theo dõi ngày', path: '/daily-monitoring', icon: ClipboardList, roles: ['ADMIN', 'SUPERVISOR', 'DOCTOR', 'NURSE'] },
+    { id: 'procedures', label: 'Thủ thuật', path: '/procedures', icon: Syringe, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE'] },
     { id: 'nutrition', label: 'Dinh dưỡng', path: '/nutrition', icon: Utensils, roles: ['ADMIN', 'DOCTOR', 'NURSE', 'SUPERVISOR', 'CAREGIVER'] },
     { id: 'residents', label: 'Danh sách NCT', path: '/residents', icon: Users, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'ACCOUNTANT', 'NURSE'] },
     { id: 'rooms', label: 'Sơ đồ phòng', path: '/rooms', icon: BedDouble, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'ACCOUNTANT', 'NURSE'] },

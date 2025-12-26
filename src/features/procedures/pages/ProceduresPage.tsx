@@ -15,6 +15,7 @@ export const ProceduresPage = () => {
     // State
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [selectedType, setSelectedType] = useState<string>('injection'); // Default to first type
+    const [mode, setMode] = useState<'add' | 'subtract'>('add');
 
     // Derived state
     const dateObj = new Date(selectedDate);
@@ -29,23 +30,19 @@ export const ProceduresPage = () => {
         fetchAllRecords(month, year);
     }, [month, year]);
 
-    const handleToggle = async (residentId: string, date: string, checked: boolean) => {
+    const handleToggle = async (residentId: string, date: string, checked: boolean, count: number) => {
         if (!selectedType) return;
 
         try {
             await upsertRecord({
                 residentId: residentId,
                 recordDate: date,
-                [selectedType]: checked
-                // Note: We rely on Supabase to merge or we should pass other fields if needed.
-                // Since we don't have the full record easily here without looking it up,
-                // and we want to avoid race conditions.
-                // Ideally we'd pass { ...existingRecord, [type]: checked }
-                // But simplified for now:
+                [selectedType]: checked,
+                [`${selectedType}Count`]: count
             });
             // Refresh to show updates
             await fetchAllRecords(month, year);
-            toast.success('Đã cập nhật');
+            // toast.success('Đã cập nhật'); // Reduce noise
         } catch (error) {
             console.error(error);
             toast.error('Lỗi khi cập nhật');
@@ -113,8 +110,8 @@ export const ProceduresPage = () => {
                                 key={t.key}
                                 onClick={() => setSelectedType(t.key)}
                                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${selectedType === t.key
-                                        ? 'bg-blue-50 text-blue-700 font-medium'
-                                        : 'text-slate-600 hover:bg-slate-50'
+                                    ? 'bg-blue-50 text-blue-700 font-medium'
+                                    : 'text-slate-600 hover:bg-slate-50'
                                     }`}
                             >
                                 {t.label}
@@ -129,6 +126,20 @@ export const ProceduresPage = () => {
                         <h3 className="font-bold text-slate-800">
                             {selectedType ? PROCEDURE_LABELS[selectedType as keyof typeof PROCEDURE_LABELS] : 'Chọn loại thủ thuật'}
                         </h3>
+                        <div className="flex bg-slate-100 p-1 rounded-lg">
+                            <button
+                                onClick={() => setMode('add')}
+                                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${mode === 'add' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                [+] Thêm
+                            </button>
+                            <button
+                                onClick={() => setMode('subtract')}
+                                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${mode === 'subtract' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                [-] Giảm
+                            </button>
+                        </div>
                     </div>
                     <div className="flex-1 overflow-auto p-4">
                         <ProcedureGrid
@@ -139,6 +150,7 @@ export const ProceduresPage = () => {
                             selectedType={selectedType}
                             isLoading={isLoading}
                             onToggle={handleToggle}
+                            mode={mode}
                         />
                     </div>
                 </div>

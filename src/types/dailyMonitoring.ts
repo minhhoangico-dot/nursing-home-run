@@ -8,6 +8,7 @@ export interface DailyMonitoringRecord {
     bp_morning?: string;
     bp_afternoon?: string;
     bp_evening?: string;
+    blood_sugar?: number;
     bowel_movements?: string;
     notes?: string;
     created_at?: string;
@@ -24,6 +25,7 @@ export interface DailyMonitoringUpdate {
     bp_morning?: string;
     bp_afternoon?: string;
     bp_evening?: string;
+    blood_sugar?: number;
     bowel_movements?: string;
     notes?: string;
 }

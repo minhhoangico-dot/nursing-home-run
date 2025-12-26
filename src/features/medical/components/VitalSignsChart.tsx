@@ -15,7 +15,7 @@ import { DailyMonitoringRecord } from '@/src/types/dailyMonitoring';
 
 interface VitalSignsChartProps {
     data: DailyMonitoringRecord[];
-    type: 'bp' | 'pulse' | 'sp02' | 'temp';
+    type: 'bp' | 'pulse' | 'sp02' | 'temp' | 'blood_sugar' | 'bowel';
     days?: number;
 }
 
@@ -45,12 +45,13 @@ export const VitalSignsChart = ({ data, type, days = 7 }: VitalSignsChartProps) 
                 bpDia,
                 pulse: record.pulse,
                 sp02: record.sp02,
-                temp: record.temperature
+                temp: record.temperature,
+                blood_sugar: record.blood_sugar
             };
         });
 
     // 2. Configuration per type
-    const config = {
+    const config: Record<string, any> = {
         bp: {
             yDomain: [40, 200],
             unit: 'mmHg',
@@ -93,12 +94,23 @@ export const VitalSignsChart = ({ data, type, days = 7 }: VitalSignsChartProps) 
             refLines: [
                 { y: 37.5, label: 'Sốt nhẹ', color: 'orange' }
             ]
+        },
+        blood_sugar: {
+            yDomain: [0, 20],
+            unit: 'mmol/L',
+            lines: [
+                { key: 'blood_sugar', color: '#10b981', name: 'Đường huyết' }
+            ],
+            refLines: [
+                { y: 6.4, label: 'Cao (6.4)', color: 'orange' },
+                { y: 3.9, label: 'Thấp (3.9)', color: 'blue' }
+            ]
         }
     };
 
     const activeConfig = config[type];
 
-    if (!processedData.length) {
+    if (!processedData.length || !activeConfig) {
         return <div className="h-full flex items-center justify-center text-slate-400">Chưa có dữ liệu biểu đồ</div>;
     }
 
@@ -128,11 +140,11 @@ export const VitalSignsChart = ({ data, type, days = 7 }: VitalSignsChartProps) 
                     />
                     <Legend />
 
-                    {activeConfig.refLines.map((ref, idx) => (
+                    {activeConfig.refLines && activeConfig.refLines.map((ref: any, idx: number) => (
                         <ReferenceLine key={idx} y={ref.y} stroke={ref.color} strokeDasharray="3 3" label={{ value: ref.label, fill: ref.color, fontSize: 10 }} />
                     ))}
 
-                    {activeConfig.lines.map((line) => (
+                    {activeConfig.lines.map((line: any) => (
                         <Line
                             key={line.key}
                             type="monotone"
