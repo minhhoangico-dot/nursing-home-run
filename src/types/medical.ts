@@ -5,15 +5,43 @@ export interface Assessment {
   assessor: string;
 }
 
+export type PrescriptionStatus = 'Active' | 'Completed' | 'Cancelled';
+
+export interface Medicine {
+  id: string;
+  name: string;
+  activeIngredient?: string;
+  unit: string;
+  defaultDosage?: string;
+  stock?: number;
+}
+
+export interface PrescriptionItem {
+  id: string;
+  prescriptionId: string;
+  medicineId?: string;
+  medicineName: string;
+  dosage: string; // e.g., "1 viên"
+  frequency: string; // e.g., "2 lần/ngày"
+  timesOfDay: string[]; // e.g., ["Sáng", "Chiều"]
+  quantity?: number;
+  instructions?: string; // e.g., "Uống sau ăn"
+}
+
 export interface Prescription {
   id: string;
-  medicationName: string;
-  dosage: string;
-  frequency: string;
+  code: string; // DT-20231226-001
+  residentId: string;
+  residentName?: string; // Computed/Joined
+  doctorId: string; // User ID
+  doctorName?: string; // Cache
+  diagnosis: string;
+  prescriptionDate: string;
   startDate: string;
-  endDate: string;
-  doctor: string;
-  status: 'Active' | 'Completed';
+  endDate?: string;
+  status: PrescriptionStatus;
+  notes?: string;
+  items: PrescriptionItem[];
 }
 
 export interface MedicationLog {
