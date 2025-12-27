@@ -11,7 +11,7 @@ export const MainLayout = () => {
   if (!user) return null;
 
   const getTitle = (pathname: string) => {
-    if (pathname.includes('/dashboard')) return 'Tổng quan';
+    // if (pathname.includes('/dashboard')) return 'Tổng quan';
     if (pathname.includes('/activities')) return 'Hoạt động & Sự kiện';
     if (pathname.includes('/handover')) return 'Sổ giao ban & Trực nhật';
     if (pathname.includes('/schedule')) return 'Lịch trực & Phân công';

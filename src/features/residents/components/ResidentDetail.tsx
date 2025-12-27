@@ -9,7 +9,9 @@ import { MonitoringPlansSection } from '@/src/features/medical/components/Monito
 // CareLogSection removed
 import { GuardianInfo } from './GuardianInfo';
 import { ResidentNutritionSection } from './ResidentNutritionSection';
-import { ServiceUsageList } from '@/src/features/finance/components/ServiceUsageList';
+import { ServiceUsageList } from '@/src/features/finance/components/ServiceUsageList'; // Keeping this for now if used elsewhere or remove if unused, but TS might complain if I remove it and it's used elsewhere, but here it was just used in the part I removed.
+// Actually I should remove it if I removed the usage.
+import { ResidentFinanceTab } from './ResidentFinanceTab';
 import { formatCurrency } from '@/src/data/index';
 import { useToast } from '@/src/app/providers';
 
@@ -316,71 +318,12 @@ export const ResidentDetail = ({
             )}
 
             {activeTab === 'finance' && (
-               <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <div className="p-4 bg-red-50 rounded-lg border border-red-100">
-                        <p className="text-xs text-red-600 uppercase font-semibold">Công nợ hiện tại</p>
-                        <p className="text-2xl font-bold text-red-700">{resident.balance < 0 ? `${formatCurrency(Math.abs(resident.balance))}` : '0 đ'}</p>
-                     </div>
-                     <div className="p-4 bg-green-50 rounded-lg border border-green-100">
-                        <p className="text-xs text-green-600 uppercase font-semibold">Số dư ký quỹ</p>
-                        <p className="text-2xl font-bold text-green-700">10,000,000 đ</p>
-                     </div>
-                  </div>
-
-                  <div className="mt-8">
-                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold text-slate-800">Dịch vụ sử dụng</h3>
-                        <div className="flex gap-2">
-                           <select
-                              className="text-sm border rounded px-2 py-1"
-                              onChange={(e) => {
-                                 const service = servicePrices.find(s => s.id === e.target.value);
-                                 if (service) handleAddService(service);
-                                 e.target.value = ''; // Reset
-                              }}
-                           >
-                              <option value="">+ Thêm dịch vụ nhanh...</option>
-                              {servicePrices.map(s => (
-                                 <option key={s.id} value={s.id}>{s.name} - {formatCurrency(s.price)}</option>
-                              ))}
-                           </select>
-                        </div>
-                     </div>
-
-                     <ServiceUsageList
-                        usageRecords={usageRecords.filter(u => u.residentId === resident.id)}
-                        residents={[resident]}
-                        hideResidentFilter={true}
-                     />
-                  </div>
-
-                  <h3 className="font-semibold text-slate-800 mt-6">Lịch sử giao dịch</h3>
-                  <table className="w-full text-sm">
-                     <thead className="bg-slate-50">
-                        <tr>
-                           <th className="px-4 py-2 text-left">Ngày</th>
-                           <th className="px-4 py-2 text-left">Nội dung</th>
-                           <th className="px-4 py-2 text-right">Số tiền</th>
-                           <th className="px-4 py-2 text-center">Trạng thái</th>
-                        </tr>
-                     </thead>
-                     <tbody className="divide-y divide-slate-100">
-                        <tr>
-                           <td className="px-4 py-3">01/10/2023</td>
-                           <td className="px-4 py-3">Phí dịch vụ tháng 10/2023</td>
-                           <td className="px-4 py-3 text-right font-medium text-red-600">-8,500,000 đ</td>
-                           <td className="px-4 py-3 text-center"><span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded text-xs">Chờ thanh toán</span></td>
-                        </tr>
-                        <tr>
-                           <td className="px-4 py-3">05/09/2023</td>
-                           <td className="px-4 py-3">Thanh toán phí tháng 9/2023</td>
-                           <td className="px-4 py-3 text-right font-medium text-green-600">+8,500,000 đ</td>
-                           <td className="px-4 py-3 text-center"><span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">Hoàn thành</span></td>
-                        </tr>
-                     </tbody>
-                  </table>
-               </div>
+               <ResidentFinanceTab
+                  resident={resident}
+                  servicePrices={servicePrices}
+                  usageRecords={usageRecords}
+                  onRecordUsage={onRecordUsage}
+               />
             )}
 
 

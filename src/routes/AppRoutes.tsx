@@ -7,7 +7,7 @@ import { useAuthStore } from '../stores/authStore';
 
 // Lazy load pages
 const LoginPage = React.lazy(() => import('../features/auth/pages/LoginPage').then(module => ({ default: module.LoginPage })));
-const DashboardPage = React.lazy(() => import('../features/dashboard/pages/DashboardPage').then(module => ({ default: module.DashboardPage })));
+// const DashboardPage = React.lazy(() => import('../features/dashboard/pages/DashboardPage').then(module => ({ default: module.DashboardPage })));
 const ResidentListPage = React.lazy(() => import('../features/residents/pages/ResidentListPage').then(module => ({ default: module.ResidentListPage })));
 const ResidentDetailPage = React.lazy(() => import('../features/residents/pages/ResidentDetailPage').then(module => ({ default: module.ResidentDetailPage })));
 const RoomMapPage = React.lazy(() => import('../features/rooms/pages/RoomMapPage').then(module => ({ default: module.RoomMapPage })));
@@ -42,8 +42,8 @@ export const AppRoutes = () => {
 
                     <Route element={<ProtectedRoute />}>
                         <Route element={<MainLayout />}>
-                            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                            <Route path="/dashboard" element={<DashboardPage />} />
+                            <Route path="/" element={<Navigate to="/residents" replace />} />
+                            {/* <Route path="/dashboard" element={<DashboardPage />} /> */}
 
                             <Route path="/residents" element={<ResidentListPage />} />
                             <Route path="/residents/:id" element={<ResidentDetailPage />} />
@@ -121,7 +121,7 @@ export const AppRoutes = () => {
                                 </RoleBasedRoute>
                             } />
 
-                            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                            <Route path="*" element={<Navigate to="/residents" replace />} />
                         </Route>
                     </Route>
                 </Routes>

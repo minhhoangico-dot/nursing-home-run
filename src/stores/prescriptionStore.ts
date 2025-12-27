@@ -14,6 +14,9 @@ interface PrescriptionsState {
     cancelPrescription: (id: string) => Promise<void>;
     completePrescription: (id: string) => Promise<void>;
     fetchMedicines: () => Promise<void>;
+    createMedicine: (medicine: Partial<Medicine>) => Promise<void>;
+    updateMedicine: (id: string, medicine: Partial<Medicine>) => Promise<void>;
+    deleteMedicine: (id: string) => Promise<void>;
 }
 
 export const usePrescriptionsStore = create<PrescriptionsState>((set, get) => ({
@@ -162,12 +165,56 @@ export const usePrescriptionsStore = create<PrescriptionsState>((set, get) => ({
                 activeIngredient: m.active_ingredient,
                 unit: m.unit,
                 defaultDosage: m.default_dosage,
-                stockQuantity: m.stock_quantity
+                price: m.price
             }));
             set({ medicines: mapped });
         } catch (e: any) {
             console.error('Fetch medicines error', e);
-            // If table doesn't exist or empty, use mock/inventory for now if needed, but better to fail silently or log
+        }
+    },
+
+    createMedicine: async (medicine) => {
+        try {
+            const { error } = await supabase.from('medicines').insert({
+                name: medicine.name,
+                active_ingredient: medicine.activeIngredient,
+                unit: medicine.unit,
+                default_dosage: medicine.defaultDosage,
+                price: medicine.price
+            });
+            if (error) throw error;
+            await get().fetchMedicines();
+        } catch (e: any) {
+            set({ error: e.message });
+            throw e;
+        }
+    },
+
+    updateMedicine: async (id, medicine) => {
+        try {
+            const { error } = await supabase.from('medicines').update({
+                name: medicine.name,
+                active_ingredient: medicine.activeIngredient,
+                unit: medicine.unit,
+                default_dosage: medicine.defaultDosage,
+                price: medicine.price
+            }).eq('id', id);
+            if (error) throw error;
+            await get().fetchMedicines();
+        } catch (e: any) {
+            set({ error: e.message });
+            throw e;
+        }
+    },
+
+    deleteMedicine: async (id) => {
+        try {
+            const { error } = await supabase.from('medicines').delete().eq('id', id);
+            if (error) throw error;
+            await get().fetchMedicines();
+        } catch (e: any) {
+            set({ error: e.message });
+            throw e;
         }
     }
 }));

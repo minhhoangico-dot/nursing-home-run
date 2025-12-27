@@ -8,17 +8,20 @@ interface PrescriptionFormProps {
    user: User;
    resident?: Resident; // Can be passed if context is known
    residents?: Resident[]; // For selection if not passed
-   inventory: InventoryItem[];
    onClose: () => void;
    onSave: () => void;
 }
 
-export const PrescriptionForm = ({ user, resident: initialResident, residents, inventory, onClose, onSave }: PrescriptionFormProps) => {
-   const { createPrescription } = usePrescriptionsStore();
+export const PrescriptionForm = ({ user, resident: initialResident, residents, onClose, onSave }: PrescriptionFormProps) => {
+   const { createPrescription, medicines, fetchMedicines } = usePrescriptionsStore();
    const [selectedResidentId, setSelectedResidentId] = useState(initialResident?.id || '');
    const [diagnosis, setDiagnosis] = useState('');
    const [notes, setNotes] = useState('');
    const [duration, setDuration] = useState(7);
+
+   useEffect(() => {
+      fetchMedicines();
+   }, [fetchMedicines]);
 
    // Items state
    const [items, setItems] = useState<Partial<PrescriptionItem>[]>([
@@ -218,8 +221,8 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, i
                                        onChange={e => updateItem(index, 'medicineName', e.target.value)}
                                     />
                                     <datalist id="med-suggestions">
-                                       {inventory.map(m => (
-                                          <option key={m.id} value={m.name}>{m.name} (Tồn: {m.stock})</option>
+                                       {medicines.map(m => (
+                                          <option key={m.id} value={m.name}>{m.name}</option>
                                        ))}
                                     </datalist>
                                  </div>

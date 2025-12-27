@@ -14,7 +14,8 @@ export const Sidebar = () => {
   if (!user) return null;
 
   const menuItems = [
-    { id: 'dashboard', label: 'Tổng quan', path: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'ACCOUNTANT', 'NURSE', 'CAREGIVER'] },
+    // { id: 'dashboard', label: 'Tổng quan', path: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'ACCOUNTANT', 'NURSE', 'CAREGIVER'] },
+
     { id: 'shift_handover', label: 'Giao ca', path: '/shift-handover', icon: ClipboardList, roles: ['ADMIN', 'SUPERVISOR'] },
     { id: 'visitors', label: 'Khách thăm', path: '/visitors', icon: UserCheck, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE', 'CAREGIVER'] },
     // { id: 'diabetes', label: 'Đường huyết', path: '/diabetes-monitoring', icon: Droplets, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE'] },
@@ -27,7 +28,7 @@ export const Sidebar = () => {
     { id: 'incidents', label: 'Sự cố & An toàn', path: '/incidents', icon: AlertTriangle, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE', 'CAREGIVER'] },
     { id: 'forms', label: 'In biểu mẫu', path: '/forms', icon: Printer, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE'] },
     { id: 'finance', label: 'Tài chính', path: '/finance', icon: CreditCard, roles: ['ADMIN', 'ACCOUNTANT', 'DOCTOR'] },
-    { id: 'inventory', label: 'Kho & Vật tư', path: '/inventory', icon: Package, roles: ['ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'DOCTOR'] },
+    // { id: 'inventory', label: 'Kho & Vật tư', path: '/inventory', icon: Package, roles: ['ADMIN', 'ACCOUNTANT', 'SUPERVISOR', 'DOCTOR'] }, // Hidden per user request
     { id: 'settings', label: 'Cài đặt', path: '/settings', icon: SettingsIcon, roles: ['ADMIN', 'ACCOUNTANT', 'SUPERVISOR'] },
   ];
 

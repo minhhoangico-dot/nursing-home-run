@@ -5,8 +5,11 @@ import { PrescriptionForm } from './PrescriptionForm';
 import { usePrescriptionsStore } from '../../../stores/prescriptionStore';
 import { printDailyMedicationSheet, printPrescription } from '../utils/printTemplates';
 
+import { MedicineManager } from './MedicineManager';
+
 export const PrescriptionList = ({ user, resident, inventory, onUpdate }: { user: User, resident: Resident, inventory: InventoryItem[], onUpdate: (r: Resident) => void }) => {
     const [showModal, setShowModal] = useState(false);
+    const [showMedicineManager, setShowMedicineManager] = useState(false);
     const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
 
     const { prescriptions, fetchPrescriptions, isLoading } = usePrescriptionsStore();
@@ -57,10 +60,13 @@ export const PrescriptionList = ({ user, resident, inventory, onUpdate }: { user
                 <PrescriptionForm
                     user={user}
                     resident={resident}
-                    inventory={inventory}
                     onClose={() => setShowModal(false)}
                     onSave={handleCreateSuccess}
                 />
+            )}
+
+            {showMedicineManager && (
+                <MedicineManager onClose={() => setShowMedicineManager(false)} />
             )}
 
             {/* SECTION A: CURRENT MEDICATIONS (Aggregated) */}
@@ -76,6 +82,12 @@ export const PrescriptionList = ({ user, resident, inventory, onUpdate }: { user
                         <p className="text-sm text-teal-600 mt-0.5">Danh sách tổng hợp các thuốc cần dùng hàng ngày</p>
                     </div>
                     <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowMedicineManager(true)}
+                            className="flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-3 py-2 rounded-lg hover:bg-slate-50 shadow-sm transition-all font-medium text-sm"
+                        >
+                            <Pill className="w-4 h-4" /> Danh mục thuốc
+                        </button>
                         <button
                             onClick={() => printDailyMedicationSheet(resident, activeItems)}
                             className="flex items-center gap-2 bg-white text-teal-700 border border-teal-200 px-3 py-2 rounded-lg hover:bg-teal-50 shadow-sm transition-all font-medium text-sm"

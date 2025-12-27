@@ -35,7 +35,7 @@ export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
                 >
                     <span className="flex items-center gap-2">
                         <Layers className={`w-4 h-4 ${!activeBuilding ? 'text-blue-600' : 'text-slate-400'}`} />
-                        Tổng quan
+                        Tất cả khu vực
                     </span>
                 </button>
 

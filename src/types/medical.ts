@@ -13,7 +13,7 @@ export interface Medicine {
   activeIngredient?: string;
   unit: string;
   defaultDosage?: string;
-  stock?: number;
+  price?: number;
 }
 
 export interface PrescriptionItem {
