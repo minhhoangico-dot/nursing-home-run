@@ -93,7 +93,7 @@ interface ServiceCatalogProps {
     onAdd: (s: ServicePrice) => void;
     onUpdate: (s: ServicePrice) => void;
     onDelete: (id: string) => void;
-    onRecordUsage: (s: ServicePrice) => void;
+    onRecordUsage?: (s: ServicePrice) => void;
 }
 
 export const ServiceCatalog = ({ services, onAdd, onUpdate, onDelete, onRecordUsage }: ServiceCatalogProps) => {
@@ -213,13 +213,15 @@ export const ServiceCatalog = ({ services, onAdd, onUpdate, onDelete, onRecordUs
                                 </td>
                                 <td className="px-4 py-3 text-right">
                                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                            onClick={() => onRecordUsage(s)}
-                                            className="bg-green-100 text-green-700 p-1.5 rounded hover:bg-green-200"
-                                            title="Ghi nhận sử dụng"
-                                        >
-                                            <Tag className="w-4 h-4" />
-                                        </button>
+                                        {onRecordUsage && (
+                                            <button
+                                                onClick={() => onRecordUsage(s)}
+                                                className="bg-green-100 text-green-700 p-1.5 rounded hover:bg-green-200"
+                                                title="Ghi nhận sử dụng"
+                                            >
+                                                <Tag className="w-4 h-4" />
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => { setIsEditing(s); setIsCreating(false); }}
                                             className="bg-blue-100 text-blue-700 p-1.5 rounded hover:bg-blue-200"

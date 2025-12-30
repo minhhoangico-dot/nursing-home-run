@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { X, ArrowLeft, ArrowRight, CheckCircle2, BedDouble, AlertCircle } from 'lucide-react';
 import { Resident } from '@/src/types/index';
+import { generateClinicCode } from '@/src/utils/clinicCodeUtils';
 
 const admissionSchema = z.object({
    name: z.string().min(2, 'Họ tên phải có ít nhất 2 ký tự'),
@@ -20,7 +21,7 @@ const admissionSchema = z.object({
 
 type FormData = z.infer<typeof admissionSchema>;
 
-export const AdmissionWizard = ({ onSave, onCancel }: { onSave: (data: Partial<Resident>) => void, onCancel: () => void }) => {
+export const AdmissionWizard = ({ onSave, onCancel, existingCodes = [] }: { onSave: (data: Partial<Resident>) => void, onCancel: () => void, existingCodes?: string[] }) => {
    const [step, setStep] = useState(1);
    const { register, handleSubmit, trigger, watch, setValue, formState: { errors } } = useForm<FormData>({
       resolver: zodResolver(admissionSchema),
@@ -55,8 +56,18 @@ export const AdmissionWizard = ({ onSave, onCancel }: { onSave: (data: Partial<R
    };
 
    const onSubmit = (data: FormData) => {
+      // Create temp resident object for code generation
+      const tempResident: Partial<Resident> = {
+         ...data,
+         gender: data.gender as 'Nam' | 'Nữ',
+         careLevel: data.careLevel as 1 | 2 | 3 | 4,
+      };
+
+      const clinicCode = generateClinicCode(tempResident, existingCodes);
+
       onSave({
          ...data,
+         clinicCode,
          careLevel: data.careLevel as 1 | 2 | 3 | 4,
          status: 'Active',
          admissionDate: new Date().toISOString().split('T')[0],

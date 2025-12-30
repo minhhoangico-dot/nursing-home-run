@@ -11,6 +11,7 @@ export interface CareLog {
 
 export interface Resident {
   id: string;
+  clinicCode?: string;
   name: string;
   dob: string;
   gender: 'Nam' | 'Nữ';

@@ -18,7 +18,16 @@ export const ResidentBasicInfo = ({ resident, onEdit, onPrint }: ResidentBasicIn
       </div>
       <div className="flex-1">
         <div className="flex items-center gap-3 mb-2">
-          <h1 className="text-2xl font-bold text-slate-800">{resident.name}</h1>
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+              {resident.name}
+              {resident.clinicCode && (
+                <span className="text-sm font-normal px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md border border-indigo-100">
+                  #{resident.clinicCode}
+                </span>
+              )}
+            </h1>
+          </div>
           <CareLevelBadge level={resident.careLevel} />
           <StatusBadge status={resident.status} />
         </div>

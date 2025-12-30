@@ -1,171 +1,79 @@
 import React, { useState } from 'react';
-import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../../../stores/authStore';
 import { useResidentsStore } from '../../../stores/residentsStore';
 import { useFinanceStore } from '../../../stores/financeStore';
-import { FinancialTransaction, ServiceUsage, ServicePrice, Resident } from '../../../types/index';
-import { formatCurrency } from '../../../data/index';
+import { Resident } from '../../../types/index';
+import { INITIAL_PRICES } from '../../../data/index';
 
-// import { InvoiceGenerator } from '../components/InvoiceGenerator';
-import { PaymentList } from '../components/PaymentList';
-import { ServiceCatalog } from '../components/ServiceCatalog';
-import { ServiceUsageList } from '../components/ServiceUsageList';
-import { AddTransactionModal } from '../components/AddTransactionModal';
-import { Plus } from 'lucide-react';
+import { MonthlyBillingConfig } from '../components/MonthlyBillingConfig';
+import { InvoicePreview } from '../components/InvoicePreview';
 
 export const FinancePage = () => {
    const { user } = useAuthStore();
-   const { residents, updateResident } = useResidentsStore();
-   const {
-      transactions,
-      addTransaction,
-      servicePrices,
-      usageRecords,
-      updateServicePrice,
-      deleteServicePrice,
-      recordUsage,
-      markAsBilled
-   } = useFinanceStore();
+   const { residents } = useResidentsStore();
+   const { usageRecords } = useFinanceStore();
 
-   const [showInvoice, setShowInvoice] = useState(false);
-   const [showAddTransactionModal, setShowAddTransactionModal] = useState(false);
-   const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
-   const [activeTab, setActiveTab] = useState<'transactions' | 'services'>('services');
+   const [previewData, setPreviewData] = useState<{
+      resident: Resident;
+      month: string;
+      fixedCosts: { name: string; amount: number }[];
+      incurredCosts: any[];
+   } | null>(null);
 
    if (!user) return null;
 
-   const handlePayment = async (resident: Resident, amount: number) => {
-      try {
-         await updateResident({
-            ...resident,
-            balance: resident.balance + amount
-         });
+   const handlePrintBill = (resident: Resident, month: string) => {
+      // Re-calculate fixed costs logic to pass to preview
+      // Ideally this helper logic should be shared or passed up, but for now duplicate the calculation or just trust the view.
+      // Wait, MonthlyBillingConfig does the calculation inside.
+      // To strictly pass data, I might need to move calculation up or just repeat it here for the printable.
+      // Repeating is safer for decoupling.
 
-         const newTrx: FinancialTransaction = {
-            id: `TRX-${Date.now()}`,
-            date: new Date().toLocaleString('vi-VN'),
-            residentName: resident.name,
-            description: 'Thanh toán phí dịch vụ',
-            amount: amount,
-            type: 'IN',
-            performer: user.name,
-            status: 'Success'
-         };
+      const fixedCosts = [];
+      const roomPrice = INITIAL_PRICES.find(p => p.category === 'ROOM' && p.name.includes(resident.roomType))?.price || 0;
+      if (roomPrice > 0) fixedCosts.push({ name: `Phòng ${resident.roomType}`, amount: roomPrice });
 
-         await addTransaction(newTrx);
-         toast.success(`Đã ghi nhận thanh toán ${formatCurrency(amount)}`);
-      } catch (error) {
-         toast.error('Giao dịch thất bại');
-      }
-   };
+      const carePrice = INITIAL_PRICES.find(p => p.category === 'CARE' && p.name.includes(`Cấp độ ${resident.careLevel}`))?.price || 0;
+      if (carePrice > 0) fixedCosts.push({ name: `CS Cấp độ ${resident.careLevel}`, amount: carePrice });
 
-   const handleQuickRecordUsage = async (service: ServicePrice) => {
-      const residentId = prompt('Nhập Mã NCT (ID) để ghi nhận sử dụng (VD: R001):');
-      if (!residentId) return;
+      const mealPrice = INITIAL_PRICES.find(p => p.category === 'MEAL' && p.name.includes('Suất ăn tiêu chuẩn'))?.price || 0;
+      if (resident.dietType !== 'Tube') fixedCosts.push({ name: 'Suất ăn tiêu chuẩn', amount: mealPrice });
 
-      const resident = residents.find(r => r.id === residentId || r.name === residentId);
-      if (!resident) {
-         toast.error(`Không tìm thấy NCT với mã/tên: ${residentId}`);
-         return;
-      }
+      const monthlyUsage = usageRecords.filter(u =>
+         u.residentId === resident.id &&
+         u.date.startsWith(month) &&
+         u.status !== 'Cancelled'
+      );
 
-      const usage: ServiceUsage = {
-         id: `USG-${Date.now()}`,
-         residentId: resident.id,
-         serviceId: service.id,
-         serviceName: service.name,
-         date: new Date().toISOString(),
-         quantity: 1,
-         unitPrice: service.price,
-         totalAmount: service.price,
-         status: 'Unbilled'
-      };
-
-      try {
-         await recordUsage(usage);
-         toast.success(`Đã thêm ${service.name} cho ${resident.name}`);
-      } catch (error) {
-         toast.error('Lỗi khi ghi nhận dịch vụ');
-      }
+      setPreviewData({
+         resident,
+         month,
+         fixedCosts,
+         incurredCosts: monthlyUsage
+      });
    };
 
    return (
       <div className="space-y-6">
-         {/* {showInvoice && selectedResident && (
-            <InvoiceGenerator
-               user={user}
-               resident={selectedResident}
-               servicePrices={servicePrices}
-               usageRecords={usageRecords}
-               onClose={() => { setShowInvoice(false); setSelectedResident(null) }}
-               onPayment={(amount) => handlePayment(selectedResident, amount)}
-               onMarkAsBilled={markAsBilled}
-            />
-         )} */}
-
          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-slate-800">Quản lý Tài chính</h2>
-            <div className="flex bg-white rounded-lg p-1 border border-slate-200">
-               <button
-                  onClick={() => setActiveTab('services')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'services' ? 'bg-teal-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
-               >
-                  Dịch vụ
-               </button>
-               <button
-                  onClick={() => setActiveTab('transactions')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'transactions' ? 'bg-teal-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
-               >
-                  Lịch sử giao dịch
-               </button>
-            </div>
+            <h2 className="text-2xl font-bold text-slate-800">Quản lý Hóa đơn & Chi phí Dịch vụ</h2>
          </div>
 
-         {activeTab === 'services' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-               <ServiceCatalog
-                  services={servicePrices}
-                  onAdd={updateServicePrice}
-                  onUpdate={updateServicePrice}
-                  onDelete={deleteServicePrice}
-                  onRecordUsage={handleQuickRecordUsage}
-               />
-               <ServiceUsageList
-                  usageRecords={usageRecords}
-                  residents={residents}
-               />
-            </div>
-         )}
-
-         {activeTab === 'transactions' && (
-            <div className="space-y-4">
-               <div className="flex justify-end">
-                  <button
-                     onClick={() => setShowAddTransactionModal(true)}
-                     className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-colors"
-                  >
-                     <Plus className="w-4 h-4" />
-                     Thêm giao dịch
-                  </button>
-               </div>
-               <PaymentList transactions={transactions} />
-            </div>
-         )}
-
-         {showAddTransactionModal && (
-            <AddTransactionModal
-               user={user}
+         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <MonthlyBillingConfig
                residents={residents}
-               onClose={() => setShowAddTransactionModal(false)}
-               onSave={async (trx) => {
-                  try {
-                     await addTransaction(trx);
-                     toast.success('Đã thêm giao dịch thành công');
-                     setShowAddTransactionModal(false);
-                  } catch (error) {
-                     toast.error('Lỗi khi thêm giao dịch');
-                  }
-               }}
+               usageRecords={usageRecords}
+               onPrintBill={handlePrintBill}
+            />
+         </div>
+
+         {previewData && (
+            <InvoicePreview
+               resident={previewData.resident}
+               month={previewData.month}
+               fixedCosts={previewData.fixedCosts}
+               incurredCosts={previewData.incurredCosts}
+               onClose={() => setPreviewData(null)}
             />
          )}
       </div>

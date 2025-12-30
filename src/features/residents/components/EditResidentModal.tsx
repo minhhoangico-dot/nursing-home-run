@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
-import { Save } from 'lucide-react';
+import { Save, RefreshCw } from 'lucide-react';
 import { Resident } from '@/src/types/index';
 import { Input, Select, Button, Modal } from '@/src/components/ui/index';
+import { generateClinicCode } from '@/src/utils/clinicCodeUtils';
 
 interface EditResidentModalProps {
   resident: Resident;
   onClose: () => void;
   onSave: (data: Partial<Resident>) => void;
+  existingCodes?: string[];
 }
 
-export const EditResidentModal = ({ resident, onClose, onSave }: EditResidentModalProps) => {
+export const EditResidentModal = ({ resident, onClose, onSave, existingCodes = [] }: EditResidentModalProps) => {
   const [formData, setFormData] = useState<Partial<Resident>>({
     name: resident.name,
     dob: resident.dob,
     gender: resident.gender,
+    clinicCode: resident.clinicCode,
     room: resident.room,
     bed: resident.bed,
     floor: resident.floor,
@@ -28,6 +31,11 @@ export const EditResidentModal = ({ resident, onClose, onSave }: EditResidentMod
 
   const handleChange = (field: keyof Resident, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleGenerateCode = () => {
+    const code = generateClinicCode(formData, existingCodes);
+    handleChange('clinicCode', code);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -45,6 +53,24 @@ export const EditResidentModal = ({ resident, onClose, onSave }: EditResidentMod
             value={formData.name}
             onChange={e => handleChange('name', e.target.value)}
           />
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <Input
+                label="Mã phòng khám (Mã hồ sơ)"
+                value={formData.clinicCode || ''}
+                onChange={e => handleChange('clinicCode', e.target.value)}
+                placeholder="VD: 2589010001"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleGenerateCode}
+              className="mb-[2px] p-2 bg-slate-100 hover:bg-teal-50 text-slate-600 hover:text-teal-600 rounded-lg border border-slate-200 transition-colors"
+              title="Tạo mã tự động"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
+          </div>
           <Input
             label="Ngày sinh"
             type="date"

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ShieldAlert, Bed, Stethoscope, ArrowRight, Wrench, X, UserPlus, LogOut, CheckCircle2, AlertTriangle, ArrowRightLeft, Building } from 'lucide-react';
+import { ShieldAlert, Bed, Stethoscope, ArrowRight, Wrench, X, UserPlus, LogOut, CheckCircle2, AlertTriangle, ArrowRightLeft, Building, ClipboardList } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { Resident, Room, User, MaintenanceRequest } from '../../../types/index';
@@ -10,6 +10,13 @@ import { AssignBedModal } from '../components/AssignBedModal';
 import { useAuthStore } from '../../../stores/authStore';
 import { useResidentsStore } from '../../../stores/residentsStore';
 import { useRoomsStore } from '../../../stores/roomsStore';
+import { useShiftHandoverStore } from '../../../stores/shiftHandoverStore';
+import { ShiftHandoverForm } from '../../shift-handover/components/ShiftHandoverForm';
+import { HandoverHistoryModal } from '../../shift-handover/components/HandoverHistoryModal';
+import { useRoomConfigStore } from '../../../stores/roomConfigStore';
+import { RoomEditModal } from '../components/RoomEditModal';
+import { Edit, Plus } from 'lucide-react';
+
 
 interface BedDetailModalProps {
    bed: any;
@@ -56,6 +63,7 @@ const BedDetailModal = ({ bed, roomNumber, roomType, floor, building, user, onCl
                      <p>Tuổi: {new Date().getFullYear() - new Date(resident.dob).getFullYear()}</p>
                      <p>Cấp độ chăm sóc: <span className="font-bold text-teal-700">{resident.careLevel}</span></p>
                      <p>Tình trạng: {resident.currentConditionNote || 'Ổn định'}</p>
+                     {/* Pass handoverNotes as prop or fetch here if needed, but for now simple check */}
                   </div>
                   <div className="mt-4 flex gap-2">
                      <button onClick={() => onAction('view_resident', resident.id)} className="flex-1 bg-white border border-slate-200 text-teal-700 py-2 rounded-lg font-medium hover:bg-teal-50 flex items-center justify-center gap-2 text-sm">
@@ -101,29 +109,77 @@ export const RoomMapPage = () => {
    const { user } = useAuthStore();
    const { residents, updateResident, selectResident } = useResidentsStore();
    const { maintenanceRequests } = useRoomsStore();
+   const { fetchHandovers, handovers } = useShiftHandoverStore();
+   const { configs, updateRoom, addRoom, deleteRoom, updateBuildingConfig } = useRoomConfigStore(); // Store hooks
    const navigate = useNavigate();
 
    const [selectedBuilding, setSelectedBuilding] = useState('Tòa A');
-   const [selectedFloor, setSelectedFloor] = useState('Tầng 1');
+   const [selectedFloor, setSelectedFloor] = useState('Tầng 2');
+   const [isEditMode, setIsEditMode] = useState(false); // Edit Mode State
+   const [editingRoom, setEditingRoom] = useState<{ roomNumber: string, bedCount: number, roomType: any } | null>(null);
+
    const [selectedBed, setSelectedBed] = useState<{ bed: any, roomNumber: string, roomType: string, building: string, floor: string } | null>(null);
    const [transferResident, setTransferResident] = useState<Resident | null>(null);
    const [assignTarget, setAssignTarget] = useState<any | null>(null);
 
+   // Handover Modal State
+   const [showHandoverForm, setShowHandoverForm] = useState(false);
+   const [showHandoverHistory, setShowHandoverHistory] = useState(false);
+
+   React.useEffect(() => {
+      fetchHandovers();
+   }, []);
+
+   // Get latest handover for selected floor
+   const latestHandover = useMemo(() => {
+      // Assuming floorId matches the selectedFloor string or we filter by notes
+      // Ideally we filter handovers by date/time to get the "current" one
+      return handovers
+         .filter(h => h.floorId === selectedFloor) // Adjust if floorId format differs
+         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+   }, [handovers, selectedFloor]);
+
+   const handoverNotes = useMemo(() => {
+      if (!latestHandover) return {};
+      const notesMap: Record<string, string> = {};
+      latestHandover.notes.forEach(n => {
+         if (n.residentId) notesMap[n.residentId] = n.content;
+      });
+      return notesMap;
+   }, [latestHandover]);
+
+
    // Live generation based on residents AND maintenance state
-   const allRooms = useMemo(() => generateRooms(residents, maintenanceRequests), [residents, maintenanceRequests]);
+   const allRooms = useMemo(() => {
+      // Pass the store configs to generateRooms to override defaults
+      return generateRooms(residents, maintenanceRequests, configs);
+   }, [residents, maintenanceRequests, configs]);
 
-   const displayedRooms = allRooms.filter(r => r.building === selectedBuilding && r.floor === selectedFloor);
+   const roomsOnFloor = useMemo(() =>
+      allRooms.filter(r => r.building === selectedBuilding && r.floor === selectedFloor),
+      [allRooms, selectedBuilding, selectedFloor]
+   );
 
-   const availableFloors = getFloorsForBuilding(selectedBuilding);
+   const availableFloors = BUILDING_STRUCTURE.find(b => b.id === selectedBuilding)?.floors || [];
 
    const stats = {
-      total: displayedRooms.reduce((acc, r) => acc + r.beds.length, 0),
-      occupied: displayedRooms.reduce((acc, r) => acc + r.beds.filter(b => b.status === 'Occupied').length, 0),
-      maintenance: displayedRooms.reduce((acc, r) => acc + r.beds.filter(b => b.status === 'Maintenance').length, 0),
+      total: roomsOnFloor.reduce((acc, r) => acc + r.beds.length, 0),
+      occupied: roomsOnFloor.reduce((acc, r) => acc + r.beds.filter(b => b.status === 'Occupied').length, 0),
+      maintenance: roomsOnFloor.reduce((acc, r) => acc + r.beds.filter(b => b.status === 'Maintenance').length, 0),
    };
    const available = stats.total - stats.occupied - stats.maintenance;
 
    if (!user) return null;
+
+   const handleRoomClick = (room: Room) => {
+      if (isEditMode) {
+         setEditingRoom({
+            roomNumber: room.number,
+            bedCount: room.beds.length,
+            roomType: room.type
+         });
+      }
+   };
 
    const handleBedAction = async (action: string, bedId: string) => {
       const resident = residents.find(r => r.id === (selectedBed?.bed.residentId || ''));
@@ -195,8 +251,56 @@ export const RoomMapPage = () => {
       }
    }
 
+   const handleSaveRoom = (data: { roomNumber: string; bedCount: number; roomType: any }) => {
+      if (editingRoom && editingRoom.roomNumber !== '') { // Existing room
+         if (data.roomNumber !== editingRoom.roomNumber) {
+            // Renaming: Delete old, add new
+            deleteRoom(selectedBuilding, selectedFloor, editingRoom.roomNumber);
+            addRoom(selectedBuilding, selectedFloor, { number: data.roomNumber, beds: data.bedCount, type: data.roomType });
+         } else {
+            updateRoom(selectedBuilding, selectedFloor, { number: data.roomNumber, beds: data.bedCount, type: data.roomType });
+         }
+         setEditingRoom(null);
+      } else { // New Room (via Add button)
+         addRoom(selectedBuilding, selectedFloor, { number: data.roomNumber, beds: data.bedCount, type: data.roomType });
+         setEditingRoom(null);
+      }
+   };
+
+   const handleDeleteRoom = () => {
+      if (editingRoom && editingRoom.roomNumber !== '') {
+         deleteRoom(selectedBuilding, selectedFloor, editingRoom.roomNumber);
+         setEditingRoom(null);
+      }
+   };
+
+   const isAdmin = user?.role === 'ADMIN';
+   const isSupervisor = user?.role === 'SUPERVISOR' || isAdmin;
+
    return (
       <div className="space-y-6">
+         {/* Handover Modals */}
+         {showHandoverForm && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+               <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+                  <ShiftHandoverForm
+                     onClose={() => setShowHandoverForm(false)}
+                     onSuccess={() => {
+                        fetchHandovers();
+                        // Optionally refresh residents if status changed
+                     }}
+                  />
+               </div>
+            </div>
+         )}
+
+         {showHandoverHistory && (
+            <HandoverHistoryModal
+               handovers={handovers.filter(h => h.floorId === selectedFloor)} // Filter by current floor? Or all? Let's filter by current floor context to match "Room Map" view.
+               onClose={() => setShowHandoverHistory(false)}
+            />
+         )}
+
          {selectedBed && (
             <BedDetailModal
                bed={selectedBed.bed}
@@ -229,37 +333,98 @@ export const RoomMapPage = () => {
             />
          )}
 
-         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+         {editingRoom && (
+            <RoomEditModal
+               roomNumber={editingRoom.roomNumber}
+               bedCount={editingRoom.bedCount}
+               roomType={editingRoom.roomType}
+               onClose={() => setEditingRoom(null)}
+               onSave={handleSaveRoom}
+               onDelete={editingRoom.roomNumber !== '' ? handleDeleteRoom : undefined} // Only allow delete for existing rooms
+            />
+         )}
+
+         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
             <div>
                <h2 className="text-2xl font-bold text-slate-800">Sơ đồ phòng ở</h2>
-               <p className="text-sm text-slate-500">Quản lý trạng thái giường bệnh theo thời gian thực</p>
+               <div className="flex items-center gap-2">
+                  <p className="text-sm text-slate-500">Quản lý trạng thái giường bệnh</p>
+                  {isAdmin && (
+                     <div className="flex items-center gap-2 ml-4">
+                        <span className="text-sm text-slate-400">|</span>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                           <div className={`w-10 h-6 rounded-full p-1 transition-colors ${isEditMode ? 'bg-indigo-600' : 'bg-slate-300'}`} onClick={() => setIsEditMode(!isEditMode)}>
+                              <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${isEditMode ? 'translate-x-4' : ''}`} />
+                           </div>
+                           <span className={`text-sm font-medium ${isEditMode ? 'text-indigo-600' : 'text-slate-500'}`}>Chế độ chỉnh sửa</span>
+                        </label>
+                        {isEditMode && (
+                           <button
+                              onClick={() => setEditingRoom({ roomNumber: '', bedCount: 1, roomType: '1 Giường' })} // Use dummy for Add mode
+                              className="p-1 bg-indigo-100 text-indigo-600 rounded hover:bg-indigo-200"
+                              title="Thêm phòng"
+                           >
+                              <Plus className="w-5 h-5" />
+                           </button>
+                        )}
+                     </div>
+                  )}
+               </div>
             </div>
 
-            <div className="flex gap-4">
-               <div className="flex bg-white rounded-lg p-1 border border-slate-200">
-                  {BUILDING_STRUCTURE.map(b => (
+            <div className="flex flex-col md:flex-row gap-4 items-end md:items-center w-full md:w-auto">
+               {isSupervisor && (
+                  <div className="flex gap-2 mr-4">
                      <button
-                        key={b.id}
-                        onClick={() => { setSelectedBuilding(b.id); setSelectedFloor(b.floors[0]); }}
-                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${selectedBuilding === b.id ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
-                           }`}
+                        onClick={() => setShowHandoverHistory(true)}
+                        className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 shadow-sm flex items-center gap-2 font-medium transition-all"
                      >
-                        <Building className="w-4 h-4" /> {b.name}
+                        <ClipboardList className="w-4 h-4" />
+                        Lịch sử
                      </button>
-                  ))}
-               </div>
+                     <button
+                        onClick={() => setShowHandoverForm(true)}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-2 font-medium transition-all transform hover:scale-105"
+                     >
+                        <ClipboardList className="w-4 h-4" /> {/* Or ClipboardList */}
+                        Tạo Giao Ca
+                     </button>
+                     <button
+                        onClick={() => navigate('/incidents')}
+                        className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 shadow-sm flex items-center gap-2 font-medium transition-all transform hover:scale-105"
+                     >
+                        <AlertTriangle className="w-4 h-4" />
+                        Báo Sự Cố
+                     </button>
+                  </div>
+               )}
 
-               <div className="flex bg-white rounded-lg p-1 border border-slate-200 overflow-x-auto max-w-md">
-                  {availableFloors.map(floor => (
-                     <button
-                        key={floor}
-                        onClick={() => setSelectedFloor(floor)}
-                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${selectedFloor === floor ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
-                           }`}
-                     >
-                        {floor}
-                     </button>
-                  ))}
+               <div className="flex gap-4">
+                  <div className="flex bg-slate-100 rounded-lg p-1">
+                     {BUILDING_STRUCTURE.map(b => (
+                        <button
+                           key={b.id}
+                           onClick={() => { setSelectedBuilding(b.id); setSelectedFloor(b.floors[0]); }}
+                           className={`px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${selectedBuilding === b.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                              }`}
+                        >
+                           <Building className="w-4 h-4" /> {b.name}
+                        </button>
+                     ))}
+                  </div>
+
+                  <div className="flex bg-slate-100 rounded-lg p-1 overflow-x-auto max-w-md">
+                     {availableFloors.map(floor => (
+                        <button
+                           key={floor}
+                           onClick={() => setSelectedFloor(floor)}
+                           className={`px-4 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap ${selectedFloor === floor ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                              }`}
+                        >
+                           {floor}
+                        </button>
+                     ))}
+                  </div>
                </div>
             </div>
          </div>
@@ -284,50 +449,74 @@ export const RoomMapPage = () => {
          </div>
 
          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {displayedRooms.map(room => (
-               <div key={room.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                  <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
-                     <div>
-                        <span className="font-bold text-slate-800 text-lg">Phòng {room.number}</span>
-                        <span className="text-xs text-slate-500 ml-2">({room.type})</span>
+            {roomsOnFloor.map(room => (
+               <div key={room.id} className={`bg-white rounded-xl shadow-sm border ${isEditMode ? 'border-indigo-300 ring-2 ring-indigo-100 cursor-pointer hover:border-indigo-500' : 'border-slate-200'} overflow-hidden relative transition-all`}>
+                  {isEditMode && (
+                     <div
+                        className="absolute inset-0 z-10 bg-indigo-50/10 hover:bg-indigo-50/30 flex items-center justify-center group"
+                        onClick={() => handleRoomClick(room)}
+                     >
+                        <Edit className="w-8 h-8 text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                      </div>
-                     {room.beds.some(b => b.status === 'Maintenance') && <ShieldAlert className="w-4 h-4 text-orange-500" />}
+                  )}
+
+                  <div className="p-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                     <span className="font-bold text-slate-700">{room.number}</span>
+                     <span className="text-xs bg-white px-2 py-1 rounded border border-slate-200 text-slate-500">{room.type}</span>
                   </div>
-                  <div className="p-4 grid grid-cols-2 gap-4">
-                     {room.beds.map(bed => {
-                        const resident = residents.find(r => r.id === bed.residentId);
-                        const bedLabel = bed.id.split('-')[2];
-                        return (
-                           <div
-                              key={bed.id}
-                              onClick={() => setSelectedBed({
-                                 bed, roomNumber: room.number, roomType: room.type, building: selectedBuilding, floor: selectedFloor
-                              })}
-                              className={`relative p-3 rounded-lg border-2 transition-all cursor-pointer hover:shadow-md ${bed.status === 'Occupied' ? 'border-teal-200 bg-teal-50/50' :
-                                 bed.status === 'Maintenance' ? 'border-orange-200 bg-orange-50/50' :
-                                    'border-slate-100 bg-slate-50 hover:border-slate-300'
-                                 }`}
-                           >
-                              <div className="flex justify-between items-start mb-2">
-                                 <span className="text-xs font-bold text-slate-400">Giường {bedLabel}</span>
-                                 {bed.status === 'Occupied' ? <div className="w-2 h-2 rounded-full bg-teal-500"></div> :
-                                    bed.status === 'Maintenance' ? <Wrench className="w-3 h-3 text-orange-500" /> :
-                                       <div className="w-2 h-2 rounded-full bg-slate-300"></div>}
+
+                  <div className="p-3 grid grid-cols-2 gap-2">
+                     {room.beds.map(bed => (
+                        <div
+                           key={bed.id}
+                           onClick={() => !isEditMode && setSelectedBed({ bed, roomNumber: room.number, roomType: room.type, building: room.building, floor: room.floor })}
+                           className={`p-2 rounded-lg border text-center transition-all cursor-pointer relative
+                                       ${bed.status === 'Occupied'
+                                 ? handoverNotes[bed.residentId!]
+                                    ? 'bg-white border-orange-400 shadow-[0_0_0_1px_rgba(251,146,60,1)]'
+                                    : 'bg-teal-50 border-teal-200 hover:bg-teal-100'
+                                 : bed.status === 'Maintenance'
+                                    ? 'bg-orange-50 border-orange-200 hover:bg-orange-100'
+                                    : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-slate-300'
+                              }`}
+                        >
+                           {/* Handover Indicator */}
+                           {bed.status === 'Occupied' && handoverNotes[bed.residentId!] && (
+                              <div className="absolute -top-1 -right-1">
+                                 <span className="relative flex h-3 w-3">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+                                 </span>
                               </div>
-                              {bed.status === 'Occupied' && resident ? (
-                                 <div><p className="font-bold text-sm text-slate-800 truncate">{resident.name}</p><p className="text-xs text-slate-500">Cấp độ {resident.careLevel}</p></div>
-                              ) : bed.status === 'Maintenance' ? (
-                                 <div className="flex flex-col items-center justify-center py-1 text-orange-600"><span className="text-xs font-bold">Bảo trì</span></div>
-                              ) : (
-                                 <div className="flex flex-col items-center justify-center py-1 text-slate-400"><span className="text-xs">Trống</span></div>
+                           )}
+
+                           <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs text-slate-400 font-medium">{bed.id.split('-')[2]}</span>
+                              {bed.status === 'Occupied' && (
+                                 <Stethoscope className={`w-3 h-3 ${handoverNotes[bed.residentId!] ? 'text-orange-500' : 'text-teal-500'}`} />
                               )}
+                              {bed.status === 'Maintenance' && <Wrench className="w-3 h-3 text-orange-500" />}
                            </div>
-                        );
-                     })}
+                           {bed.status === 'Occupied' ? (
+                              <div className="truncate text-xs font-bold text-slate-800">
+                                 {residents.find(r => r.id === bed.residentId)?.name || 'N/A'}
+                              </div>
+                           ) : (
+                              <div className="text-xs text-slate-400 italic">Trống</div>
+                           )}
+
+                           {/* Handover Note Snippet */}
+                           {bed.status === 'Occupied' && handoverNotes[bed.residentId!] && (
+                              <div className="mt-1 pt-1 border-t border-orange-100 text-[10px] text-orange-700 flex items-start gap-1 line-clamp-1 text-left">
+                                 <ClipboardList className="w-3 h-3 shrink-0" />
+                                 <span className="truncate">{handoverNotes[bed.residentId!]}</span>
+                              </div>
+                           )}
+                        </div>
+                     ))}
                   </div>
                </div>
-            ))}
-         </div>
+            ))}</div>
       </div>
    );
 };

@@ -9,15 +9,20 @@ interface AddTransactionModalProps {
     residents: Resident[];
     onClose: () => void;
     onSave: (transaction: FinancialTransaction) => void;
+    initialData?: {
+        residentId?: string;
+        amount?: number;
+        description?: string;
+    };
 }
 
-export const AddTransactionModal = ({ user, residents, onClose, onSave }: AddTransactionModalProps) => {
+export const AddTransactionModal = ({ user, residents, onClose, onSave, initialData }: AddTransactionModalProps) => {
     const [formData, setFormData] = useState({
         date: new Date().toISOString().slice(0, 16), // datetime-local format
         type: 'IN' as 'IN' | 'OUT',
-        amount: '',
-        description: '',
-        residentId: '',
+        amount: initialData?.amount?.toString() || '',
+        description: initialData?.description || '',
+        residentId: initialData?.residentId || '',
         performer: user.name
     });
 

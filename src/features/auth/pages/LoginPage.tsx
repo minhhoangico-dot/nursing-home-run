@@ -27,7 +27,13 @@ export const LoginPage = () => {
     if (user.password === password) {
       login(user);
       toast.success(`Xin chào, ${user.name}`);
-      navigate('/residents');
+
+      // Redirect based on role
+      if (user.role === 'ADMIN' || user.role === 'SUPERVISOR') {
+        navigate('/rooms');
+      } else {
+        navigate('/residents');
+      }
     } else {
       console.warn('Password mismatch for user:', username);
       toast.error('Mật khẩu không đúng.');

@@ -9,11 +9,7 @@ export const BUILDING_STRUCTURE = [
         name: 'Tòa B',
         floors: ['Tầng 1', 'Tầng 2', 'Tầng 3', 'Tầng 4', 'Tầng 5']
     },
-    {
-        id: 'Khu vực chung',
-        name: 'Khu vực chung',
-        floors: ['Tiếp đón', 'Sân vườn', 'Bếp chính', 'Bếp bánh']
-    }
+
 ];
 
 export const getFloorsForBuilding = (buildingId: string): string[] => {

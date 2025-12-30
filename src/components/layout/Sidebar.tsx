@@ -15,8 +15,7 @@ export const Sidebar = () => {
 
   const menuItems = [
     // { id: 'dashboard', label: 'Tổng quan', path: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'ACCOUNTANT', 'NURSE', 'CAREGIVER'] },
-
-    { id: 'shift_handover', label: 'Giao ca', path: '/shift-handover', icon: ClipboardList, roles: ['ADMIN', 'SUPERVISOR'] },
+    // { id: 'shift_handover', label: 'Giao ca', path: '/shift-handover', icon: ClipboardList, roles: ['ADMIN', 'SUPERVISOR'] },
     { id: 'visitors', label: 'Khách thăm', path: '/visitors', icon: UserCheck, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE', 'CAREGIVER'] },
     // { id: 'diabetes', label: 'Đường huyết', path: '/diabetes-monitoring', icon: Droplets, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE'] },
     { id: 'daily_monitoring', label: 'Theo dõi ngày', path: '/daily-monitoring', icon: ClipboardList, roles: ['ADMIN', 'SUPERVISOR', 'DOCTOR', 'NURSE'] },

@@ -96,6 +96,7 @@ export const ResidentDetailPage = () => {
                resident={resident}
                onClose={() => setShowEditModal(false)}
                onSave={handleUpdateInfo}
+               existingCodes={residents.map(r => r.clinicCode || '')}
             />
          )}
 

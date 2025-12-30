@@ -4,6 +4,7 @@ import { DailyMonitoringRecord, DailyMonitoringUpdate } from '@/src/types/dailyM
 import { Loader2 } from 'lucide-react';
 import { useMonitoringStore } from '@/src/stores/monitoringStore';
 import { useDiabetesStore } from '@/src/stores/diabetesStore';
+import { BloodSugarInput } from './BloodSugarInput';
 
 interface MonitoringGridProps {
     month: Date;
@@ -49,55 +50,20 @@ export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLo
         await updateRecord(update);
     };
 
-    const handleBSUpdate = async (residentId: string, day: number, value: string) => {
-        if (!value.trim()) return; // Handle empty? maybe delete? for now ignore
-
+    const handleBSSave = async (residentId: string, day: number, data: Partial<BloodSugarRecord>) => {
         const date = new Date(month.getFullYear(), month.getMonth(), day);
         const dateStr = formatDate(date);
         const existing = bsRecords.find(r => r.residentId === residentId && r.recordDate === dateStr);
 
-        // Simple Parser
-        // "S:7.5 T:8" or "7.5"
-        // S = MorningBefore, Tr = LunchBefore, T = DinnerBefore
-        const updates: any = {};
-        const lower = value.toLowerCase();
-
-        // Regex for precise matching could be complex, simple split logic:
-        // If single number: "7.5" -> morningBeforeMeal
-        const isSingleNumber = /^-?\d*(\.\d+)?$/.test(value.trim());
-        if (isSingleNumber) {
-            updates.morningBeforeMeal = parseFloat(value);
-        } else {
-            // Parse tokens
-            // S:7.5, S7.5, S 7.5
-            const updateVal = (key: string, val: string) => {
-                const num = parseFloat(val.replace(':', ''));
-                if (!isNaN(num)) updates[key] = num;
-            };
-
-            // Simple primitive non-regex manual parse or smarter regex
-            // Let's use regex global match
-            // S:?(\d+(\.\d+)?)
-            const sMatch = value.match(/S[:\s]*([\d\.]+)/i);
-            if (sMatch) updateVal('morningBeforeMeal', sMatch[1]);
-
-            const trMatch = value.match(/(?:Tr|C)[:\s]*([\d\.]+)/i); // Tr or C (Chieu)
-            if (trMatch) updateVal('lunchBeforeMeal', trMatch[1]);
-
-            const tMatch = value.match(/T[:\s]*([\d\.]+)/i);
-            if (tMatch) updateVal('dinnerBeforeMeal', tMatch[1]);
-        }
-
-        if (Object.keys(updates).length === 0) return;
-
         if (existing) {
-            await updateBSRecord(existing.id, updates);
+            await updateBSRecord(existing.id, data);
         } else {
+            // New record
             await addRecord({
                 residentId: residentId,
                 recordDate: dateStr,
-                ...updates
-            });
+                ...data
+            } as any);
         }
     };
 
@@ -189,22 +155,11 @@ export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLo
                                 <td className="border p-2 font-medium text-slate-600 truncate text-orange-700">Đ.Máu</td>
                                 {days.map(day => {
                                     const bs = getBSRecord(resident.id, day);
-                                    let display = '';
-                                    if (bs) {
-                                        const parts = [];
-                                        if (bs.morningBeforeMeal) parts.push(`S:${bs.morningBeforeMeal}`);
-                                        if (bs.lunchBeforeMeal) parts.push(`Tr:${bs.lunchBeforeMeal}`);
-                                        if (bs.dinnerBeforeMeal) parts.push(`T:${bs.dinnerBeforeMeal}`);
-                                        display = parts.length > 0 ? parts.join(' ') : (bs.morningBeforeMeal?.toString() || '');
-                                    }
                                     return (
-                                        <td key={`bs-${day}`} className="border p-0 relative group">
-                                            <input
-                                                className="w-full h-full p-1 text-[10px] text-center bg-transparent focus:bg-orange-100 outline-none text-orange-800 font-medium"
-                                                defaultValue={display}
-                                                // placeholder="S:7 T:8"
-                                                title="S=Sáng, Tr=Trưa, T=Tối (VD: S:7.5 T:8.0)"
-                                                onBlur={(e) => handleBSUpdate(resident.id, day, e.target.value)}
+                                        <td key={`bs-${day}`} className="border p-0 relative h-[32px]">
+                                            <BloodSugarInput
+                                                initialData={bs}
+                                                onSave={(data) => handleBSSave(resident.id, day, data)}
                                             />
                                         </td>
                                     );

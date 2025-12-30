@@ -49,6 +49,7 @@ export const ResidentListPage = () => {
             <AdmissionWizard
                onSave={handleAddResident}
                onCancel={() => setShowWizard(false)}
+               existingCodes={residents.map(r => r.clinicCode || '')}
             />
          )}
 
