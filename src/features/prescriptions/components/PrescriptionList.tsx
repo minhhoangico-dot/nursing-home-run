@@ -72,37 +72,39 @@ export const PrescriptionList = ({ user, resident, inventory, onUpdate }: { user
 
             {/* SECTION A: CURRENT MEDICATIONS (Aggregated) */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-4 bg-teal-50 border-b border-teal-100 flex justify-between items-center">
-                    <div>
-                        <h3 className="font-bold text-teal-800 text-lg flex items-center gap-2">
-                            <Pill className="w-5 h-5" /> Thuốc đang dùng
-                            <span className="bg-teal-200 text-teal-800 text-xs px-2 py-0.5 rounded-full font-bold">
-                                {activeItems.length}
-                            </span>
-                        </h3>
-                        <p className="text-sm text-teal-600 mt-0.5">Danh sách tổng hợp các thuốc cần dùng hàng ngày</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setShowMedicineManager(true)}
-                            className="flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-3 py-2 rounded-lg hover:bg-slate-50 shadow-sm transition-all font-medium text-sm"
-                        >
-                            <Pill className="w-4 h-4" /> Danh mục thuốc
-                        </button>
-                        <button
-                            onClick={() => printDailyMedicationSheet(resident, activeItems)}
-                            className="flex items-center gap-2 bg-white text-teal-700 border border-teal-200 px-3 py-2 rounded-lg hover:bg-teal-50 shadow-sm transition-all font-medium text-sm"
-                        >
-                            <Printer className="w-4 h-4" /> In phiếu chia thuốc
-                        </button>
-                        {['DOCTOR', 'ADMIN', 'SUPERVISOR'].includes(user.role) && (
+                <div className="p-4 bg-teal-50 border-b border-teal-100">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                            <h3 className="font-bold text-teal-800 text-lg flex items-center gap-2">
+                                <Pill className="w-5 h-5" /> Thuốc đang dùng
+                                <span className="bg-teal-200 text-teal-800 text-xs px-2 py-0.5 rounded-full font-bold">
+                                    {activeItems.length}
+                                </span>
+                            </h3>
+                            <p className="text-sm text-teal-600 mt-0.5 hidden sm:block">Danh sách thuốc cần dùng hàng ngày</p>
+                        </div>
+                        <div className="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar">
                             <button
-                                onClick={() => setShowModal(true)}
-                                className="flex items-center gap-2 bg-teal-600 text-white px-3 py-2 rounded-lg hover:bg-teal-700 shadow-sm transition-all font-medium text-sm"
+                                onClick={() => setShowMedicineManager(true)}
+                                className="flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-3 py-2 rounded-lg hover:bg-slate-50 shadow-sm transition-all font-medium text-sm whitespace-nowrap shrink-0"
                             >
-                                <Plus className="w-4 h-4" /> Kê đơn mới
+                                <Pill className="w-4 h-4" /> <span className="hidden sm:inline">Danh mục</span><span className="sm:hidden">DM</span>
                             </button>
-                        )}
+                            <button
+                                onClick={() => printDailyMedicationSheet(resident, activeItems)}
+                                className="flex items-center gap-2 bg-white text-teal-700 border border-teal-200 px-3 py-2 rounded-lg hover:bg-teal-50 shadow-sm transition-all font-medium text-sm whitespace-nowrap shrink-0"
+                            >
+                                <Printer className="w-4 h-4" /> In phiếu
+                            </button>
+                            {['DOCTOR', 'ADMIN', 'SUPERVISOR'].includes(user.role) && (
+                                <button
+                                    onClick={() => setShowModal(true)}
+                                    className="flex items-center gap-2 bg-teal-600 text-white px-3 py-2 rounded-lg hover:bg-teal-700 shadow-sm transition-all font-medium text-sm whitespace-nowrap shrink-0"
+                                >
+                                    <Plus className="w-4 h-4" /> Kê đơn
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -155,9 +157,11 @@ export const PrescriptionList = ({ user, resident, inventory, onUpdate }: { user
                                         <span className="text-xs">Bắt đầu: {item.startDate}</span>
                                     </div>
                                 ),
-                                mobileLabel: 'Đơn thuốc'
+                                mobileLabel: 'Đơn thuốc',
+                                mobileHidden: true
                             }
                         ]}
+                        mobileCardView={true}
                     />
                 ) : (
                     <div className="p-8 text-center text-slate-400">
@@ -221,7 +225,8 @@ export const PrescriptionList = ({ user, resident, inventory, onUpdate }: { user
                                             Chẩn đoán: {p.diagnosis}
                                             {p.notes && <div>Ghi chú: {p.notes}</div>}
                                         </div>
-                                        <table className="w-full text-sm">
+                                        {/* Desktop Table */}
+                                        <table className="hidden sm:table w-full text-sm">
                                             <thead className="bg-slate-50 text-slate-500">
                                                 <tr>
                                                     <th className="px-3 py-2 text-left">Thuốc</th>
@@ -239,6 +244,18 @@ export const PrescriptionList = ({ user, resident, inventory, onUpdate }: { user
                                                 ))}
                                             </tbody>
                                         </table>
+                                        {/* Mobile Card View */}
+                                        <div className="sm:hidden space-y-2">
+                                            {p.items?.map((item, idx) => (
+                                                <div key={idx} className="bg-slate-50 p-3 rounded-lg">
+                                                    <p className="font-medium text-slate-800">{item.medicineName}</p>
+                                                    <div className="flex justify-between text-sm text-slate-600 mt-1">
+                                                        <span>{item.dosage} - {item.frequency}</span>
+                                                        <span className="font-medium">SL: {item.quantity}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
