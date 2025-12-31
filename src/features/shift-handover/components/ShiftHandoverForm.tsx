@@ -5,6 +5,7 @@ import { useResidentsStore } from '@/src/stores/residentsStore';
 import { useAuthStore } from '@/src/stores/authStore';
 import { X, Save, Users, Calendar } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { Modal } from '@/src/components/ui';
 import { Resident } from '@/src/types/resident';
 
 interface ShiftHandoverFormProps {
@@ -90,7 +91,7 @@ export const ShiftHandoverForm = ({ onClose, onSuccess }: ShiftHandoverFormProps
 
         if (newStatus === 'Present') {
             newStartDate = undefined; // Clear if back
-        } else if (currentUpdate.locationStatus === 'Present' && newStatus !== 'Present') {
+        } else if ((currentUpdate.locationStatus as string) === 'Present' && newStatus !== 'Present') {
             // Check if just starting absence
             newStartDate = new Date().toISOString();
         }
@@ -158,24 +159,36 @@ export const ShiftHandoverForm = ({ onClose, onSuccess }: ShiftHandoverFormProps
         }
     };
 
-    return (
-        <div className="flex flex-col h-full bg-slate-50">
-            <div className="flex justify-between items-center p-6 border-b border-slate-200 bg-white shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-teal-100 rounded-lg">
-                        <Calendar className="w-6 h-6 text-teal-600" />
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-800">Giao Ban & Điểm Danh</h2>
-                        <p className="text-sm text-slate-500">Cập nhật trạng thái và ghi chú giao ca</p>
-                    </div>
-                </div>
-                <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                    <X className="w-5 h-5 text-slate-500" />
-                </button>
-            </div>
+    const [activeTab, setActiveTab] = useState<'info' | 'residents'>('info');
 
-            <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto p-6 space-y-6">
+    return (
+        <Modal
+            isOpen={true}
+            onClose={onClose}
+            title="Giao Ban & Điểm Danh"
+            fullScreenMobile={true}
+            footer={
+                <>
+                    <button
+                        onClick={onClose}
+                        className="px-5 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50 transition-colors"
+                    >
+                        Hủy bỏ
+                    </button>
+                    <button
+                        form="handover-form"
+                        type="submit"
+                        disabled={isLoading}
+                        className="px-5 py-2.5 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 flex items-center gap-2 shadow-lg shadow-teal-600/20 disabled:opacity-50 disabled:shadow-none transition-all"
+                    >
+                        <Save className="w-4 h-4" />
+                        {isLoading ? 'Đang lưu...' : 'Lưu Biên Bản'}
+                    </button>
+                </>
+            }
+        >
+            <form id="handover-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+
                 {/* Meta Info Card */}
                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="space-y-1">
@@ -200,14 +213,15 @@ export const ShiftHandoverForm = ({ onClose, onSuccess }: ShiftHandoverFormProps
                     </div>
                 </div>
 
-                {/* Resident Status Table */}
+                {/* Resident Status Section */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
+                    <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center gap-2 sticky top-0 z-10">
                         <Users className="w-5 h-5 text-slate-600" />
                         <h3 className="font-bold text-slate-800">Bảng Tình Trạng NCT ({fields.length})</h3>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-slate-500 uppercase bg-slate-50/50 border-b border-slate-200">
                                 <tr>
@@ -267,25 +281,60 @@ export const ShiftHandoverForm = ({ onClose, onSuccess }: ShiftHandoverFormProps
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Mobile Card List View */}
+                    <div className="md:hidden divide-y divide-slate-100">
+                        {fields.map((field, index) => {
+                            const status = watch(`residentUpdates.${index}.locationStatus`);
+                            const startDate = watch(`residentUpdates.${index}.absentStartDate`);
+                            const isAbsent = status !== 'Present';
+
+                            return (
+                                <div key={field.id} className="p-4 space-y-3">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                                    {field.room}
+                                                </span>
+                                                <span className="font-bold text-slate-800">{field.name}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <select
+                                                {...register(`residentUpdates.${index}.locationStatus`)}
+                                                onChange={(e) => handleStatusChange(index, e.target.value as any)}
+                                                className={`p-1.5 rounded-md border text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none
+                                                        ${status === 'Present' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                        status === 'Home' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                                                            'bg-red-50 text-red-700 border-red-200'}`}
+                                            >
+                                                <option value="Present">Tại viện</option>
+                                                <option value="Home">Về nhà</option>
+                                                <option value="Hospital">Đi viện</option>
+                                            </select>
+
+                                            {isAbsent && startDate && (
+                                                <span className="text-xs text-slate-500">
+                                                    Vắng {getDaysAbsent(startDate)} ngày
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <input
+                                            {...register(`residentUpdates.${index}.note`)}
+                                            placeholder="Ghi chú tình trạng (nếu có)..."
+                                            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             </form>
-
-            <div className="p-4 border-t border-slate-200 bg-white flex justify-end gap-3 z-10">
-                <button
-                    onClick={onClose}
-                    className="px-5 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50 transition-colors"
-                >
-                    Hủy bỏ
-                </button>
-                <button
-                    onClick={handleSubmit(onSubmit)}
-                    disabled={isLoading}
-                    className="px-5 py-2.5 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 flex items-center gap-2 shadow-lg shadow-teal-600/20 disabled:opacity-50 disabled:shadow-none transition-all"
-                >
-                    <Save className="w-4 h-4" />
-                    {isLoading ? 'Đang lưu...' : 'Lưu Biên Bản'}
-                </button>
-            </div>
-        </div>
+        </Modal>
     );
 };

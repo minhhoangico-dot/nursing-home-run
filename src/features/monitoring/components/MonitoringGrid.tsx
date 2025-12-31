@@ -72,15 +72,15 @@ export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLo
     }
 
     return (
-        <div className="overflow-x-auto border border-slate-200 rounded-lg shadow bg-white">
-            <table className="w-full text-sm border-collapse min-w-[max-content]">
-                <thead>
+        <div className="overflow-auto border border-slate-200 rounded-lg shadow bg-white h-full">
+            <table className="w-full text-sm border-collapse min-w-max">
+                <thead className="sticky top-0 z-30">
                     <tr className="bg-slate-100 text-slate-700 font-bold">
-                        <th className="sticky left-0 z-20 bg-slate-100 border p-2 w-12 min-w-[3rem]">STT</th>
-                        <th className="sticky left-12 z-20 bg-slate-100 border p-2 w-48 min-w-[12rem] text-left">Tên NCT</th>
-                        <th className="border p-2 w-24 min-w-[6rem]">Chỉ số</th>
+                        <th className="sticky left-0 z-40 bg-slate-100 border p-2 w-12 min-w-[3rem]">STT</th>
+                        <th className="sticky left-12 z-40 bg-slate-100 border p-2 w-48 min-w-[12rem] text-left">Tên NCT</th>
+                        <th className="bg-slate-100 border p-2 w-24 min-w-[6rem]">Chỉ số</th>
                         {days.map(d => (
-                            <th key={d} className="border p-1 w-12 min-w-[3rem] text-center">{d}</th>
+                            <th key={d} className="bg-slate-100 border p-1 w-12 min-w-[3rem] text-center">{d}</th>
                         ))}
                     </tr>
                 </thead>
@@ -110,15 +110,6 @@ export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLo
                                 <td className="border p-2 font-medium text-slate-600 truncate" title="Huyết áp">H.A</td>
                                 {days.map(day => {
                                     const record = getDailyRecord(resident.id, day);
-                                    // Combine standard logic: maybe specific input or just free text.
-                                    // Use bp_morning for simplicity in this grid view if tight space,
-                                    // OR render a small stack? The image shows "S 105/72 T 132/70"
-                                    // Let's use a single text input for now that maps to bp_morning or special logic.
-                                    // Better: popover? No, grid needs speed.
-                                    // Let's allow typing "120/80" -> update bp_morning (default).
-                                    // If user wants multiple, they probably type "S:120/80 T:130/80".
-                                    // I'll map this input to `bp_morning` for now as the "primary" text field if simplifying.
-                                    // Wait, I defined 3 columns.
                                     return (
                                         <td key={`bp-${day}`} className="border p-0 relative group">
                                             <input
@@ -126,7 +117,6 @@ export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLo
                                                 defaultValue={[record?.bp_morning, record?.bp_afternoon].filter(Boolean).join(' ') || ''}
                                                 title={`S: ${record?.bp_morning || '-'} | C: ${record?.bp_afternoon || '-'} | T: ${record?.bp_evening || '-'}`}
                                                 onBlur={(e) => handleUpdate(resident.id, day, 'bp_morning', e.target.value)}
-                                            // Simplified: saving to bp_morning ONLY. Supervisor can type "S120 T130".
                                             />
                                         </td>
                                     );

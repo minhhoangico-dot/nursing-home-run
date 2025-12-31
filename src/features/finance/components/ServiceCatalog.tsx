@@ -5,6 +5,7 @@ import * as z from 'zod';
 import { Plus, Edit2, Trash2, Tag, List, Save, X } from 'lucide-react';
 import { ServicePrice } from '@/src/types/index';
 import { formatCurrency } from '@/src/data/index';
+import { Table, Column } from '@/src/components/ui/Table';
 
 const serviceSchema = z.object({
     name: z.string().min(2, 'Tên dịch vụ quá ngắn'),
@@ -101,7 +102,7 @@ export const ServiceCatalog = ({ services, onAdd, onUpdate, onDelete, onRecordUs
     const [isEditing, setIsEditing] = useState<ServicePrice | null>(null);
     const [isCreating, setIsCreating] = useState(false);
 
-    const categories = {
+    const categories: Record<string, { label: string; color: string }> = {
         'ROOM': { label: 'Phòng ở', color: 'bg-blue-100 text-blue-800' },
         'CARE': { label: 'Chăm sóc', color: 'bg-green-100 text-green-800' },
         'MEAL': { label: 'Dinh dưỡng', color: 'bg-orange-100 text-orange-800' },
@@ -129,40 +130,109 @@ export const ServiceCatalog = ({ services, onAdd, onUpdate, onDelete, onRecordUs
     };
 
     const filteredServices = services.filter(s => {
-        // Fallback or explicit check
         const type = s.billingType || (['ROOM', 'CARE', 'MEAL'].includes(s.category) ? 'FIXED' : 'ONE_OFF');
         return type === activeTab;
     });
 
+    const columns: Column<ServicePrice>[] = [
+        {
+            header: 'Tên dịch vụ',
+            accessor: 'name',
+            mobilePrimary: true,
+            className: 'font-medium text-slate-700'
+        },
+        {
+            header: 'Danh mục',
+            accessor: 'category',
+            mobileLabel: 'Danh mục',
+            render: (s) => (
+                <span className={`px-2 py-0.5 rounded text-xs font-semibold ${categories[s.category]?.color || 'bg-slate-100'}`}>
+                    {categories[s.category]?.label || s.category}
+                </span>
+            )
+        },
+        {
+            header: 'Loại',
+            accessor: 'billingType',
+            mobileHidden: true,
+            className: 'text-slate-500 text-xs',
+            render: (s) => s.billingType === 'FIXED' ? 'Định kỳ' : 'Theo lượt'
+        },
+        {
+            header: 'Đơn giá',
+            accessor: 'price',
+            className: 'text-right font-bold text-slate-600',
+            mobileLabel: 'Đơn giá',
+            render: (s) => (
+                <>
+                    {formatCurrency(s.price)} <span className="text-xs font-normal text-slate-400">/{s.unit}</span>
+                </>
+            )
+        },
+        {
+            header: 'Thao tác',
+            accessor: 'id',
+            className: 'text-right',
+            render: (s) => (
+                <div className="flex justify-end gap-2 transition-opacity">
+                    {onRecordUsage && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onRecordUsage(s); }}
+                            className="bg-green-100 text-green-700 p-1.5 rounded hover:bg-green-200"
+                            title="Ghi nhận sử dụng"
+                        >
+                            <Tag className="w-4 h-4" />
+                        </button>
+                    )}
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setIsEditing(s); setIsCreating(false); }}
+                        className="bg-blue-100 text-blue-700 p-1.5 rounded hover:bg-blue-200"
+                    >
+                        <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(s.id); }}
+                        className="bg-red-100 text-red-700 p-1.5 rounded hover:bg-red-200"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </div>
+            )
+        }
+    ];
+
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+            <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center bg-slate-50 gap-3">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
                     <List className="w-5 h-5 text-teal-600" /> Danh mục dịch vụ
                 </h3>
-                <div className="flex bg-slate-200 rounded-lg p-1 text-sm font-medium">
+                <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+                    <div className="flex bg-slate-200 rounded-lg p-1 text-sm font-medium shrink-0">
+                        <button
+                            onClick={() => setActiveTab('FIXED')}
+                            className={`px-3 py-1 rounded-md transition-all ${activeTab === 'FIXED' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Cố định tháng
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('ONE_OFF')}
+                            className={`px-3 py-1 rounded-md transition-all ${activeTab === 'ONE_OFF' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Phát sinh
+                        </button>
+                    </div>
                     <button
-                        onClick={() => setActiveTab('FIXED')}
-                        className={`px-3 py-1 rounded-md transition-all ${activeTab === 'FIXED' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                        onClick={() => {
+                            setIsCreating(true);
+                            setIsEditing(null);
+                        }}
+                        className="bg-teal-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-700 flex items-center gap-2 shrink-0 ml-auto md:ml-0"
                     >
-                        Cố định tháng
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('ONE_OFF')}
-                        className={`px-3 py-1 rounded-md transition-all ${activeTab === 'ONE_OFF' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        Phát sinh
+                        <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Thêm dịch vụ</span>
+                        <span className="sm:hidden">Thêm</span>
                     </button>
                 </div>
-                <button
-                    onClick={() => {
-                        setIsCreating(true);
-                        setIsEditing(null);
-                    }}
-                    className="bg-teal-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-700 flex items-center gap-2"
-                >
-                    <Plus className="w-4 h-4" /> Thêm dịch vụ
-                </button>
             </div>
 
             {(isCreating || isEditing) && (
@@ -185,67 +255,11 @@ export const ServiceCatalog = ({ services, onAdd, onUpdate, onDelete, onRecordUs
                 />
             )}
 
-            <div className="max-h-[600px] overflow-y-auto">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-slate-50 sticky top-0">
-                        <tr>
-                            <th className="px-4 py-2 text-slate-500">Tên dịch vụ</th>
-                            <th className="px-4 py-2 text-slate-500">Danh mục</th>
-                            <th className="px-4 py-2 text-slate-500">Loại</th>
-                            <th className="px-4 py-2 text-slate-500 text-right">Đơn giá</th>
-                            <th className="px-4 py-2 text-slate-500 text-right">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        {filteredServices.map(s => (
-                            <tr key={s.id} className="hover:bg-slate-50 group">
-                                <td className="px-4 py-3 font-medium text-slate-700">{s.name}</td>
-                                <td className="px-4 py-3">
-                                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${categories[s.category]?.color || 'bg-slate-100'}`}>
-                                        {categories[s.category]?.label || s.category}
-                                    </span>
-                                </td>
-                                <td className="px-4 py-3 text-slate-500 text-xs">
-                                    {s.billingType === 'FIXED' ? 'Định kỳ' : 'Theo lượt'}
-                                </td>
-                                <td className="px-4 py-3 text-right font-bold text-slate-600">
-                                    {formatCurrency(s.price)} <span className="text-xs font-normal text-slate-400">/{s.unit}</span>
-                                </td>
-                                <td className="px-4 py-3 text-right">
-                                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        {onRecordUsage && (
-                                            <button
-                                                onClick={() => onRecordUsage(s)}
-                                                className="bg-green-100 text-green-700 p-1.5 rounded hover:bg-green-200"
-                                                title="Ghi nhận sử dụng"
-                                            >
-                                                <Tag className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => { setIsEditing(s); setIsCreating(false); }}
-                                            className="bg-blue-100 text-blue-700 p-1.5 rounded hover:bg-blue-200"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => onDelete(s.id)}
-                                            className="bg-red-100 text-red-700 p-1.5 rounded hover:bg-red-200"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        {filteredServices.length === 0 && (
-                            <tr>
-                                <td colSpan={5} className="text-center py-8 text-slate-400 italic">Chưa có dịch vụ nào trong danh mục này</td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+            <Table
+                data={filteredServices}
+                columns={columns}
+                mobileCardView={true}
+            />
         </div>
     );
 };

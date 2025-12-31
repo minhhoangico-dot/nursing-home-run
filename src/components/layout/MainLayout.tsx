@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
@@ -7,6 +7,7 @@ import { useAuthStore } from '../../stores/authStore';
 export const MainLayout = () => {
   const { user } = useAuthStore();
   const location = useLocation();
+  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   if (!user) return null;
 
@@ -32,17 +33,36 @@ export const MainLayout = () => {
 
   const title = getTitle(location.pathname);
 
+  const handleMenuOpen = () => setMobileMenuOpen(true);
+  const handleMenuClose = () => setMobileMenuOpen(false);
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <div className="no-print h-full flex flex-col">
-        <Sidebar />
+      {/* Mobile overlay backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden animate-in fade-in duration-200"
+          onClick={handleMenuClose}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar - hidden on mobile by default, slides in when menu is open */}
+      <div className={`
+        no-print h-full flex flex-col
+        fixed lg:relative z-50
+        transition-transform duration-300 ease-in-out
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <Sidebar onClose={handleMenuClose} />
       </div>
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      {/* Main content area */}
+      <main className="flex-1 flex flex-col overflow-hidden w-full">
         <div className="no-print">
-          <Header title={title} />
+          <Header title={title} onMenuClick={handleMenuOpen} />
         </div>
-        <div className="flex-1 overflow-y-auto p-8 print:p-0 print:overflow-visible">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 print:p-0 print:overflow-visible">
           <Outlet />
         </div>
       </main>

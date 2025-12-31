@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Eye, Plus, Activity, FileText } from 'lucide-react';
 import { Resident, MonitoringPlan, User } from '../../../types/index';
 
+import { Modal } from '@/src/components/ui';
+
 const MonitoringModal = ({ user, onClose, onSave }: { user: User, onClose: () => void, onSave: (m: MonitoringPlan) => void }) => {
     const [data, setData] = useState({
         type: 'Theo dõi huyết áp',
@@ -20,35 +22,39 @@ const MonitoringModal = ({ user, onClose, onSave }: { user: User, onClose: () =>
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl w-full max-w-md p-6">
-                <h3 className="font-bold text-lg mb-4">Tạo kế hoạch theo dõi đặc biệt</h3>
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Loại theo dõi</label>
-                        <select className="w-full border rounded p-2" value={data.type} onChange={e => setData({ ...data, type: e.target.value })}>
-                            <option>Theo dõi huyết áp</option>
-                            <option>Theo dõi đường huyết</option>
-                            <option>Theo dõi sau té ngã</option>
-                            <option>Chăm sóc vết thương</option>
-                            <option>Khác</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Tần suất</label>
-                        <input type="text" className="w-full border rounded p-2" placeholder="VD: 2 giờ/lần" value={data.frequency} onChange={e => setData({ ...data, frequency: e.target.value })} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Ghi chú / Chỉ định</label>
-                        <textarea className="w-full border rounded p-2" rows={3} placeholder="VD: Báo bác sĩ nếu HA > 160/90" value={data.note} onChange={e => setData({ ...data, note: e.target.value })}></textarea>
-                    </div>
+        <Modal
+            isOpen={true}
+            onClose={onClose}
+            title="Tạo kế hoạch theo dõi đặc biệt"
+            footer={
+                <>
+                    <button onClick={onClose} className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg">Hủy</button>
+                    <button onClick={handleSave} className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">Lưu kế hoạch</button>
+                </>
+            }
+            fullScreenMobile={true}
+        >
+            <div className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium mb-1">Loại theo dõi</label>
+                    <select className="w-full border rounded-lg p-3" value={data.type} onChange={e => setData({ ...data, type: e.target.value })}>
+                        <option>Theo dõi huyết áp</option>
+                        <option>Theo dõi đường huyết</option>
+                        <option>Theo dõi sau té ngã</option>
+                        <option>Chăm sóc vết thương</option>
+                        <option>Khác</option>
+                    </select>
                 </div>
-                <div className="mt-6 flex justify-end gap-2">
-                    <button onClick={onClose} className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded">Hủy</button>
-                    <button onClick={handleSave} className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700">Lưu kế hoạch</button>
+                <div>
+                    <label className="block text-sm font-medium mb-1">Tần suất</label>
+                    <input type="text" className="w-full border rounded-lg p-3" placeholder="VD: 2 giờ/lần" value={data.frequency} onChange={e => setData({ ...data, frequency: e.target.value })} />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1">Ghi chú / Chỉ định</label>
+                    <textarea className="w-full border rounded-lg p-3" rows={3} placeholder="VD: Báo bác sĩ nếu HA > 160/90" value={data.note} onChange={e => setData({ ...data, note: e.target.value })}></textarea>
                 </div>
             </div>
-        </div>
+        </Modal>
     );
 };
 

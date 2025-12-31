@@ -60,60 +60,58 @@ export const VisitorsPage = () => {
             />
          )}
 
-         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-               <h2 className="text-2xl font-bold text-slate-800">Quản lý Khách thăm</h2>
-               <p className="text-sm text-slate-500">Ghi nhận khách ra vào và lịch sử thăm gặp</p>
+               <h2 className="text-xl md:text-2xl font-bold text-slate-800">Quản lý Khách thăm</h2>
+               <p className="text-sm text-slate-500 hidden sm:block">Ghi nhận khách ra vào và lịch sử thăm gặp</p>
             </div>
-            <div className="flex gap-2 w-full md:w-auto">
-               <div className="relative flex-1 md:w-64">
+            <div className="flex gap-2 w-full sm:w-auto">
+               <div className="relative flex-1 sm:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                   <input
                      className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-teal-500 focus:outline-none"
-                     placeholder="Tìm khách hoặc NCT..."
+                     placeholder="Tìm khách..."
                      value={search}
                      onChange={e => setSearch(e.target.value)}
                   />
                </div>
-               <Button onClick={() => setShowModal(true)} icon={<UserPlus className="w-4 h-4" />}>
-                  Đăng ký vào
+               <Button onClick={() => setShowModal(true)} icon={<UserPlus className="w-4 h-4" />} className="shrink-0">
+                  <span className="hidden sm:inline">Đăng ký vào</span>
+                  <span className="sm:hidden">Check-in</span>
                </Button>
             </div>
          </div>
 
          {/* Stats */}
          {activeTab === 'current' && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-               <div className="bg-teal-50 p-4 rounded-xl border border-teal-100 flex items-center justify-between">
-                  <div>
-                     <p className="text-teal-600 font-bold text-sm uppercase">Đang ở trong viện</p>
-                     <p className="text-3xl font-bold text-teal-800 mt-1">{visitors.filter(v => v.status === 'Active').length}</p>
-                  </div>
-                  <div className="p-3 bg-white rounded-full text-teal-500"><Clock className="w-6 h-6" /></div>
+            <div className="bg-teal-50 p-4 rounded-xl border border-teal-100 flex items-center justify-between">
+               <div>
+                  <p className="text-teal-600 font-bold text-sm uppercase">Đang ở trong viện</p>
+                  <p className="text-3xl font-bold text-teal-800 mt-1">{visitors.filter(v => v.status === 'Active').length}</p>
                </div>
+               <div className="p-3 bg-white rounded-full text-teal-500"><Clock className="w-6 h-6" /></div>
             </div>
          )}
 
          {/* Tabs */}
-         <div className="flex gap-6 border-b border-slate-200">
+         <div className="flex gap-4 sm:gap-6 border-b border-slate-200 overflow-x-auto hide-scrollbar">
             <button
                onClick={() => setActiveTab('current')}
-               className={`pb-3 text-sm font-medium transition-colors border-b-2 px-2 flex items-center gap-2 ${activeTab === 'current' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'
-                  }`}
+               className={`pb-3 text-sm font-medium transition-colors border-b-2 px-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'current' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
             >
                <Clock className="w-4 h-4" /> Khách đang thăm
             </button>
             <button
                onClick={() => setActiveTab('history')}
-               className={`pb-3 text-sm font-medium transition-colors border-b-2 px-2 flex items-center gap-2 ${activeTab === 'history' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'
-                  }`}
+               className={`pb-3 text-sm font-medium transition-colors border-b-2 px-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'history' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
             >
-               <History className="w-4 h-4" /> Lịch sử ra vào
+               <History className="w-4 h-4" /> Lịch sử
             </button>
          </div>
 
          <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-            <table className="w-full text-left text-sm">
+            {/* Desktop Table */}
+            <table className="hidden md:table w-full text-left text-sm">
                <thead className="bg-slate-50 text-slate-500 font-medium">
                   <tr>
                      <th className="px-6 py-3">Khách thăm</th>
@@ -170,6 +168,46 @@ export const VisitorsPage = () => {
                   )}
                </tbody>
             </table>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-slate-100">
+               {sortedVisitors.length > 0 ? sortedVisitors.map(v => (
+                  <div key={v.id} className="p-4 hover:bg-slate-50 active:bg-slate-100">
+                     <div className="flex justify-between items-start mb-2">
+                        <div>
+                           <p className="font-bold text-slate-800">{v.visitorName}</p>
+                           <p className="text-xs text-slate-500">{v.phone} • {v.relationship}</p>
+                        </div>
+                        {activeTab === 'current' && (
+                           <button
+                              onClick={() => handleCheckOut(v.id)}
+                              className="text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1 rounded text-xs font-bold border border-red-200 flex items-center gap-1"
+                           >
+                              <LogOut className="w-3 h-3" /> Ra
+                           </button>
+                        )}
+                     </div>
+                     <div className="text-sm text-slate-600 mb-2">
+                        Thăm: <span className="font-medium">{v.residentName}</span>
+                     </div>
+                     <div className="flex justify-between text-xs text-slate-500">
+                        <span>Vào: {new Date(v.checkInTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'numeric' })}</span>
+                        {activeTab === 'history' && v.checkOutTime && (
+                           <span>Ra: {new Date(v.checkOutTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'numeric' })}</span>
+                        )}
+                     </div>
+                     {v.itemBrought && (
+                        <div className="mt-2 flex items-center gap-1 text-xs text-teal-600 bg-teal-50 px-2 py-1 rounded w-fit">
+                           <Package className="w-3 h-3" /> {v.itemBrought}
+                        </div>
+                     )}
+                  </div>
+               )) : (
+                  <div className="p-12 text-center text-slate-400 italic">
+                     {activeTab === 'current' ? 'Hiện không có khách nào' : 'Chưa có lịch sử'}
+                  </div>
+               )}
+            </div>
          </div>
       </div>
    );

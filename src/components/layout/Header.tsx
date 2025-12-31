@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, Bell, X, User as UserIcon, ArrowRight, LogOut, Settings, Cloud, RefreshCw } from 'lucide-react';
+import { Search, Bell, X, User as UserIcon, ArrowRight, LogOut, Settings, Cloud, RefreshCw, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../../data';
@@ -11,9 +11,10 @@ import { Resident } from '../../types';
 
 interface HeaderProps {
    title: string;
+   onMenuClick?: () => void;
 }
 
-export const Header = ({ title }: HeaderProps) => {
+export const Header = ({ title, onMenuClick }: HeaderProps) => {
    const navigate = useNavigate();
    const { user, logout } = useAuthStore();
    const { residents, isSyncing: residentsSync } = useResidentsStore();
@@ -26,6 +27,7 @@ export const Header = ({ title }: HeaderProps) => {
    const [showNotifications, setShowNotifications] = useState(false);
    const [showSearch, setShowSearch] = useState(false);
    const [showUserMenu, setShowUserMenu] = useState(false);
+   const [isMobileSearchExpanded, setMobileSearchExpanded] = useState(false);
 
    const searchRef = useRef<HTMLDivElement>(null);
    const notifRef = useRef<HTMLDivElement>(null);
@@ -95,7 +97,10 @@ export const Header = ({ title }: HeaderProps) => {
 
    useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
-         if (searchRef.current && !searchRef.current.contains(event.target as Node)) setShowSearch(false);
+         if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+            setShowSearch(false);
+            setMobileSearchExpanded(false);
+         }
          if (notifRef.current && !notifRef.current.contains(event.target as Node)) setShowNotifications(false);
          if (userRef.current && !userRef.current.contains(event.target as Node)) setShowUserMenu(false);
       };
@@ -115,18 +120,32 @@ export const Header = ({ title }: HeaderProps) => {
       navigate(`/residents/${r.id}`);
       setSearch('');
       setShowSearch(false);
+      setMobileSearchExpanded(false);
    };
 
    if (!user) return null;
 
    return (
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-20 px-8 py-4 flex justify-between items-center shadow-sm h-[72px]">
-         <div className="flex items-center gap-8 flex-1">
-            <div className="flex flex-col">
-               <h1 className="text-xl font-bold text-slate-800 whitespace-nowrap min-w-[200px]">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-20 px-4 md:px-6 lg:px-8 py-3 md:py-4 flex justify-between items-center shadow-sm min-h-[60px] md:min-h-[72px]">
+         {/* Left side - Menu + Title + Search */}
+         <div className="flex items-center gap-2 md:gap-4 lg:gap-8 flex-1 min-w-0">
+            {/* Hamburger menu button - mobile only */}
+            {onMenuClick && (
+               <button
+                  onClick={onMenuClick}
+                  className="lg:hidden p-2 -ml-1 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
+                  aria-label="Open menu"
+               >
+                  <Menu className="w-5 h-5 text-slate-600" />
+               </button>
+            )}
+
+            {/* Title and sync status */}
+            <div className={`flex flex-col min-w-0 ${isMobileSearchExpanded ? 'hidden md:flex' : 'flex'}`}>
+               <h1 className="text-base md:text-xl font-bold text-slate-800 whitespace-nowrap truncate">
                   {title}
                </h1>
-               <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider">
+               <div className="hidden md:flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider">
                   {isSyncing ? (
                      <span className="text-teal-600 flex items-center gap-1">
                         <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Đang đồng bộ Cloud...
@@ -139,8 +158,8 @@ export const Header = ({ title }: HeaderProps) => {
                </div>
             </div>
 
-            {/* Global Search */}
-            <div className="relative max-w-md w-full" ref={searchRef}>
+            {/* Global Search - Desktop */}
+            <div className="relative max-w-md w-full hidden md:block" ref={searchRef}>
                <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                   <input
@@ -189,9 +208,74 @@ export const Header = ({ title }: HeaderProps) => {
                   </div>
                )}
             </div>
+
+            {/* Mobile Expanded Search */}
+            {isMobileSearchExpanded && (
+               <div className="md:hidden flex-1" ref={searchRef}>
+                  <div className="relative">
+                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                     <input
+                        type="text"
+                        placeholder="Tìm NCT..."
+                        className="w-full pl-10 pr-10 py-2 bg-slate-100 border-transparent focus:bg-white focus:border-teal-500 border rounded-lg text-sm transition-all outline-none"
+                        value={search}
+                        onChange={e => { setSearch(e.target.value); setShowSearch(true); }}
+                        onFocus={() => setShowSearch(true)}
+                        autoFocus
+                     />
+                     <button
+                        onClick={() => { setSearch(''); setMobileSearchExpanded(false); setShowSearch(false); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+                     >
+                        <X className="w-4 h-4" />
+                     </button>
+                  </div>
+
+                  {/* Mobile Search Results */}
+                  {showSearch && search && (
+                     <div className="absolute left-4 right-4 top-full mt-2 bg-white rounded-xl shadow-xl border border-slate-100 max-h-80 overflow-y-auto z-30">
+                        {filteredResidents.length > 0 ? (
+                           <div className="py-2">
+                              {filteredResidents.slice(0, 5).map(r => (
+                                 <div
+                                    key={r.id}
+                                    onClick={() => handleSelectResident(r)}
+                                    className="px-4 py-3 hover:bg-teal-50 cursor-pointer flex items-center gap-3"
+                                 >
+                                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+                                       <UserIcon className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex-1">
+                                       <p className="font-bold text-slate-800">{r.name}</p>
+                                       <p className="text-xs text-slate-500">Phòng {r.room}</p>
+                                    </div>
+                                 </div>
+                              ))}
+                           </div>
+                        ) : (
+                           <div className="p-6 text-center text-slate-500 text-sm">
+                              Không tìm thấy "{search}"
+                           </div>
+                        )}
+                     </div>
+                  )}
+               </div>
+            )}
          </div>
 
-         <div className="flex items-center gap-4">
+         {/* Right side - Actions */}
+         <div className="flex items-center gap-1 md:gap-4 flex-shrink-0">
+            {/* Mobile search toggle */}
+            {!isMobileSearchExpanded && (
+               <button
+                  onClick={() => setMobileSearchExpanded(true)}
+                  className="md:hidden p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                  aria-label="Search"
+               >
+                  <Search className="w-5 h-5 text-slate-500" />
+               </button>
+            )}
+
             {/* Notifications */}
             <div className="relative" ref={notifRef}>
                <button
@@ -205,7 +289,7 @@ export const Header = ({ title }: HeaderProps) => {
                </button>
 
                {showNotifications && (
-                  <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-100 z-30 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+                  <div className="absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border border-slate-100 z-30 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
                      <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                         <h3 className="font-bold text-slate-800 text-sm">Thông báo</h3>
                         <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">{notifications.length}</span>
@@ -245,13 +329,13 @@ export const Header = ({ title }: HeaderProps) => {
             <div className="relative" ref={userRef}>
                <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-3 pl-4 border-l border-slate-200 hover:bg-slate-50 p-2 rounded-r-lg transition-colors"
+                  className="flex items-center gap-2 md:gap-3 md:pl-4 md:border-l border-slate-200 hover:bg-slate-50 p-1.5 md:p-2 rounded-lg transition-colors"
                >
                   <div className="text-right hidden md:block">
                      <span className="block text-sm font-bold text-slate-700">{user.name}</span>
                      <span className="block text-xs text-slate-500">{user.role}</span>
                   </div>
-                  <div className="w-9 h-9 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold shadow-sm ring-2 ring-white">
+                  <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold shadow-sm ring-2 ring-white">
                      {user.name.charAt(0)}
                   </div>
                </button>
@@ -262,16 +346,16 @@ export const Header = ({ title }: HeaderProps) => {
                         <p className="font-bold text-slate-800">{user.name}</p>
                         <p className="text-xs text-slate-500">{user.role}</p>
                      </div>
-                     <button className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                     <button className="w-full text-left px-4 py-3 md:py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
                         <UserIcon className="w-4 h-4" /> Hồ sơ cá nhân
                      </button>
-                     <button className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                     <button className="w-full text-left px-4 py-3 md:py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
                         <Settings className="w-4 h-4" /> Đổi mật khẩu
                      </button>
                      <div className="border-t border-slate-50 my-1"></div>
                      <button
                         onClick={logout}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        className="w-full text-left px-4 py-3 md:py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                      >
                         <LogOut className="w-4 h-4" /> Đăng xuất
                      </button>

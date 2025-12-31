@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Calendar as CalendarIcon, Users, Filter, X, Plus, Trash2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Users, Filter, X, Plus, Trash2, Menu, MapPin } from 'lucide-react';
 import { StaffSchedule, SHIFT_CONFIG, ShiftAssignment } from '../../../types/schedule';
 import { ShiftCell } from '../components/ShiftCell';
 import { useToast } from '../../../app/providers';
@@ -29,6 +29,7 @@ export const SchedulePage = () => {
    const [floorFilter, setFloorFilter] = useState('');
    const [isEditing, setIsEditing] = useState(false);
    const [showManageStaff, setShowManageStaff] = useState(false);
+   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
    // New Staff Form State
    const [newStaffName, setNewStaffName] = useState('');
@@ -192,20 +193,62 @@ export const SchedulePage = () => {
    return (
       <div className="h-[calc(100vh-6rem)] flex flex-col bg-slate-50/50 -m-6">
          <div className="flex-1 flex overflow-hidden">
-            {/* Sidebar Navigation */}
-            <ScheduleSidebar
-               activeBuilding={buildingFilter}
-               activeFloor={floorFilter}
-               onSelect={(b, f) => {
-                  setBuildingFilter(b);
-                  setFloorFilter(f);
-               }}
-            />
+            {/* Mobile Sidebar Overlay */}
+            {showMobileSidebar && (
+               <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setShowMobileSidebar(false)}>
+                  <div className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl animate-slide-in-left" onClick={e => e.stopPropagation()}>
+                     <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+                        <h3 className="font-bold text-slate-800">Chọn khu vực</h3>
+                        <button onClick={() => setShowMobileSidebar(false)} className="p-2 hover:bg-slate-100 rounded-full">
+                           <X className="w-5 h-5" />
+                        </button>
+                     </div>
+                     <ScheduleSidebar
+                        activeBuilding={buildingFilter}
+                        activeFloor={floorFilter}
+                        onSelect={(b, f) => {
+                           setBuildingFilter(b);
+                           setFloorFilter(f);
+                           setShowMobileSidebar(false);
+                        }}
+                     />
+                  </div>
+               </div>
+            )}
+
+            {/* Desktop Sidebar Navigation - hidden on mobile */}
+            <div className="hidden lg:block">
+               <ScheduleSidebar
+                  activeBuilding={buildingFilter}
+                  activeFloor={floorFilter}
+                  onSelect={(b, f) => {
+                     setBuildingFilter(b);
+                     setFloorFilter(f);
+                  }}
+               />
+            </div>
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden min-w-0 bg-slate-50/50">
                {/* Header Toolbar */}
                <div className="p-4 pb-2">
+                  {/* Mobile Location Button */}
+                  <div className="lg:hidden mb-3">
+                     <button
+                        onClick={() => setShowMobileSidebar(true)}
+                        className="w-full flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 shadow-sm"
+                     >
+                        <div className="flex items-center gap-2">
+                           <MapPin className="w-4 h-4 text-blue-600" />
+                           <span className="font-medium text-slate-700">
+                              {buildingFilter || floorFilter
+                                 ? `${buildingFilter}${floorFilter ? ` > ${floorFilter}` : ''}`
+                                 : 'Tất cả khu vực'}
+                           </span>
+                        </div>
+                        <Menu className="w-5 h-5 text-slate-400" />
+                     </button>
+                  </div>
                   <ScheduleHeader
                      weekStart={currentWeekStart}
                      onWeekChange={handleWeekChange}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Calendar, Filter, User } from 'lucide-react';
+import { Table } from '@/src/components/ui';
 import { ServiceUsage, Resident } from '../../../types/index';
 import { formatCurrency } from '../../../data/index';
 
@@ -61,47 +62,60 @@ export const ServiceUsageList = ({ usageRecords, residents, hideResidentFilter =
                 )}
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
                     <h3 className="font-bold text-slate-800">Lịch sử sử dụng dịch vụ</h3>
                     <span className="text-sm font-semibold text-teal-600">Tổng cộng: {formatCurrency(totalAmount)}</span>
                 </div>
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-slate-50 border-b border-slate-100">
-                        <tr>
-                            <th className="px-6 py-3 font-medium text-slate-500">Ngày</th>
-                            <th className="px-6 py-3 font-medium text-slate-500">Người sử dụng</th>
-                            <th className="px-6 py-3 font-medium text-slate-500">Dịch vụ</th>
-                            <th className="px-6 py-3 font-medium text-slate-500 text-center">SL</th>
-                            <th className="px-6 py-3 font-medium text-slate-500 text-right">Thành tiền</th>
-                            <th className="px-6 py-3 font-medium text-slate-500 text-center">Trạng thái</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        {filteredRecords.length > 0 ? filteredRecords.map(r => (
-                            <tr key={r.id} className="hover:bg-slate-50">
-                                <td className="px-6 py-3 text-slate-600">{new Date(r.date).toLocaleDateString('vi-VN')}</td>
-                                <td className="px-6 py-3 font-medium text-slate-800">{getResidentName(r.residentId)}</td>
-                                <td className="px-6 py-3 text-slate-700">
-                                    {r.serviceName}
+                <Table
+                    data={filteredRecords}
+                    mobileCardView={true}
+                    columns={[
+                        {
+                            header: 'Ngày',
+                            accessor: (r) => new Date(r.date).toLocaleDateString('vi-VN'),
+                            mobileLabel: 'Ngày',
+                        },
+                        {
+                            header: 'Người sử dụng',
+                            accessor: (r) => getResidentName(r.residentId),
+                            mobileHidden: true
+                        },
+                        {
+                            header: 'Dịch vụ',
+                            accessor: (r) => (
+                                <div>
+                                    <div>{r.serviceName}</div>
                                     {r.description && <div className="text-xs text-slate-400 italic">{r.description}</div>}
-                                </td>
-                                <td className="px-6 py-3 text-center">{r.quantity}</td>
-                                <td className="px-6 py-3 text-right font-medium text-slate-700">{formatCurrency(r.totalAmount)}</td>
-                                <td className="px-6 py-3 text-center">
-                                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${r.status === 'Billed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                                        }`}>
-                                        {r.status === 'Billed' ? 'Đã thu' : 'Chưa thu'}
-                                    </span>
-                                </td>
-                            </tr>
-                        )) : (
-                            <tr>
-                                <td colSpan={6} className="text-center py-8 text-slate-400 italic">Không có dữ liệu</td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+                                </div>
+                            ),
+                            mobilePrimary: true
+                        },
+                        {
+                            header: 'SL',
+                            accessor: 'quantity',
+                            align: 'center',
+                            mobileLabel: 'Số lượng'
+                        },
+                        {
+                            header: 'Thành tiền',
+                            accessor: (r) => formatCurrency(r.totalAmount),
+                            align: 'right',
+                            mobileLabel: 'Tổng tiền',
+                            className: 'font-medium text-slate-700'
+                        },
+                        {
+                            header: 'Trạng thái',
+                            accessor: (r) => (
+                                <span className={`px-2 py-0.5 rounded text-xs font-semibold ${r.status === 'Billed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                    {r.status === 'Billed' ? 'Đã thu' : 'Chưa thu'}
+                                </span>
+                            ),
+                            align: 'center',
+                            mobileLabel: 'Trạng thái'
+                        }
+                    ]}
+                />
             </div>
         </div>
     );

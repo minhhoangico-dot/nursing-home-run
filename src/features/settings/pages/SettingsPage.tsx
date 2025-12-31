@@ -32,17 +32,18 @@ export const SettingsPage = () => {
 
    const UserManagement = () => (
       <div>
-         <div className="flex justify-between items-center mb-6">
+         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
             <h3 className="text-lg font-bold text-slate-800">Quản lý người dùng</h3>
             <button
                onClick={() => setShowAddUserModal(true)}
-               className="bg-teal-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-teal-700 shadow-sm"
+               className="bg-teal-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-teal-700 shadow-sm w-full sm:w-auto justify-center"
             >
                <Plus className="w-4 h-4" /> Thêm người dùng
             </button>
          </div>
          <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-            <table className="w-full text-left text-sm">
+            {/* Desktop Table */}
+            <table className="hidden md:table w-full text-left text-sm">
                <thead className="bg-slate-50 text-slate-500 font-medium">
                   <tr>
                      <th className="px-6 py-3">Họ và tên</th>
@@ -81,6 +82,36 @@ export const SettingsPage = () => {
                   )}
                </tbody>
             </table>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-slate-100">
+               {users.length > 0 ? users.map(u => (
+                  <div key={u.id} className="p-4 hover:bg-slate-50">
+                     <div className="flex justify-between items-start mb-2">
+                        <div>
+                           <p className="font-bold text-slate-800">{u.name}</p>
+                           <p className="text-xs text-slate-500">@{u.username}</p>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.role === 'ADMIN' ? 'bg-slate-800 text-white' :
+                           u.role === 'DOCTOR' ? 'bg-blue-100 text-blue-700' :
+                              u.role === 'SUPERVISOR' ? 'bg-green-100 text-green-700' :
+                                 'bg-purple-100 text-purple-700'
+                           }`}>
+                           {u.role === 'ADMIN' ? 'Admin' :
+                              u.role === 'DOCTOR' ? 'Bác sĩ' :
+                                 u.role === 'SUPERVISOR' ? 'Trưởng tầng' : 'Kế toán'}
+                        </span>
+                     </div>
+                     {u.floor && <p className="text-sm text-slate-500">Khu vực: {u.floor}</p>}
+                     <div className="flex justify-end gap-3 mt-3">
+                        <button className="text-teal-600 text-sm font-medium">Sửa</button>
+                        <button className="text-red-500 text-sm font-medium">Xóa</button>
+                     </div>
+                  </div>
+               )) : (
+                  <div className="text-center py-8 text-slate-500 italic">Chưa có người dùng nào</div>
+               )}
+            </div>
          </div>
       </div>
    );

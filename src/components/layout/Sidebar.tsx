@@ -4,11 +4,15 @@ import {
   Activity, LayoutDashboard, Users, BedDouble,
   CreditCard, Package, Settings as SettingsIcon, LogOut,
   Printer, BarChart3, AlertTriangle, CalendarDays, Pill, BookOpen, Utensils, UserCheck, Wrench, Smile,
-  ClipboardList, Droplets, Syringe, Scale
+  ClipboardList, Droplets, Syringe, Scale, X
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
-export const Sidebar = () => {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+export const Sidebar = ({ onClose }: SidebarProps) => {
   const { user, logout } = useAuthStore();
 
   if (!user) return null;
@@ -42,21 +46,42 @@ export const Sidebar = () => {
     CAREGIVER: 'Hộ lý'
   };
 
+  const handleNavClick = () => {
+    // Close sidebar on navigation (mobile only)
+    if (onClose) {
+      onClose();
+    }
+  };
+
   return (
     <div className="w-64 bg-slate-900 text-slate-300 flex flex-col h-full">
-      <div className="p-6 flex items-center gap-3 text-white">
-        <div className="bg-teal-600 p-2 rounded">
-          <Activity className="w-5 h-5" />
+      {/* Header with close button for mobile */}
+      <div className="p-4 lg:p-6 flex items-center justify-between text-white">
+        <div className="flex items-center gap-3">
+          <div className="bg-teal-600 p-2 rounded">
+            <Activity className="w-5 h-5" />
+          </div>
+          <span className="font-bold text-lg">FDC System</span>
         </div>
-        <span className="font-bold text-lg">FDC System</span>
+        {/* Close button - mobile only */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="lg:hidden p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
-      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 lg:px-4 py-4 space-y-1 overflow-y-auto">
         {filteredMenu.map(item => (
           <NavLink
             key={item.id}
             to={item.path}
-            className={({ isActive }) => `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
+            onClick={handleNavClick}
+            className={({ isActive }) => `w-full flex items-center gap-3 px-4 py-3.5 lg:py-3 rounded-lg transition-colors ${isActive
               ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/20'
               : 'hover:bg-slate-800 hover:text-white'
               }`}

@@ -344,111 +344,118 @@ export const RoomMapPage = () => {
             />
          )}
 
-         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-            <div>
-               <h2 className="text-2xl font-bold text-slate-800">Sơ đồ phòng ở</h2>
-               <div className="flex items-center gap-2">
-                  <p className="text-sm text-slate-500">Quản lý trạng thái giường bệnh</p>
-                  {isAdmin && (
-                     <div className="flex items-center gap-2 ml-4">
-                        <span className="text-sm text-slate-400">|</span>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                           <div className={`w-10 h-6 rounded-full p-1 transition-colors ${isEditMode ? 'bg-indigo-600' : 'bg-slate-300'}`} onClick={() => setIsEditMode(!isEditMode)}>
-                              <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${isEditMode ? 'translate-x-4' : ''}`} />
-                           </div>
-                           <span className={`text-sm font-medium ${isEditMode ? 'text-indigo-600' : 'text-slate-500'}`}>Chế độ chỉnh sửa</span>
-                        </label>
-                        {isEditMode && (
-                           <button
-                              onClick={() => setEditingRoom({ roomNumber: '', bedCount: 1, roomType: '1 Giường' })} // Use dummy for Add mode
-                              className="p-1 bg-indigo-100 text-indigo-600 rounded hover:bg-indigo-200"
-                              title="Thêm phòng"
-                           >
-                              <Plus className="w-5 h-5" />
-                           </button>
-                        )}
-                     </div>
-                  )}
+         <div className="flex flex-col gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            {/* Title Row */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+               <div>
+                  <h2 className="text-xl md:text-2xl font-bold text-slate-800">Sơ đồ phòng ở</h2>
+                  <div className="flex items-center gap-2 flex-wrap">
+                     <p className="text-sm text-slate-500">Quản lý trạng thái giường bệnh</p>
+                     {isAdmin && (
+                        <div className="flex items-center gap-2">
+                           <span className="text-sm text-slate-400 hidden sm:inline">|</span>
+                           <label className="flex items-center gap-2 cursor-pointer">
+                              <div className={`w-10 h-6 rounded-full p-1 transition-colors ${isEditMode ? 'bg-indigo-600' : 'bg-slate-300'}`} onClick={() => setIsEditMode(!isEditMode)}>
+                                 <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${isEditMode ? 'translate-x-4' : ''}`} />
+                              </div>
+                              <span className={`text-sm font-medium ${isEditMode ? 'text-indigo-600' : 'text-slate-500'}`}>Chỉnh sửa</span>
+                           </label>
+                           {isEditMode && (
+                              <button
+                                 onClick={() => setEditingRoom({ roomNumber: '', bedCount: 1, roomType: '1 Giường' })}
+                                 className="p-1 bg-indigo-100 text-indigo-600 rounded hover:bg-indigo-200"
+                                 title="Thêm phòng"
+                              >
+                                 <Plus className="w-5 h-5" />
+                              </button>
+                           )}
+                        </div>
+                     )}
+                  </div>
                </div>
-            </div>
 
-            <div className="flex flex-col md:flex-row gap-4 items-end md:items-center w-full md:w-auto">
+               {/* Action Buttons - Supervisor only */}
                {isSupervisor && (
-                  <div className="flex gap-2 mr-4">
+                  <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
                      <button
                         onClick={() => setShowHandoverHistory(true)}
-                        className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 shadow-sm flex items-center gap-2 font-medium transition-all"
+                        className="px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 shadow-sm flex items-center gap-2 font-medium transition-all text-sm whitespace-nowrap shrink-0"
                      >
                         <ClipboardList className="w-4 h-4" />
-                        Lịch sử
+                        <span className="hidden sm:inline">Lịch sử</span>
                      </button>
                      <button
                         onClick={() => setShowHandoverForm(true)}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-2 font-medium transition-all transform hover:scale-105"
+                        className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-2 font-medium transition-all text-sm whitespace-nowrap shrink-0"
                      >
-                        <ClipboardList className="w-4 h-4" /> {/* Or ClipboardList */}
-                        Tạo Giao Ca
+                        <ClipboardList className="w-4 h-4" />
+                        Giao Ca
                      </button>
                      <button
                         onClick={() => navigate('/incidents')}
-                        className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 shadow-sm flex items-center gap-2 font-medium transition-all transform hover:scale-105"
+                        className="px-3 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 shadow-sm flex items-center gap-2 font-medium transition-all text-sm whitespace-nowrap shrink-0"
                      >
                         <AlertTriangle className="w-4 h-4" />
-                        Báo Sự Cố
+                        Sự Cố
                      </button>
                   </div>
                )}
+            </div>
 
-               <div className="flex gap-4">
-                  <div className="flex bg-slate-100 rounded-lg p-1">
-                     {BUILDING_STRUCTURE.map(b => (
-                        <button
-                           key={b.id}
-                           onClick={() => { setSelectedBuilding(b.id); setSelectedFloor(b.floors[0]); }}
-                           className={`px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${selectedBuilding === b.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                              }`}
-                        >
-                           <Building className="w-4 h-4" /> {b.name}
-                        </button>
-                     ))}
-                  </div>
+            {/* Building and Floor Selectors */}
+            <div className="flex flex-col sm:flex-row gap-3">
+               {/* Building Selector */}
+               <div className="flex bg-slate-100 rounded-lg p-1 overflow-x-auto hide-scrollbar shrink-0">
+                  {BUILDING_STRUCTURE.map(b => (
+                     <button
+                        key={b.id}
+                        onClick={() => { setSelectedBuilding(b.id); setSelectedFloor(b.floors[0]); }}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${selectedBuilding === b.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                           }`}
+                     >
+                        <Building className="w-4 h-4" /> {b.name}
+                     </button>
+                  ))}
+               </div>
 
-                  <div className="flex bg-slate-100 rounded-lg p-1 overflow-x-auto max-w-md">
-                     {availableFloors.map(floor => (
-                        <button
-                           key={floor}
-                           onClick={() => setSelectedFloor(floor)}
-                           className={`px-4 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap ${selectedFloor === floor ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                              }`}
-                        >
-                           {floor}
-                        </button>
-                     ))}
-                  </div>
+               {/* Floor Selector */}
+               <div className="flex bg-slate-100 rounded-lg p-1 overflow-x-auto hide-scrollbar flex-1">
+                  {availableFloors.map(floor => (
+                     <button
+                        key={floor}
+                        onClick={() => setSelectedFloor(floor)}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap ${selectedFloor === floor ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                           }`}
+                     >
+                        {floor}
+                     </button>
+                  ))}
                </div>
             </div>
          </div>
 
-         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-slate-100 flex items-center justify-between">
-               <div><p className="text-xs text-slate-500 font-bold uppercase">Tổng giường</p><p className="text-2xl font-bold text-slate-800">{stats.total}</p></div>
-               <div className="p-2 bg-slate-100 rounded-lg"><Bed className="w-5 h-5 text-slate-500" /></div>
+         {/* Stats Cards - Horizontal scroll on mobile */}
+         <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar md:grid md:grid-cols-4 md:gap-4 md:overflow-visible">
+            <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-100 flex items-center justify-between min-w-[140px] shrink-0 md:min-w-0 md:shrink">
+               <div><p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase">Tổng giường</p><p className="text-xl md:text-2xl font-bold text-slate-800">{stats.total}</p></div>
+               <div className="p-2 bg-slate-100 rounded-lg"><Bed className="w-4 h-4 md:w-5 md:h-5 text-slate-500" /></div>
             </div>
-            <div className="bg-teal-50 p-4 rounded-xl border border-teal-100 flex items-center justify-between">
-               <div><p className="text-xs text-teal-600 font-bold uppercase">Đang ở</p><p className="text-2xl font-bold text-teal-800">{stats.occupied}</p></div>
-               <div className="p-2 bg-white rounded-lg"><UserPlus className="w-5 h-5 text-teal-600" /></div>
+            <div className="bg-teal-50 p-3 md:p-4 rounded-xl border border-teal-100 flex items-center justify-between min-w-[140px] shrink-0 md:min-w-0 md:shrink">
+               <div><p className="text-[10px] md:text-xs text-teal-600 font-bold uppercase">Đang ở</p><p className="text-xl md:text-2xl font-bold text-teal-800">{stats.occupied}</p></div>
+               <div className="p-2 bg-white rounded-lg"><UserPlus className="w-4 h-4 md:w-5 md:h-5 text-teal-600" /></div>
             </div>
-            <div className="bg-green-50 p-4 rounded-xl border border-green-100 flex items-center justify-between">
-               <div><p className="text-xs text-green-600 font-bold uppercase">Còn trống</p><p className="text-2xl font-bold text-green-800">{available}</p></div>
-               <div className="p-2 bg-white rounded-lg"><CheckCircle2 className="w-5 h-5 text-green-600" /></div>
+            <div className="bg-green-50 p-3 md:p-4 rounded-xl border border-green-100 flex items-center justify-between min-w-[140px] shrink-0 md:min-w-0 md:shrink">
+               <div><p className="text-[10px] md:text-xs text-green-600 font-bold uppercase">Còn trống</p><p className="text-xl md:text-2xl font-bold text-green-800">{available}</p></div>
+               <div className="p-2 bg-white rounded-lg"><CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-green-600" /></div>
             </div>
-            <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 flex items-center justify-between">
-               <div><p className="text-xs text-orange-600 font-bold uppercase">Bảo trì</p><p className="text-2xl font-bold text-orange-800">{stats.maintenance}</p></div>
-               <div className="p-2 bg-white rounded-lg"><Wrench className="w-5 h-5 text-orange-500" /></div>
+            <div className="bg-orange-50 p-3 md:p-4 rounded-xl border border-orange-100 flex items-center justify-between min-w-[140px] shrink-0 md:min-w-0 md:shrink">
+               <div><p className="text-[10px] md:text-xs text-orange-600 font-bold uppercase">Bảo trì</p><p className="text-xl md:text-2xl font-bold text-orange-800">{stats.maintenance}</p></div>
+               <div className="p-2 bg-white rounded-lg"><Wrench className="w-4 h-4 md:w-5 md:h-5 text-orange-500" /></div>
             </div>
          </div>
 
-         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+         {/* Room Grid - 2 columns on mobile */}
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {roomsOnFloor.map(room => (
                <div key={room.id} className={`bg-white rounded-xl shadow-sm border ${isEditMode ? 'border-indigo-300 ring-2 ring-indigo-100 cursor-pointer hover:border-indigo-500' : 'border-slate-200'} overflow-hidden relative transition-all`}>
                   {isEditMode && (

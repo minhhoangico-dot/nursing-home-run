@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Pill, Plus, History, Calendar, Clock, User as UserIcon, AlertCircle, CheckCircle2, XCircle, FileText, ChevronDown, ChevronUp, Printer } from 'lucide-react';
+import { Table } from '@/src/components/ui';
 import { Prescription, PrescriptionItem, InventoryItem, Resident, User } from '../../../types/index';
 import { PrescriptionForm } from './PrescriptionForm';
 import { usePrescriptionsStore } from '../../../stores/prescriptionStore';
@@ -106,50 +107,58 @@ export const PrescriptionList = ({ user, resident, inventory, onUpdate }: { user
                 </div>
 
                 {activeItems.length > 0 ? (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-slate-50 text-slate-500 font-medium">
-                                <tr>
-                                    <th className="px-4 py-3">Tên thuốc</th>
-                                    <th className="px-4 py-3">Liều lượng</th>
-                                    <th className="px-4 py-3">Cách dùng</th>
-                                    <th className="px-4 py-3">Thời điểm</th>
-                                    <th className="px-4 py-3">Kê từ đơn</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {activeItems.map((item, idx) => (
-                                    <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-4 py-3 font-semibold text-slate-800">
-                                            {item.medicineName}
-                                            {item.instructions && (
-                                                <div className="text-xs font-normal text-slate-500 italic mt-0.5">
-                                                    Lưu ý: {item.instructions}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3 text-slate-700">{item.dosage}</td>
-                                        <td className="px-4 py-3 text-slate-700">{item.frequency}</td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex gap-1 flex-wrap">
-                                                {item.timesOfDay?.map(t => (
-                                                    <span key={t} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs border border-blue-100">
-                                                        {t}
-                                                    </span>
-                                                ))}
+                    <Table
+                        data={activeItems}
+                        columns={[
+                            {
+                                header: 'Tên thuốc',
+                                accessor: (item) => (
+                                    <div>
+                                        <div className="font-semibold text-slate-800">{item.medicineName}</div>
+                                        {item.instructions && (
+                                            <div className="text-xs font-normal text-slate-500 italic mt-0.5">
+                                                Lưu ý: {item.instructions}
                                             </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-slate-500">
-                                            <div className="flex flex-col">
-                                                <span className="font-medium text-teal-600">{item.prescriptionCode}</span>
-                                                <span className="text-xs">Bắt đầu: {item.startDate}</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                        )}
+                                    </div>
+                                ),
+                                mobilePrimary: true
+                            },
+                            {
+                                header: 'Liều lượng',
+                                accessor: 'dosage',
+                                mobileLabel: 'Liều'
+                            },
+                            {
+                                header: 'Cách dùng',
+                                accessor: 'frequency',
+                                mobileLabel: 'Tần suất'
+                            },
+                            {
+                                header: 'Thời điểm',
+                                accessor: (item) => (
+                                    <div className="flex gap-1 flex-wrap">
+                                        {item.timesOfDay?.map(t => (
+                                            <span key={t} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs border border-blue-100">
+                                                {t}
+                                            </span>
+                                        ))}
+                                    </div>
+                                ),
+                                mobileLabel: 'Giờ dùng'
+                            },
+                            {
+                                header: 'Kê từ đơn',
+                                accessor: (item) => (
+                                    <div className="flex flex-col">
+                                        <span className="font-medium text-teal-600">{item.prescriptionCode}</span>
+                                        <span className="text-xs">Bắt đầu: {item.startDate}</span>
+                                    </div>
+                                ),
+                                mobileLabel: 'Đơn thuốc'
+                            }
+                        ]}
+                    />
                 ) : (
                     <div className="p-8 text-center text-slate-400">
                         <CheckCircle2 className="w-10 h-10 mx-auto mb-2 opacity-50" />

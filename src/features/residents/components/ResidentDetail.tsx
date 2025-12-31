@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Plus, Upload, FileText, Trash2, Eye, User as UserIcon, Calendar, CreditCard, Home, Bed, Activity, Clock } from 'lucide-react';
+import { Tabs } from '@/src/components/ui';
 import { Resident, InventoryItem, User, ServicePrice, ServiceUsage } from '@/src/types/index';
 import { MedicalHistorySection } from '@/src/features/medical/components/MedicalHistorySection';
 import { VitalSignsSection } from '@/src/features/medical/components/VitalSignsSection';
@@ -89,19 +90,12 @@ export const ResidentDetail = ({
    return (
       <>
          {/* Tabs */}
-         <div className="border-b border-slate-200 mb-6 no-print">
-            <div className="flex overflow-x-auto gap-6 hide-scrollbar">
-               {tabs.map(tab => (
-                  <button
-                     key={tab.id}
-                     onClick={() => setActiveTab(tab.id)}
-                     className={`pb-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 px-1 ${activeTab === tab.id ? 'text-teal-600 border-teal-600' : 'text-slate-500 border-transparent hover:text-slate-700'
-                        }`}
-                  >
-                     {tab.label}
-                  </button>
-               ))}
-            </div>
+         <div className="mb-6 no-print">
+            <Tabs
+               tabs={tabs}
+               activeTab={activeTab}
+               onChange={setActiveTab}
+            />
          </div>
 
          {/* Tab Content */}
