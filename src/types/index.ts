@@ -81,6 +81,7 @@ export interface ProcedureRecord {
     woundDressingCount: number;
     performedBy?: string;
     notes?: string;
+    ivDripDetails?: IVDripItem[];
     createdAt: string;
     createdBy?: string;
 }
@@ -100,6 +101,20 @@ export const PROCEDURE_LABELS: Record<ProcedureType, string> = {
     bloodPressure: 'Đo huyết áp',
     oxygenTherapy: 'Thở Oxy',
     woundDressing: 'Thay băng',
+};
+
+export interface IVDripItem {
+    fluid: 'nacl' | 'ringer' | 'aminoplasma' | 'lipofudin' | 'albumin' | 'combilipid';
+    quantity: number;
+}
+
+export const IV_FLUID_LABELS: Record<IVDripItem['fluid'], string> = {
+    nacl: 'NaCl',
+    ringer: 'Ringer',
+    aminoplasma: 'Aminoplasma',
+    lipofudin: 'Lipofudin',
+    albumin: 'Albumin',
+    combilipid: 'Combilipid'
 };
 
 // =============================================

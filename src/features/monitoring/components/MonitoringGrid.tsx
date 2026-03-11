@@ -127,15 +127,19 @@ export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLo
                                 <td className="border p-2 font-medium text-slate-600 truncate">Đại tiện</td>
                                 {days.map(day => {
                                     const record = getDailyRecord(resident.id, day);
-                                    const hasBowel = !!record?.bowel_movements;
-
                                     return (
-                                        <td
-                                            key={`bowel-${day}`}
-                                            className="border p-0 text-center cursor-pointer hover:bg-slate-100 transition-colors select-none"
-                                            onClick={() => handleUpdate(resident.id, day, 'bowel_movements', hasBowel ? '' : 'x')}
-                                        >
-                                            {hasBowel && <span className="text-slate-700 font-bold">x</span>}
+                                        <td key={`bowel-${day}`} className="border p-0">
+                                            <select
+                                                className="w-full h-full p-1 text-center bg-transparent focus:bg-teal-50 outline-none appearance-none"
+                                                value={record?.bowel_movements || ''}
+                                                onChange={(e) => handleUpdate(resident.id, day, 'bowel_movements', e.target.value)}
+                                                style={{ textAlignLast: 'center' }}
+                                            >
+                                                <option value=""></option>
+                                                <option value="thường">x</option>
+                                                <option value="móc">M</option>
+                                                <option value="thụt">T</option>
+                                            </select>
                                         </td>
                                     );
                                 })}

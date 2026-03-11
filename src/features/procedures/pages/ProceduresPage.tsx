@@ -3,7 +3,8 @@ import { useProceduresStore } from '@/src/stores/proceduresStore';
 import { useResidentsStore } from '@/src/stores/residentsStore';
 import { Syringe, Calendar, Printer, Filter, ChevronDown, X, Check, Plus, Minus } from 'lucide-react';
 import { LoadingScreen } from '@/src/components/ui';
-import { PROCEDURE_LABELS } from '@/src/types';
+import { IVDripModal } from '../components/IVDripModal';
+import { PROCEDURE_LABELS, ProcedureRecord, IVDripItem } from '@/src/types';
 import { ProcedureGrid } from '../components/ProcedureGrid';
 import { PrintProcedureForm } from '../components/PrintProcedureForm';
 import { toast } from 'react-hot-toast';
@@ -18,6 +19,20 @@ export const ProceduresPage = () => {
     const [mode, setMode] = useState<'add' | 'subtract'>('add');
     const [showMobileFilter, setShowMobileFilter] = useState(false);
     const [mobileSelectedDay, setMobileSelectedDay] = useState(new Date().getDate());
+
+    const [ivDripModal, setIvDripModal] = useState<{
+        isOpen: boolean;
+        residentId: string;
+        residentName: string;
+        date: string;
+        items: IVDripItem[];
+    }>({
+        isOpen: false,
+        residentId: '',
+        residentName: '',
+        date: '',
+        items: []
+    });
 
     // Derived state
     const dateObj = new Date(selectedDate);
@@ -49,6 +64,38 @@ export const ProceduresPage = () => {
         }
     };
 
+    const handleDetailedClick = (residentId: string, date: string, record: ProcedureRecord | undefined) => {
+        const resident = residents.find(r => r.id === residentId);
+        setIvDripModal({
+            isOpen: true,
+            residentId,
+            residentName: resident?.name || '',
+            date,
+            items: record?.ivDripDetails || []
+        });
+    };
+
+    const handleSaveIVDrip = async (items: IVDripItem[]) => {
+        if (!ivDripModal.residentId || !ivDripModal.date) return;
+
+        const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+
+        try {
+            await upsertRecord({
+                residentId: ivDripModal.residentId,
+                recordDate: ivDripModal.date,
+                ivDrip: items.length > 0,
+                ivDripCount: totalQuantity,
+                ivDripDetails: items
+            });
+            await fetchAllRecords(month, year);
+            setIvDripModal(prev => ({ ...prev, isOpen: false }));
+        } catch (error) {
+            console.error(error);
+            toast.error('Lỗi khi lưu truyền dịch');
+        }
+    };
+
     const handlePrint = () => {
         window.print();
     };
@@ -63,6 +110,13 @@ export const ProceduresPage = () => {
     // Mobile: toggle for a specific resident on selected day
     const handleMobileToggle = async (residentId: string, currentCount: number) => {
         const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(mobileSelectedDay).padStart(2, '0')}`;
+
+        if (selectedType === 'ivDrip') {
+            const record = records.find(r => r.residentId === residentId && r.recordDate === dateStr);
+            handleDetailedClick(residentId, dateStr, record);
+            return;
+        }
+
         const newCount = mode === 'add' ? currentCount + 1 : Math.max(0, currentCount - 1);
         await handleToggle(residentId, dateStr, newCount > 0, newCount);
     };
@@ -228,6 +282,7 @@ export const ProceduresPage = () => {
                             selectedType={selectedType}
                             isLoading={isLoading}
                             onToggle={handleToggle}
+                            onDetailedClick={handleDetailedClick}
                             mode={mode}
                         />
                     </div>
@@ -268,8 +323,8 @@ export const ProceduresPage = () => {
                                             onClick={() => handleMobileToggle(resident.id, count)}
                                             disabled={isLoading}
                                             className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${mode === 'add'
-                                                    ? 'bg-blue-100 text-blue-600 active:bg-blue-200'
-                                                    : 'bg-red-100 text-red-600 active:bg-red-200'
+                                                ? 'bg-blue-100 text-blue-600 active:bg-blue-200'
+                                                : 'bg-red-100 text-red-600 active:bg-red-200'
                                                 } ${isLoading ? 'opacity-50' : ''}`}
                                         >
                                             {mode === 'add' ? <Plus className="w-6 h-6" /> : <Minus className="w-6 h-6" />}
@@ -302,8 +357,8 @@ export const ProceduresPage = () => {
                                         setShowMobileFilter(false);
                                     }}
                                     className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-colors flex items-center justify-between ${selectedType === t.key
-                                            ? 'bg-blue-50 text-blue-700 font-medium'
-                                            : 'text-slate-600 hover:bg-slate-50'
+                                        ? 'bg-blue-50 text-blue-700 font-medium'
+                                        : 'text-slate-600 hover:bg-slate-50'
                                         }`}
                                 >
                                     {t.label}
@@ -314,6 +369,16 @@ export const ProceduresPage = () => {
                     </div>
                 </div>
             )}
+
+            {/* IV Drip Modal */}
+            <IVDripModal
+                isOpen={ivDripModal.isOpen}
+                onClose={() => setIvDripModal(prev => ({ ...prev, isOpen: false }))}
+                onSave={handleSaveIVDrip}
+                initialItems={ivDripModal.items}
+                residentName={ivDripModal.residentName}
+                recordDate={ivDripModal.date}
+            />
 
             {/* Print Form (Hidden normally) */}
             <div className="hidden print:block fixed inset-0 bg-white z-[100]">

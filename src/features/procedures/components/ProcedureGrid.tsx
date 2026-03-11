@@ -10,9 +10,10 @@ interface ProcedureGridProps {
     selectedType: string | null;
     isLoading: boolean;
     onToggle: (residentId: string, date: string, checked: boolean, count: number) => void;
+    onDetailedClick?: (residentId: string, date: string, record: ProcedureRecord | undefined) => void;
 }
 
-export const ProcedureGrid = ({ month, year, residents, records, selectedType, isLoading, onToggle, mode = 'add' }: ProcedureGridProps & { mode?: 'add' | 'subtract' }) => {
+export const ProcedureGrid = ({ month, year, residents, records, selectedType, isLoading, onToggle, onDetailedClick, mode = 'add' }: ProcedureGridProps & { mode?: 'add' | 'subtract' }) => {
     const daysInMonth = new Date(year, month, 0).getDate();
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
@@ -31,6 +32,12 @@ export const ProcedureGrid = ({ month, year, residents, records, selectedType, i
     const handleCellClick = (residentId: string, day: number, current: { checked: boolean, count: number }) => {
         if (!selectedType || isLoading) return;
         const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        if (selectedType === 'ivDrip' && onDetailedClick) {
+            const record = records.find(r => r.residentId === residentId && r.recordDate === dateStr);
+            onDetailedClick(residentId, dateStr, record);
+            return;
+        }
 
         let newCount = current.count;
         if (mode === 'add') {

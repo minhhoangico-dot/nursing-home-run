@@ -52,6 +52,7 @@ export const useProceduresStore = create<ProceduresState>((set) => ({
                     woundDressingCount: d.wound_dressing_count,
                     performedBy: d.performed_by,
                     notes: d.notes,
+                    ivDripDetails: d.iv_drip_details,
                     createdAt: d.created_at
                 })),
                 isLoading: false
@@ -100,6 +101,7 @@ export const useProceduresStore = create<ProceduresState>((set) => ({
                     woundDressingCount: d.wound_dressing_count,
                     performedBy: d.performed_by,
                     notes: d.notes,
+                    ivDripDetails: d.iv_drip_details,
                     createdAt: d.created_at
                 })),
                 isLoading: false
@@ -134,7 +136,8 @@ export const useProceduresStore = create<ProceduresState>((set) => ({
                 oxygen_therapy_count: record.oxygenTherapyCount,
                 wound_dressing_count: record.woundDressingCount,
                 performed_by: record.performedBy,
-                notes: record.notes
+                notes: record.notes,
+                iv_drip_details: record.ivDripDetails
             };
 
             const { error } = await supabase

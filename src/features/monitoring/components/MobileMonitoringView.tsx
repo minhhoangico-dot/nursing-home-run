@@ -225,16 +225,16 @@ export const MobileMonitoringView = ({
                                         </div>
                                         <span className="font-medium text-slate-600">Đại tiện</span>
                                     </div>
-                                    <button
-                                        onClick={() => handleUpdate(resident.id, 'bowel_movements', record?.bowel_movements ? '' : 'x')}
-                                        className={`w-14 h-8 rounded-full transition-colors relative ${record?.bowel_movements
-                                                ? 'bg-teal-500'
-                                                : 'bg-slate-300'
-                                            }`}
+                                    <select
+                                        value={record?.bowel_movements || ''}
+                                        onChange={(e) => handleUpdate(resident.id, 'bowel_movements', e.target.value)}
+                                        className="h-9 px-3 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-sm font-medium text-slate-700"
                                     >
-                                        <span className={`absolute w-6 h-6 bg-white rounded-full top-1 transition-all shadow ${record?.bowel_movements ? 'right-1' : 'left-1'
-                                            }`} />
-                                    </button>
+                                        <option value="">Chưa có</option>
+                                        <option value="thường">Bình thường (x)</option>
+                                        <option value="móc">Móc (M)</option>
+                                        <option value="thụt">Thụt (T)</option>
+                                    </select>
                                 </div>
                             </div>
                         )}
