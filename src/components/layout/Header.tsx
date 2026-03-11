@@ -346,10 +346,16 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
                         <p className="font-bold text-slate-800">{user.name}</p>
                         <p className="text-xs text-slate-500">{user.role}</p>
                      </div>
-                     <button className="w-full text-left px-4 py-3 md:py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                     <button 
+                        onClick={() => { setShowUserMenu(false); navigate('/profile?tab=info'); }}
+                        className="w-full text-left px-4 py-3 md:py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                     >
                         <UserIcon className="w-4 h-4" /> Hồ sơ cá nhân
                      </button>
-                     <button className="w-full text-left px-4 py-3 md:py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                     <button 
+                        onClick={() => { setShowUserMenu(false); navigate('/profile?tab=security'); }}
+                        className="w-full text-left px-4 py-3 md:py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                     >
                         <Settings className="w-4 h-4" /> Đổi mật khẩu
                      </button>
                      <div className="border-t border-slate-50 my-1"></div>

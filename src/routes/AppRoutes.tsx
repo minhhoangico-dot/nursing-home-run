@@ -22,6 +22,7 @@ const FinancePage = React.lazy(() => import('../features/finance/pages/FinancePa
 const StockPage = React.lazy(() => import('../features/inventory/pages/StockPage').then(module => ({ default: module.StockPage })));
 const SettingsPage = React.lazy(() => import('../features/settings/pages/SettingsPage').then(module => ({ default: module.SettingsPage })));
 const ActivitiesPage = React.lazy(() => import('../features/activities/pages/ActivitiesPage').then(module => ({ default: module.ActivitiesPage })));
+const ProfilePage = React.lazy(() => import('../features/profile').then(module => ({ default: module.ProfilePage })));
 
 // New Modules
 const ShiftHandoverPage = React.lazy(() => import('../features/shift-handover').then(module => ({ default: module.ShiftHandoverPage })));
@@ -120,6 +121,8 @@ export const AppRoutes = () => {
                                     <SettingsPage />
                                 </RoleBasedRoute>
                             } />
+
+                            <Route path="/profile" element={<ProfilePage />} />
 
                             <Route path="*" element={<Navigate to="/residents" replace />} />
                         </Route>
