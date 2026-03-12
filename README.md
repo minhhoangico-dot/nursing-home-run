@@ -1,5 +1,3 @@
-# FDC Nursing Home Management System (Hệ thống Quản lý Viện Dưỡng Lão)
-
 This is a comprehensive web application designed for managing a Nursing Home facility (starting with Floor 3). Ideally suited for tablet usage by nursing staff, supervisors, and administrators.
 
 ## Features Implemented
