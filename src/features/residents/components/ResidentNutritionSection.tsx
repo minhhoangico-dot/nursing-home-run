@@ -11,7 +11,7 @@ const DIET_CONFIG: Record<string, { label: string; color: string; icon: any; des
     Cut: { label: 'Cắt cơm', color: 'bg-slate-100 text-slate-800', icon: FileText, description: 'Ngừng cung cấp suất ăn (Về nhà/Nhập viện).' },
 };
 
-export const ResidentNutritionSection = ({ resident, onEdit }: { resident: Resident, onEdit: () => void }) => {
+export const ResidentNutritionSection = ({ resident, onEdit, readOnly = false }: { resident: Resident, onEdit: () => void, readOnly?: boolean }) => {
     const diet = DIET_CONFIG[resident.dietType || 'Normal'] || DIET_CONFIG.Normal;
 
     return (
@@ -25,12 +25,14 @@ export const ResidentNutritionSection = ({ resident, onEdit }: { resident: Resid
                     <h3 className="text-xl font-bold mb-2">{diet.label}</h3>
                     <p className="text-sm opacity-80 mb-6">{diet.description}</p>
 
+                    {!readOnly && (
                     <button
                         onClick={onEdit}
                         className="bg-white text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 border border-slate-200"
                     >
                         Thay đổi chế độ
                     </button>
+                    )}
                 </div>
 
                 {/* Notes & Allergies */}

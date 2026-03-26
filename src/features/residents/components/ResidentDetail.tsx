@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Plus, Upload, FileText, Trash2, Eye, User as UserIcon, Calendar, CreditCard, Home, Bed, Activity, Clock } from 'lucide-react';
 import { Tabs } from '@/src/components/ui';
 import { Resident, User, ServicePrice, ServiceUsage } from '@/src/types/index';
@@ -16,6 +16,7 @@ import { useToast } from '@/src/app/providers';
 interface ResidentDetailProps {
    user: User;
    resident: Resident;
+   readOnly?: boolean;
    onUpdateResident: (r: Resident) => void;
    onOpenAssessment: () => void;
    onEdit: () => void;
@@ -25,7 +26,7 @@ interface ResidentDetailProps {
 }
 
 export const ResidentDetail = ({
-   user, resident, onUpdateResident, onOpenAssessment, onEdit,
+   user, resident, readOnly = false, onUpdateResident, onOpenAssessment, onEdit,
    servicePrices, usageRecords, onRecordUsage
 }: ResidentDetailProps) => {
    const [activeTab, setActiveTab] = useState('info');
@@ -38,6 +39,8 @@ export const ResidentDetail = ({
    const { addToast } = useToast();
 
    const handleAddService = (service: ServicePrice) => {
+      if (readOnly) return;
+
       const usage: ServiceUsage = {
          id: `USG-${Date.now()}`,
          residentId: resident.id,
@@ -55,6 +58,8 @@ export const ResidentDetail = ({
    };
 
    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (readOnly) return;
+
       const files = e.target.files;
       if (files && files.length > 0) {
          const file = files[0];
@@ -83,12 +88,20 @@ export const ResidentDetail = ({
 
    ];
 
+   const visibleTabs = readOnly ? tabs.filter(tab => tab.id !== 'finance') : tabs;
+
+   useEffect(() => {
+      if (readOnly && activeTab === 'finance') {
+         setActiveTab('info');
+      }
+   }, [activeTab, readOnly]);
+
    return (
       <>
          {/* Tabs */}
          <div className="mb-6 no-print">
             <Tabs
-               tabs={tabs}
+               tabs={visibleTabs}
                activeTab={activeTab}
                onChange={setActiveTab}
             />
@@ -215,6 +228,8 @@ export const ResidentDetail = ({
                                  <p className="text-xs text-slate-500">CCCD, BHYT, Hợp đồng...</p>
                               </div>
                            </div>
+                           {!readOnly && (
+                              <>
                            <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
                            <button
                               onClick={() => fileInputRef.current?.click()}
@@ -222,6 +237,8 @@ export const ResidentDetail = ({
                            >
                               <Upload className="w-3 h-3" /> Tải lên
                            </button>
+                              </>
+                           )}
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                            {documents.map(doc => (
@@ -232,7 +249,9 @@ export const ResidentDetail = ({
                                  <span className="text-xs text-slate-600 font-medium truncate w-full px-1">{doc.name}</span>
                                  <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center gap-2 transition-all backdrop-blur-[1px]">
                                     <button className="p-2 bg-white text-slate-800 rounded-full hover:bg-orange-50 shadow-lg transform hover:scale-105 transition-all"><Eye className="w-4 h-4" /></button>
-                                    <button onClick={(e) => { e.stopPropagation(); setDocuments(documents.filter(d => d.id !== doc.id)); }} className="p-2 bg-white text-red-500 rounded-full hover:bg-red-50 shadow-lg transform hover:scale-105 transition-all"><Trash2 className="w-4 h-4" /></button>
+                                    {!readOnly && (
+                                       <button onClick={(e) => { e.stopPropagation(); setDocuments(documents.filter(d => d.id !== doc.id)); }} className="p-2 bg-white text-red-500 rounded-full hover:bg-red-50 shadow-lg transform hover:scale-105 transition-all"><Trash2 className="w-4 h-4" /></button>
+                                    )}
                                  </div>
                               </div>
                            ))}
@@ -252,29 +271,29 @@ export const ResidentDetail = ({
 
             {activeTab === 'medical_record' && (
                <div className="space-y-8">
-                  <MedicalHistorySection user={user} resident={resident} onUpdate={onUpdateResident} />
+                  <MedicalHistorySection user={user} resident={resident} onUpdate={onUpdateResident} readOnly={readOnly} />
                   <div className="border-t border-slate-200 my-6"></div>
-                  <MedicalVisitsSection user={user} resident={resident} onUpdate={onUpdateResident} />
+                  <MedicalVisitsSection user={user} resident={resident} onUpdate={onUpdateResident} readOnly={readOnly} />
                </div>
             )}
 
             {activeTab === 'medication' && (
                <div className="space-y-6">
-                  <PrescriptionList user={user} resident={resident} onUpdate={onUpdateResident} />
+                  <PrescriptionList user={user} resident={resident} onUpdate={onUpdateResident} readOnly={readOnly} />
                </div>
             )}
 
             {activeTab === 'vital_signs' && (
                <div className="space-y-8">
-                  <VitalSignsSection user={user} resident={resident} />
+                  <VitalSignsSection user={user} resident={resident} readOnly={readOnly} />
                </div>
             )}
 
             {activeTab === 'monitoring' && (
                <div className="space-y-8">
-                  <MonitoringPlansSection user={user} resident={resident} onUpdate={onUpdateResident} />
+                  <MonitoringPlansSection user={user} resident={resident} onUpdate={onUpdateResident} readOnly={readOnly} />
                   <div className="border-t border-slate-200 my-6"></div>
-                  <ResidentNutritionSection resident={resident} onEdit={onEdit} />
+                  <ResidentNutritionSection resident={resident} onEdit={onEdit} readOnly={readOnly} />
                </div>
             )}
 
@@ -284,9 +303,11 @@ export const ResidentDetail = ({
                <div className="space-y-6">
                   <div className="flex justify-between items-center">
                      <h3 className="font-semibold text-slate-800">Lịch sử đánh giá</h3>
+                     {!readOnly && (
                      <button onClick={onOpenAssessment} className="text-sm bg-teal-600 text-white px-3 py-1.5 rounded hover:bg-teal-700 flex items-center gap-2 no-print">
                         <Plus className="w-4 h-4" /> Đánh giá mới
                      </button>
+                     )}
                   </div>
                   <div className="space-y-3">
                      {resident.assessments.length > 0 ? resident.assessments.map((a, i) => (
@@ -307,7 +328,7 @@ export const ResidentDetail = ({
                </div>
             )}
 
-            {activeTab === 'finance' && (
+            {!readOnly && activeTab === 'finance' && (
                <ResidentFinanceTab
                   resident={resident}
                   servicePrices={servicePrices}

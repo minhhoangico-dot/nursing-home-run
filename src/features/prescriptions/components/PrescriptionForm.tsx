@@ -10,9 +10,10 @@ interface PrescriptionFormProps {
    residents?: Resident[]; // For selection if not passed
    onClose: () => void;
    onSave: () => void;
+   readOnly?: boolean;
 }
 
-export const PrescriptionForm = ({ user, resident: initialResident, residents, onClose, onSave }: PrescriptionFormProps) => {
+export const PrescriptionForm = ({ user, resident: initialResident, residents, onClose, onSave, readOnly = false }: PrescriptionFormProps) => {
    const { createPrescription, medicines, fetchMedicines } = usePrescriptionsStore();
    const [selectedResidentId, setSelectedResidentId] = useState(initialResident?.id || '');
    const [diagnosis, setDiagnosis] = useState('');
@@ -36,10 +37,13 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
    const prescriptionCode = `DT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
 
    const handleAddItem = () => {
+      if (readOnly) return;
       setItems([...items, { id: Date.now().toString(), medicineName: '', dosage: '', frequency: '2 lần/ngày', timesOfDay: ['Sáng', 'Chiều'], quantity: 0 }]);
    };
 
    const handleRemoveItem = (index: number) => {
+      if (readOnly) return;
+
       if (items.length > 1) {
          const newItems = [...items];
          newItems.splice(index, 1);
@@ -48,6 +52,8 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
    };
 
    const updateItem = (index: number, field: keyof PrescriptionItem, value: any) => {
+      if (readOnly) return;
+
       const newItems = [...items];
       newItems[index] = { ...newItems[index], [field]: value };
       setItems(newItems);
@@ -60,6 +66,8 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
    };
 
    const handleSubmit = async () => {
+      if (readOnly) return;
+
       if (!selectedResidentId || !diagnosis) {
          setError('Vui lòng chọn NCT và nhập chẩn đoán');
          return;
@@ -98,6 +106,8 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
          setLoading(false);
       }
    };
+
+   if (readOnly) return null;
 
    return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">

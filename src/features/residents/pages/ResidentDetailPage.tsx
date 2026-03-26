@@ -8,6 +8,8 @@ import { AssessmentWizard } from '@/src/features/assessments/components/Assessme
 import { ResidentBasicInfo } from '../components/ResidentBasicInfo';
 import { ResidentDetail } from '../components/ResidentDetail';
 import { EditResidentModal } from '../components/EditResidentModal';
+import { ModuleReadOnlyBanner } from '@/src/components/ui/ModuleReadOnlyBanner';
+import { useModuleReadOnly } from '@/src/routes/ModuleAccessContext';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useResidentsStore } from '@/src/stores/residentsStore';
 import { useFinanceStore } from '@/src/stores/financeStore';
@@ -18,6 +20,7 @@ export const ResidentDetailPage = () => {
    const { user } = useAuthStore();
    const { residents, updateResident } = useResidentsStore();
    const { servicePrices, usageRecords, recordUsage } = useFinanceStore();
+   const readOnly = useModuleReadOnly();
 
    const [showAssessmentWizard, setShowAssessmentWizard] = useState(false);
    const [showEditModal, setShowEditModal] = useState(false);
@@ -35,6 +38,8 @@ export const ResidentDetailPage = () => {
    if (!resident || !user) return null;
 
    const handleSaveAssessment = async (score: number) => {
+      if (readOnly) return;
+
       let level: 1 | 2 | 3 | 4 = 1;
       if (score > 10) level = 2;
       if (score > 20) level = 3;
@@ -61,6 +66,8 @@ export const ResidentDetailPage = () => {
    };
 
    const handleUpdateInfo = async (data: any) => {
+      if (readOnly) return;
+
       try {
          await updateResident({ ...resident, ...data });
          toast.success('Cập nhật thông tin thành công');
@@ -71,6 +78,8 @@ export const ResidentDetailPage = () => {
 
    // Check this: handleMedicalUpdate
    const handleMedicalUpdate = async (updatedResident: any) => {
+      if (readOnly) return;
+
       try {
          await updateResident(updatedResident);
          toast.success('Hồ sơ sức khỏe đã được cập nhật');
@@ -81,7 +90,9 @@ export const ResidentDetailPage = () => {
 
    return (
       <div className="space-y-6">
-         {showAssessmentWizard && (
+         {readOnly && <ModuleReadOnlyBanner />}
+
+         {showAssessmentWizard && !readOnly && (
             <AssessmentWizard
                resident={resident}
                onSave={handleSaveAssessment}
@@ -89,12 +100,13 @@ export const ResidentDetailPage = () => {
             />
          )}
 
-         {showEditModal && (
+         {showEditModal && !readOnly && (
             <EditResidentModal
                resident={resident}
                onClose={() => setShowEditModal(false)}
                onSave={handleUpdateInfo}
                existingCodes={residents.map(r => r.clinicCode || '')}
+               readOnly={readOnly}
             />
          )}
 
@@ -106,11 +118,13 @@ export const ResidentDetailPage = () => {
             resident={resident}
             onEdit={() => setShowEditModal(true)}
             onPrint={() => window.print()}
+            readOnly={readOnly}
          />
 
          <ResidentDetail
             user={user}
             resident={resident}
+            readOnly={readOnly}
             onUpdateResident={handleMedicalUpdate}
             onOpenAssessment={() => setShowAssessmentWizard(true)}
             onEdit={() => setShowEditModal(true)}

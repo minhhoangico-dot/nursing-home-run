@@ -5,9 +5,10 @@ import { Medicine } from '../../../types/medical';
 
 interface MedicineManagerProps {
     onClose: () => void;
+    readOnly?: boolean;
 }
 
-export const MedicineManager = ({ onClose }: MedicineManagerProps) => {
+export const MedicineManager = ({ onClose, readOnly = false }: MedicineManagerProps) => {
     const { medicines, createMedicine, updateMedicine, deleteMedicine, isLoading } = usePrescriptionsStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -20,18 +21,24 @@ export const MedicineManager = ({ onClose }: MedicineManagerProps) => {
     );
 
     const handleEdit = (medicine: Medicine) => {
+        if (readOnly) return;
+
         setEditingId(medicine.id);
         setFormData(medicine);
         setIsAdding(false);
     };
 
     const handleAdd = () => {
+        if (readOnly) return;
+
         setIsAdding(true);
         setEditingId(null);
         setFormData({ name: '', unit: 'viên', price: 0, defaultDosage: '', activeIngredient: '' });
     };
 
     const handleSave = async () => {
+        if (readOnly) return;
+
         try {
             if (isAdding) {
                 await createMedicine(formData);
@@ -48,6 +55,7 @@ export const MedicineManager = ({ onClose }: MedicineManagerProps) => {
     };
 
     const handleDelete = async (id: string) => {
+        if (readOnly) return;
         if (confirm('Bạn có chắc muốn xóa thuốc này?')) {
             try {
                 await deleteMedicine(id);
@@ -59,6 +67,8 @@ export const MedicineManager = ({ onClose }: MedicineManagerProps) => {
     };
 
     const isFormValid = formData.name && formData.unit;
+
+    if (readOnly) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">

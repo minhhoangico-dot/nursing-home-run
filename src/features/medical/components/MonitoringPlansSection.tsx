@@ -4,7 +4,7 @@ import { Resident, MonitoringPlan, User } from '../../../types/index';
 
 import { Modal } from '@/src/components/ui';
 
-const MonitoringModal = ({ user, onClose, onSave }: { user: User, onClose: () => void, onSave: (m: MonitoringPlan) => void }) => {
+const MonitoringModal = ({ user, onClose, onSave, readOnly = false }: { user: User, onClose: () => void, onSave: (m: MonitoringPlan) => void, readOnly?: boolean }) => {
     const [data, setData] = useState({
         type: 'Theo dõi huyết áp',
         frequency: 'Mỗi 4 giờ',
@@ -12,6 +12,8 @@ const MonitoringModal = ({ user, onClose, onSave }: { user: User, onClose: () =>
     });
 
     const handleSave = () => {
+        if (readOnly) return;
+
         onSave({
             id: `M${Math.floor(Math.random() * 1000)}`,
             startDate: new Date().toISOString().split('T')[0],
@@ -58,10 +60,12 @@ const MonitoringModal = ({ user, onClose, onSave }: { user: User, onClose: () =>
     );
 };
 
-export const MonitoringPlansSection = ({ user, resident, onUpdate }: { user: User, resident: Resident, onUpdate: (r: Resident) => void }) => {
+export const MonitoringPlansSection = ({ user, resident, onUpdate, readOnly = false }: { user: User, resident: Resident, onUpdate: (r: Resident) => void, readOnly?: boolean }) => {
     const [showModal, setShowModal] = useState(false);
 
     const handleAddMonitoring = (m: MonitoringPlan) => {
+        if (readOnly) return;
+
         onUpdate({
             ...resident,
             specialMonitoring: [m, ...(resident.specialMonitoring || [])]
@@ -71,15 +75,17 @@ export const MonitoringPlansSection = ({ user, resident, onUpdate }: { user: Use
 
     return (
         <div className="space-y-6">
-            {showModal && <MonitoringModal user={user} onClose={() => setShowModal(false)} onSave={handleAddMonitoring} />}
+            {showModal && !readOnly && <MonitoringModal user={user} onClose={() => setShowModal(false)} onSave={handleAddMonitoring} readOnly={readOnly} />}
 
             <div className="flex justify-between items-center">
                 <h3 className="font-semibold text-slate-800 flex items-center gap-2">
                     <Eye className="w-5 h-5 text-purple-500" /> Kế hoạch theo dõi đặc biệt
                 </h3>
+                {!readOnly && (
                 <button onClick={() => setShowModal(true)} className="text-sm bg-purple-600 text-white px-3 py-1.5 rounded hover:bg-purple-700 flex items-center gap-2">
                     <Plus className="w-4 h-4" /> Tạo kế hoạch mới
                 </button>
+                )}
             </div>
             <div className="space-y-3">
                 {resident.specialMonitoring && resident.specialMonitoring.length > 0 ? resident.specialMonitoring.map((m, i) => (
