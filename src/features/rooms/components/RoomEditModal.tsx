@@ -61,7 +61,10 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, readOnly = false
                         <label className="block text-sm font-medium text-slate-700 mb-1">Số phòng</label>
                         <input
                             {...register('roomNumber', { required: 'Vui lòng nhập số phòng' })}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            disabled={readOnly}
+                            className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                                readOnly ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''
+                            }`}
                             placeholder="VD: 101, 201A..."
                         />
                         {errors.roomNumber && <span className="text-red-500 text-xs">{errors.roomNumber.message as string}</span>}
@@ -72,7 +75,10 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, readOnly = false
                         <input
                             type="number"
                             {...register('bedCount', { required: true, min: 1, max: 10 })}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            disabled={readOnly}
+                            className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                                readOnly ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''
+                            }`}
                         />
                     </div>
 
@@ -80,7 +86,10 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, readOnly = false
                         <label className="block text-sm font-medium text-slate-700 mb-1">Loại phòng</label>
                         <select
                             {...register('roomType')}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            disabled={readOnly}
+                            className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                                readOnly ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''
+                            }`}
                         >
                             <option value="1 Giường">1 Giường</option>
                             <option value="2 Giường">2 Giường</option>

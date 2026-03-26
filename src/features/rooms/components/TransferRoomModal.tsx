@@ -81,7 +81,10 @@ export const TransferRoomModal = ({ resident, allResidents, readOnly = false, on
                      {['Tòa A', 'Tòa B'].map(b => (
                         <button
                            key={b}
+                           type="button"
+                           disabled={readOnly}
                            onClick={() => {
+                              if (readOnly) return;
                               setSelectedBuilding(b);
                               setSelectedRoomId('');
                               setSelectedBedId('');
@@ -90,7 +93,7 @@ export const TransferRoomModal = ({ resident, allResidents, readOnly = false, on
                               selectedBuilding === b
                                  ? 'bg-slate-800 text-white border-slate-800'
                                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
-                           }`}
+                           } ${readOnly ? 'opacity-60 cursor-not-allowed pointer-events-none' : ''}`}
                         >
                            <Building className="w-4 h-4" /> {b}
                         </button>
@@ -104,12 +107,19 @@ export const TransferRoomModal = ({ resident, allResidents, readOnly = false, on
                      {floors.map(f => (
                         <button
                            key={f}
-                           onClick={() => { setSelectedFloor(f); setSelectedRoomId(''); setSelectedBedId(''); }}
+                           type="button"
+                           disabled={readOnly}
+                           onClick={() => {
+                              if (readOnly) return;
+                              setSelectedFloor(f);
+                              setSelectedRoomId('');
+                              setSelectedBedId('');
+                           }}
                            className={`py-2 text-sm rounded-lg border transition-colors ${
                               selectedFloor === f
                                  ? 'bg-teal-600 text-white border-teal-600'
                                  : 'bg-white text-slate-600 border-slate-200 hover:border-teal-400'
-                           }`}
+                           } ${readOnly ? 'opacity-60 cursor-not-allowed pointer-events-none' : ''}`}
                         >
                            {f.replace('Tầng ', 'T')}
                         </button>
@@ -120,9 +130,14 @@ export const TransferRoomModal = ({ resident, allResidents, readOnly = false, on
                <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Chọn Phòng</label>
                   <select
+                     disabled={readOnly}
                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                      value={selectedRoomId}
-                     onChange={e => { setSelectedRoomId(e.target.value); setSelectedBedId(''); }}
+                     onChange={e => {
+                        if (readOnly) return;
+                        setSelectedRoomId(e.target.value);
+                        setSelectedBedId('');
+                     }}
                   >
                      <option value="">-- Chọn phòng --</option>
                      {availableRooms.map(r => {
@@ -142,12 +157,16 @@ export const TransferRoomModal = ({ resident, allResidents, readOnly = false, on
                      {availableBeds.length > 0 ? availableBeds.map(bed => (
                         <div
                            key={bed.id}
-                           onClick={() => setSelectedBedId(bed.id)}
-                           className={`p-3 rounded-lg border cursor-pointer flex items-center justify-between ${
+                           aria-disabled={readOnly}
+                           onClick={() => {
+                              if (readOnly) return;
+                              setSelectedBedId(bed.id);
+                           }}
+                           className={`p-3 rounded-lg border flex items-center justify-between ${
                               selectedBedId === bed.id
                                  ? 'bg-teal-50 border-teal-500 text-teal-700'
                                  : 'bg-white border-slate-200 hover:border-teal-300'
-                           }`}
+                           } ${readOnly ? 'opacity-60 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
                         >
                            <span className="font-bold">Giường {bed.id.split('-')[2]}</span>
                            {selectedBedId === bed.id && <CheckCircle2 className="w-4 h-4 text-teal-600" />}

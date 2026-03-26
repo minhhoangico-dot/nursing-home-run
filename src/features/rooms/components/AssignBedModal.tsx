@@ -52,12 +52,16 @@ export const AssignBedModal = ({ residents, targetBed, readOnly = false, onClose
                      {waitingResidents.map(r => (
                         <div
                            key={r.id}
-                           onClick={() => setSelectedId(r.id)}
-                           className={`p-3 rounded-lg border cursor-pointer flex items-center justify-between transition-all ${
+                           aria-disabled={readOnly}
+                           onClick={() => {
+                              if (readOnly) return;
+                              setSelectedId(r.id);
+                           }}
+                           className={`p-3 rounded-lg border flex items-center justify-between transition-all ${
                               selectedId === r.id
                                  ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500'
                                  : 'bg-white border-slate-200 hover:border-blue-300'
-                           }`}
+                           } ${readOnly ? 'opacity-60 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
                         >
                            <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
