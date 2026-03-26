@@ -1,4 +1,5 @@
 import type { Role } from '../types/user';
+import { getModuleAccess } from '../lib/moduleAccess';
 
 type ModuleDefinition = {
   key: string;
@@ -126,7 +127,13 @@ export const isModuleEnabledForRole = (
   permissions: RolePermissionMap,
   role: Role,
   moduleKey: ManagedModuleKey
-): boolean => permissions[role][moduleKey];
+): boolean => getModuleAccess(permissions, role, moduleKey) === 'full';
+
+const hasAccessibleModule = (
+  permissions: RolePermissionMap,
+  role: Role,
+  moduleKey: ManagedModuleKey
+): boolean => getModuleAccess(permissions, role, moduleKey) !== 'none';
 
 export const getSidebarModulesForRole = (
   permissions: RolePermissionMap,
@@ -153,7 +160,7 @@ export const getAccessibleModulesForRole = (
       return true;
     }
 
-    return isModuleEnabledForRole(permissions, role, module.key);
+    return hasAccessibleModule(permissions, role, module.key);
   });
 
 export const getModuleTitleByPath = (pathname: string): string =>
@@ -164,7 +171,9 @@ export const getDefaultModulePathForRole = (
   role: Role
 ): string => {
   const accessibleModuleKeys = new Set(
-    getAccessibleModulesForRole(permissions, role).map((module) => module.key)
+    MODULES.filter((module) => module.permissionManaged && isModuleEnabledForRole(permissions, role, module.key)).map(
+      (module) => module.key
+    )
   );
 
   for (const moduleKey of DEFAULT_LANDING_PRIORITY) {

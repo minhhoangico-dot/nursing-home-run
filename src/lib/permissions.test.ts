@@ -9,6 +9,7 @@ import {
   getModuleTitleByPath,
   getSidebarModulesForRole,
 } from '../constants/modules';
+import { MODULE_READONLY_LINKS, getModuleAccess } from './moduleAccess';
 
 describe('module registry', () => {
   it('keeps profile in the registry while excluding it from admin-managed permissions', () => {
@@ -35,6 +36,20 @@ describe('module registry', () => {
       sidebarVisible: false,
       permissionManaged: true,
     });
+  });
+
+  it('derives read_only access from a directly full source module', () => {
+    expect(MODULE_READONLY_LINKS.rooms).toEqual(['residents', 'incidents', 'maintenance']);
+    expect(getModuleAccess(DEFAULT_ROLE_PERMISSIONS, 'CAREGIVER', 'residents')).toBe('read_only');
+  });
+
+  it('denies finance and settings without direct full access', () => {
+    expect(getModuleAccess(DEFAULT_ROLE_PERMISSIONS, 'CAREGIVER', 'finance')).toBe('none');
+    expect(getModuleAccess(DEFAULT_ROLE_PERMISSIONS, 'CAREGIVER', 'settings')).toBe('none');
+  });
+
+  it('does not chain read_only access transitively', () => {
+    expect(getModuleAccess(DEFAULT_ROLE_PERMISSIONS, 'CAREGIVER', 'maintenance')).toBe('none');
   });
 
   it('keeps shared-only modules in the registry metadata', () => {
@@ -66,6 +81,8 @@ describe('module registry', () => {
     expect(adminSidebarKeys).toContain('settings');
     expect(adminSidebarKeys).not.toContain('profile');
     expect(adminSidebarKeys).not.toContain('weight_tracking');
+    expect(getModuleAccess(DEFAULT_ROLE_PERMISSIONS, 'CAREGIVER', 'residents')).toBe('read_only');
+    expect(caregiverSidebarKeys).not.toContain('residents');
     expect(caregiverSidebarKeys).toEqual(['nutrition', 'visitors', 'incidents']);
   });
 
@@ -75,5 +92,6 @@ describe('module registry', () => {
 
     expect(getDefaultModulePathForRole(DEFAULT_ROLE_PERMISSIONS, 'ADMIN')).toBe('/rooms');
     expect(getDefaultModulePathForRole(DEFAULT_ROLE_PERMISSIONS, 'CAREGIVER')).toBe('/nutrition');
+    expect(getDefaultModulePathForRole(DEFAULT_ROLE_PERMISSIONS, 'CAREGIVER')).not.toBe('/residents');
   });
 });
