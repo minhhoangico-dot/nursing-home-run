@@ -47,10 +47,10 @@ const BedDetailModal = ({ bed, roomNumber, roomType, floor, building, user, read
                         <Bed className="w-6 h-6" />}
                </div>
                <div>
-                  <h3 className="font-bold text-lg text-slate-800">GiÆ°á»ng {bed.id.split('-')[2]} - P.{roomNumber}</h3>
+                  <h3 className="font-bold text-lg text-slate-800">Giường {bed.id.split('-')[2]} - P.{roomNumber}</h3>
                   <p className="text-sm text-slate-500">
-                     {building} â€¢ {floor} â€¢ {bed.status === 'Occupied' ? 'Äang sá»­ dá»¥ng' :
-                        bed.status === 'Maintenance' ? 'Äang báº£o trÃ¬' : 'GiÆ°á»ng trá»‘ng'}
+                     {building} • {floor} • {bed.status === 'Occupied' ? 'Đang sử dụng' :
+                        bed.status === 'Maintenance' ? 'Đang bảo trì' : 'Giường trống'}
                   </p>
                </div>
             </div>
@@ -59,24 +59,24 @@ const BedDetailModal = ({ bed, roomNumber, roomType, floor, building, user, read
                <div className="bg-slate-50 rounded-lg p-4 mb-6 border border-slate-100">
                   <p className="font-bold text-slate-800 text-lg mb-1">{resident.name}</p>
                   <div className="space-y-1 text-sm text-slate-600">
-                     <p>Tuá»•i: {new Date().getFullYear() - new Date(resident.dob).getFullYear()}</p>
-                     <p>Cáº¥p Ä‘á»™ chÄƒm sÃ³c: <span className="font-bold text-teal-700">{resident.careLevel}</span></p>
-                     <p>TÃ¬nh tráº¡ng: {resident.currentConditionNote || 'á»”n Ä‘á»‹nh'}</p>
+                     <p>Tuổi: {new Date().getFullYear() - new Date(resident.dob).getFullYear()}</p>
+                     <p>Cấp độ chăm sóc: <span className="font-bold text-teal-700">{resident.careLevel}</span></p>
+                     <p>Tình trạng: {resident.currentConditionNote || 'Ổn định'}</p>
                   </div>
                   <div className="mt-4 flex gap-2">
                      <button onClick={() => onAction('view_resident', resident.id)} className="flex-1 bg-white border border-slate-200 text-teal-700 py-2 rounded-lg font-medium hover:bg-teal-50 flex items-center justify-center gap-2 text-sm">
-                        Xem há»“ sÆ¡
+                        Xem hồ sơ
                      </button>
                      {!readOnly && (
                         <button onClick={() => onAction('transfer', resident.id)} className="flex-1 bg-teal-600 text-white py-2 rounded-lg font-medium hover:bg-teal-700 flex items-center justify-center gap-2 text-sm shadow-sm">
-                           <ArrowRightLeft className="w-4 h-4" /> Chuyá»ƒn phÃ²ng
+                           <ArrowRightLeft className="w-4 h-4" /> Chuyển phòng
                         </button>
                      )}
                   </div>
                </div>
             ) : (
                <div className="text-center py-6 text-slate-500 italic bg-slate-50 rounded-lg mb-6 border border-dashed border-slate-200">
-                  ChÆ°a cÃ³ bá»‡nh nhÃ¢n
+                  Chưa có bệnh nhân
                </div>
             )}
 
@@ -84,23 +84,23 @@ const BedDetailModal = ({ bed, roomNumber, roomType, floor, building, user, read
                {bed.status === 'Occupied' ? (
                   !readOnly && (
                      <button onClick={() => onAction('discharge', bed.id)} className="w-full py-2 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 flex items-center justify-center gap-2">
-                        <LogOut className="w-4 h-4" /> LÃ m thá»§ tá»¥c xuáº¥t viá»‡n
+                        <LogOut className="w-4 h-4" /> Làm thủ tục xuất viện
                      </button>
                   )
                ) : bed.status === 'Maintenance' ? (
                   !readOnly && (
                      <button onClick={() => onAction('end_maintenance', bed.id)} className="w-full py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 flex items-center justify-center gap-2">
-                        <CheckCircle2 className="w-4 h-4" /> HoÃ n táº¥t báº£o trÃ¬
+                        <CheckCircle2 className="w-4 h-4" /> Hoàn tất bảo trì
                      </button>
                   )
                ) : (
                   !readOnly && (
                      <>
                         <button onClick={() => onAction('assign', bed.id)} className="w-full py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 flex items-center justify-center gap-2">
-                           <UserPlus className="w-4 h-4" /> Xáº¿p bá»‡nh nhÃ¢n má»›i
+                           <UserPlus className="w-4 h-4" /> Xếp bệnh nhân mới
                         </button>
                         <button onClick={() => onAction('start_maintenance', bed.id)} className="w-full py-2 bg-orange-50 text-orange-600 font-medium rounded-lg hover:bg-orange-100 flex items-center justify-center gap-2">
-                           <Wrench className="w-4 h-4" /> BÃ¡o há»ng / Báº£o trÃ¬
+                           <Wrench className="w-4 h-4" /> Báo hỏng / Bảo trì
                         </button>
                      </>
                   )
@@ -119,8 +119,8 @@ export const RoomMapPage = () => {
    const navigate = useNavigate();
    const readOnly = useModuleReadOnly();
 
-   const [selectedBuilding, setSelectedBuilding] = useState('TÃ²a A');
-   const [selectedFloor, setSelectedFloor] = useState('Táº§ng 2');
+   const [selectedBuilding, setSelectedBuilding] = useState('Tòa A');
+   const [selectedFloor, setSelectedFloor] = useState('Tầng 2');
    const [isEditMode, setIsEditMode] = useState(false);
    const [editingRoom, setEditingRoom] = useState<{ roomNumber: string, bedCount: number, roomType: any } | null>(null);
 
@@ -189,13 +189,13 @@ export const RoomMapPage = () => {
          }
       } else if (action === 'discharge') {
          if (resident) {
-            if (window.confirm(`Báº¡n cÃ³ cháº¯c cháº¯n muá»‘n lÃ m thá»§ tá»¥c xuáº¥t viá»‡n cho ${resident.name}?`)) {
+            if (window.confirm(`Bạn có chắc chắn muốn làm thủ tục xuất viện cho ${resident.name}?`)) {
                await updateResident({
                   ...resident,
                   status: 'Discharged',
                   room: 'N/A', bed: 'N/A', floor: 'N/A'
                });
-               toast.success(`Há»“ sÆ¡ cá»§a ${resident.name} Ä‘Ã£ cáº­p nháº­t.`);
+               toast.success(`Hồ sơ của ${resident.name} đã cập nhật.`);
                setSelectedBed(null);
             }
          }
@@ -212,7 +212,7 @@ export const RoomMapPage = () => {
             setSelectedBed(null);
          }
       } else {
-         toast('HÃ nh Ä‘á»™ng báº£o trÃ¬ cáº§n Ä‘Æ°á»£c thá»±c hiá»‡n qua module Báº£o trÃ¬.', { icon: 'â„¹ï¸' });
+         toast('Hành động bảo trì cần được thực hiện qua module Bảo trì.', { icon: 'ℹ️' });
          setSelectedBed(null);
       }
    };
@@ -234,7 +234,7 @@ export const RoomMapPage = () => {
             bed: assignTarget.bedLabel,
             roomType: assignTarget.type
          });
-         toast.success(`ÄÃ£ xáº¿p ${resident.name} vÃ o P.${assignTarget.roomNumber}`);
+         toast.success(`Đã xếp ${resident.name} vào P.${assignTarget.roomNumber}`);
          setAssignTarget(null);
       }
    };
@@ -252,7 +252,7 @@ export const RoomMapPage = () => {
             ...data
          });
          setTransferResident(null);
-         toast.success("Chuyá»ƒn phÃ²ng thÃ nh cÃ´ng");
+         toast.success("Chuyển phòng thành công");
       }
    };
 
@@ -348,9 +348,9 @@ export const RoomMapPage = () => {
          <div className="flex flex-col gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                <div>
-                  <h2 className="text-xl md:text-2xl font-bold text-slate-800">SÆ¡ Ä‘á»“ phÃ²ng á»Ÿ</h2>
+                  <h2 className="text-xl md:text-2xl font-bold text-slate-800">Sơ đồ phòng ở</h2>
                   <div className="flex items-center gap-2 flex-wrap">
-                     <p className="text-sm text-slate-500">Quáº£n lÃ½ tráº¡ng thÃ¡i giÆ°á»ng bá»‡nh</p>
+                     <p className="text-sm text-slate-500">Quản lý trạng thái giường bệnh</p>
                      {canManageRooms && (
                         <div className="flex items-center gap-2">
                            <span className="text-sm text-slate-400 hidden sm:inline">|</span>
@@ -358,13 +358,13 @@ export const RoomMapPage = () => {
                               <div className={`w-10 h-6 rounded-full p-1 transition-colors ${isEditMode ? 'bg-indigo-600' : 'bg-slate-300'}`} onClick={() => setIsEditMode(!isEditMode)}>
                                  <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${isEditMode ? 'translate-x-4' : ''}`} />
                               </div>
-                              <span className={`text-sm font-medium ${isEditMode ? 'text-indigo-600' : 'text-slate-500'}`}>Chá»‰nh sá»­a</span>
+                              <span className={`text-sm font-medium ${isEditMode ? 'text-indigo-600' : 'text-slate-500'}`}>Chỉnh sửa</span>
                            </label>
                            {isEditMode && (
                               <button
-                                 onClick={() => setEditingRoom({ roomNumber: '', bedCount: 1, roomType: '1 GiÆ°á»ng' })}
+                                 onClick={() => setEditingRoom({ roomNumber: '', bedCount: 1, roomType: '1 Giường' })}
                                  className="p-1 bg-indigo-100 text-indigo-600 rounded hover:bg-indigo-200"
-                                 title="ThÃªm phÃ²ng"
+                                 title="Thêm phòng"
                               >
                                  <Plus className="w-5 h-5" />
                               </button>
@@ -381,7 +381,7 @@ export const RoomMapPage = () => {
                         className="px-3 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 shadow-sm flex items-center gap-2 font-medium transition-all text-sm whitespace-nowrap shrink-0"
                      >
                         <AlertTriangle className="w-4 h-4" />
-                        Sá»± Cá»‘
+                        Sự Cố
                      </button>
                   </div>
                )}
@@ -418,19 +418,19 @@ export const RoomMapPage = () => {
 
          <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar md:grid md:grid-cols-4 md:gap-4 md:overflow-visible">
             <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-100 flex items-center justify-between min-w-[140px] shrink-0 md:min-w-0 md:shrink">
-               <div><p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase">Tá»•ng giÆ°á»ng</p><p className="text-xl md:text-2xl font-bold text-slate-800">{stats.total}</p></div>
+               <div><p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase">Tổng giường</p><p className="text-xl md:text-2xl font-bold text-slate-800">{stats.total}</p></div>
                <div className="p-2 bg-slate-100 rounded-lg"><Bed className="w-4 h-4 md:w-5 md:h-5 text-slate-500" /></div>
             </div>
             <div className="bg-teal-50 p-3 md:p-4 rounded-xl border border-teal-100 flex items-center justify-between min-w-[140px] shrink-0 md:min-w-0 md:shrink">
-               <div><p className="text-[10px] md:text-xs text-teal-600 font-bold uppercase">Äang á»Ÿ</p><p className="text-xl md:text-2xl font-bold text-teal-800">{stats.occupied}</p></div>
+               <div><p className="text-[10px] md:text-xs text-teal-600 font-bold uppercase">Đang ở</p><p className="text-xl md:text-2xl font-bold text-teal-800">{stats.occupied}</p></div>
                <div className="p-2 bg-white rounded-lg"><UserPlus className="w-4 h-4 md:w-5 md:h-5 text-teal-600" /></div>
             </div>
             <div className="bg-green-50 p-3 md:p-4 rounded-xl border border-green-100 flex items-center justify-between min-w-[140px] shrink-0 md:min-w-0 md:shrink">
-               <div><p className="text-[10px] md:text-xs text-green-600 font-bold uppercase">CÃ²n trá»‘ng</p><p className="text-xl md:text-2xl font-bold text-green-800">{available}</p></div>
+               <div><p className="text-[10px] md:text-xs text-green-600 font-bold uppercase">Còn trống</p><p className="text-xl md:text-2xl font-bold text-green-800">{available}</p></div>
                <div className="p-2 bg-white rounded-lg"><CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-green-600" /></div>
             </div>
             <div className="bg-orange-50 p-3 md:p-4 rounded-xl border border-orange-100 flex items-center justify-between min-w-[140px] shrink-0 md:min-w-0 md:shrink">
-               <div><p className="text-[10px] md:text-xs text-orange-600 font-bold uppercase">Báº£o trÃ¬</p><p className="text-xl md:text-2xl font-bold text-orange-800">{stats.maintenance}</p></div>
+               <div><p className="text-[10px] md:text-xs text-orange-600 font-bold uppercase">Bảo trì</p><p className="text-xl md:text-2xl font-bold text-orange-800">{stats.maintenance}</p></div>
                <div className="p-2 bg-white rounded-lg"><Wrench className="w-4 h-4 md:w-5 md:h-5 text-orange-500" /></div>
             </div>
          </div>
@@ -475,7 +475,7 @@ export const RoomMapPage = () => {
                                  {residents.find(r => r.id === bed.residentId)?.name || 'N/A'}
                               </div>
                            ) : (
-                              <div className="text-xs text-slate-400 italic">Trá»‘ng</div>
+                              <div className="text-xs text-slate-400 italic">Trống</div>
                            )}
                         </div>
                      ))}

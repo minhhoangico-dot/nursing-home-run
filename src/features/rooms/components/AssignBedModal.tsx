@@ -15,7 +15,7 @@ export const AssignBedModal = ({ residents, targetBed, readOnly = false, onClose
    const [selectedId, setSelectedId] = useState<string>('');
 
    const waitingResidents = residents.filter(r =>
-      r.status === 'Active' && (r.room === 'ChÆ°a xáº¿p' || !r.room || r.room === 'N/A')
+      r.status === 'Active' && (r.room === 'Chưa xếp' || !r.room || r.room === 'N/A')
    );
 
    const handleSubmit = () => {
@@ -30,22 +30,22 @@ export const AssignBedModal = ({ residents, targetBed, readOnly = false, onClose
    };
 
    return (
-      <Modal title="Tiáº¿p nháº­n vÃ o phÃ²ng" onClose={onClose} maxWidth="max-w-xl">
+      <Modal title="Tiếp nhận vào phòng" onClose={onClose} maxWidth="max-w-xl">
          <div className="space-y-6">
             <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
-               <h4 className="text-teal-800 font-bold mb-2">Vá»‹ trÃ­ tiáº¿p nháº­n</h4>
+               <h4 className="text-teal-800 font-bold mb-2">Vị trí tiếp nhận</h4>
                <div className="flex gap-4 text-sm text-teal-700">
-                  <span>TÃ²a nhÃ : <b>{targetBed.building}</b></span>
-                  <span>PhÃ²ng: <b>{targetBed.roomNumber}</b></span>
-                  <span>GiÆ°á»ng: <b>{targetBed.bedLabel}</b></span>
+                  <span>Tòa nhà: <b>{targetBed.building}</b></span>
+                  <span>Phòng: <b>{targetBed.roomNumber}</b></span>
+                  <span>Giường: <b>{targetBed.bedLabel}</b></span>
                </div>
                <div className="mt-1 text-xs text-teal-600">
-                  Loáº¡i phÃ²ng: {targetBed.type} â€¢ {targetBed.floor}
+                  Loại phòng: {targetBed.type} • {targetBed.floor}
                </div>
             </div>
 
             <div>
-               <label className="block text-sm font-medium text-slate-700 mb-3">Chá»n NCT chá» xáº¿p phÃ²ng ({waitingResidents.length})</label>
+               <label className="block text-sm font-medium text-slate-700 mb-3">Chọn NCT chờ xếp phòng ({waitingResidents.length})</label>
 
                {waitingResidents.length > 0 ? (
                   <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
@@ -66,13 +66,13 @@ export const AssignBedModal = ({ residents, targetBed, readOnly = false, onClose
                               <div>
                                  <p className="font-bold text-slate-800 text-sm">{r.name}</p>
                                  <p className="text-xs text-slate-500 flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" /> NgÃ y vÃ o: {r.admissionDate}
+                                    <Calendar className="w-3 h-3" /> Ngày vào: {r.admissionDate}
                                  </p>
                               </div>
                            </div>
                            <div className="text-right">
                               <span className="text-xs font-medium bg-slate-100 px-2 py-1 rounded">
-                                 Cáº¥p Ä‘á»™ {r.careLevel}
+                                 Cấp độ {r.careLevel}
                               </span>
                            </div>
                         </div>
@@ -81,17 +81,17 @@ export const AssignBedModal = ({ residents, targetBed, readOnly = false, onClose
                ) : (
                   <div className="text-center py-8 bg-slate-50 rounded-lg border border-dashed border-slate-300 text-slate-500">
                      <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-                     <p>KhÃ´ng cÃ³ NCT nÃ o Ä‘ang chá» xáº¿p phÃ²ng.</p>
-                     <p className="text-xs mt-1">Vui lÃ²ng táº¡o há»“ sÆ¡ NCT má»›i trÆ°á»›c.</p>
+                     <p>Không có NCT nào đang chờ xếp phòng.</p>
+                     <p className="text-xs mt-1">Vui lòng tạo hồ sơ NCT mới trước.</p>
                   </div>
                )}
             </div>
 
             <div className="flex justify-end pt-4 gap-2 border-t border-slate-100">
-               <Button variant="secondary" onClick={onClose}>Há»§y bá»</Button>
+               <Button variant="secondary" onClick={onClose}>Hủy bỏ</Button>
                {!readOnly && (
                   <Button onClick={handleSubmit} disabled={!selectedId}>
-                     XÃ¡c nháº­n xáº¿p phÃ²ng
+                     Xác nhận xếp phòng
                   </Button>
                )}
             </div>

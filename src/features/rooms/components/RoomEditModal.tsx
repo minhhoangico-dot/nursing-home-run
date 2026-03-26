@@ -31,7 +31,7 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, readOnly = false
 
         onSave(data);
         onClose();
-        toast.success(`ÄÃ£ cáº­p nháº­t phÃ²ng ${data.roomNumber}`);
+        toast.success(`Đã cập nhật phòng ${data.roomNumber}`);
     };
 
     const handleDelete = () => {
@@ -40,7 +40,7 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, readOnly = false
             return;
         }
 
-        if (confirm('Báº¡n cÃ³ cháº¯c muá»‘n xÃ³a phÃ²ng nÃ y khÃ´ng?')) {
+        if (confirm('Bạn có chắc muốn xóa phòng này không?')) {
             onDelete?.();
             onClose();
         }
@@ -50,7 +50,7 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, readOnly = false
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
                 <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                    <h3 className="font-bold text-lg text-slate-800">Äiá»u chá»‰nh phÃ²ng {roomNumber}</h3>
+                    <h3 className="font-bold text-lg text-slate-800">Điều chỉnh phòng {roomNumber}</h3>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
                         <X className="w-5 h-5" />
                     </button>
@@ -58,9 +58,9 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, readOnly = false
 
                 <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Sá»‘ phÃ²ng</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Số phòng</label>
                         <input
-                            {...register('roomNumber', { required: 'Vui lÃ²ng nháº­p sá»‘ phÃ²ng' })}
+                            {...register('roomNumber', { required: 'Vui lòng nhập số phòng' })}
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                             placeholder="VD: 101, 201A..."
                         />
@@ -68,7 +68,7 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, readOnly = false
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Sá»‘ giÆ°á»ng</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Số giường</label>
                         <input
                             type="number"
                             {...register('bedCount', { required: true, min: 1, max: 10 })}
@@ -77,19 +77,19 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, readOnly = false
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Loáº¡i phÃ²ng</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Loại phòng</label>
                         <select
                             {...register('roomType')}
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         >
-                            <option value="1 GiÆ°á»ng">1 GiÆ°á»ng</option>
-                            <option value="2 GiÆ°á»ng">2 GiÆ°á»ng</option>
-                            <option value="3 GiÆ°á»ng">3 GiÆ°á»ng</option>
-                            <option value="4 GiÆ°á»ng">4 GiÆ°á»ng</option>
-                            <option value="5 GiÆ°á»ng">5 GiÆ°á»ng</option>
-                            <option value="7 GiÆ°á»ng">7 GiÆ°á»ng</option>
-                            <option value="8 GiÆ°á»ng">8 GiÆ°á»ng</option>
-                            <option value="9 GiÆ°á»ng">9 GiÆ°á»ng</option>
+                            <option value="1 Giường">1 Giường</option>
+                            <option value="2 Giường">2 Giường</option>
+                            <option value="3 Giường">3 Giường</option>
+                            <option value="4 Giường">4 Giường</option>
+                            <option value="5 Giường">5 Giường</option>
+                            <option value="7 Giường">7 Giường</option>
+                            <option value="8 Giường">8 Giường</option>
+                            <option value="9 Giường">9 Giường</option>
                         </select>
                     </div>
 
@@ -108,7 +108,7 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, readOnly = false
                                 type="submit"
                                 className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center justify-center gap-2"
                             >
-                                <Save className="w-4 h-4" /> LÆ°u thay Ä‘á»•i
+                                <Save className="w-4 h-4" /> Lưu thay đổi
                             </button>
                         )}
                     </div>
