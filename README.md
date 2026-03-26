@@ -35,7 +35,7 @@ This is a comprehensive web application designed for managing a Nursing Home fac
 - **State Management**: Zustand.
 - **Backend/Database**: Supabase (PostgreSQL).
 - **Charts**: Recharts.
-- **Deployment**: Netlify.
+- **Deployment**: Cloudflare Workers.
 
 ## Installation
 
@@ -45,7 +45,13 @@ This is a comprehensive web application designed for managing a Nursing Home fac
 4. Run locally: `npm run dev`.
 
 ## Deployment
-Changes are automatically deployed to Netlify on push to the `main` branch.
+1. Set `.env` to the Vostro self-hosted Supabase endpoint.
+2. Bootstrap the Vostro database when needed:
+   `VOSTRO_SUPABASE_SERVICE_ROLE_KEY=... npm run bootstrap:vostro`
+3. Build and deploy the frontend Worker:
+   `npm run deploy:worker`
+
+The production app is served from `https://vdl.fdc-nhanvien.org`, and the frontend talks to `https://supabase.fdc-nhanvien.org`.
 
 ## Recent Updates (Dec 2024)
 - Added Diabetes Monitoring Module.

@@ -41,8 +41,7 @@ export const FinancePage = () => {
 
       const monthlyUsage = usageRecords.filter(u =>
          u.residentId === resident.id &&
-         u.date.startsWith(month) &&
-         u.status !== 'Cancelled'
+         u.date.startsWith(month)
       );
 
       setPreviewData({

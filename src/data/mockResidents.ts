@@ -20,7 +20,29 @@ export const INITIAL_RESIDENTS: Resident[] = [
       { date: '2023-10-01', score: 8, level: 1, assessor: 'BS. Lê Minh Khánh' }
     ],
     prescriptions: [
-      { id: 'P101', medicationName: 'Amlodipine 5mg', dosage: '1 viên', frequency: 'Sáng', startDate: '2023-01-10', endDate: '2024-01-10', doctor: 'BS. Lê Minh Khánh', status: 'Active' }
+      {
+        id: 'P101',
+        code: 'DT-20230110-001',
+        residentId: 'R001',
+        residentName: 'Nguyễn Văn Minh',
+        doctorId: 'U001',
+        doctorName: 'BS. Lê Minh Khánh',
+        diagnosis: 'Cao huyết áp',
+        prescriptionDate: '2023-01-10',
+        startDate: '2023-01-10',
+        endDate: '2024-01-10',
+        status: 'Active',
+        items: [
+          {
+            id: 'PI101',
+            prescriptionId: 'P101',
+            medicineName: 'Amlodipine 5mg',
+            dosage: '1 viên',
+            frequency: 'Sáng',
+            timesOfDay: ['Sáng']
+          }
+        ]
+      }
     ],
     medicalVisits: [
       { id: 'V1', date: '2023-10-15', doctor: 'BS. Lê Minh Khánh', complaint: 'Đau nhẹ vùng khớp gối', diagnosis: 'Thoái hóa khớp tuổi già', treatment: 'Chườm ấm, vận động nhẹ' }
@@ -34,7 +56,19 @@ export const INITIAL_RESIDENTS: Resident[] = [
       { id: 'A1', allergen: 'Penicillin', severity: 'Nặng', reaction: 'Nổi mề đay, khó thở' }
     ],
     vitalSigns: [
-      { id: 'VS1', dateTime: '2023-10-25 08:00', bp: '125/80', pulse: 72, temp: 36.6, spo2: 98, recorder: 'ĐD. Lan' }
+      {
+        id: 'VS1',
+        residentId: 'R001',
+        recordDate: '2023-10-25',
+        pulse: 72,
+        bpMorningSystolic: 125,
+        bpMorningDiastolic: 80,
+        temperature: 36.6,
+        spo2: 98,
+        bowelMovement: false,
+        recordedBy: 'ĐD. Lan',
+        createdAt: '2023-10-25T08:00:00Z'
+      }
     ],
     careLogs: [
       { id: 'CL1', timestamp: '2023-10-25T07:30:00Z', category: 'Nutrition', note: 'Ăn hết suất sáng, tinh thần vui vẻ', performer: 'HL. Tú' }
@@ -42,7 +76,8 @@ export const INITIAL_RESIDENTS: Resident[] = [
     currentConditionNote: 'Sức khỏe ổn định, tự sinh hoạt tốt.',
     lastMedicalUpdate: '2023-10-15',
     roomType: '1 Giường',
-    dietType: 'Normal'
+    dietType: 'Normal',
+    isDiabetic: false
   },
   {
     id: 'R002',
@@ -63,7 +98,29 @@ export const INITIAL_RESIDENTS: Resident[] = [
       { date: '2023-09-20', score: 18, level: 2, assessor: 'BS. Lê Minh Khánh' }
     ],
     prescriptions: [
-      { id: 'P201', medicationName: 'Metformin 500mg', dosage: '1 viên', frequency: 'Sáng, Chiều', startDate: '2023-03-15', endDate: '2023-12-15', doctor: 'BS. Lê Minh Khánh', status: 'Active' }
+      {
+        id: 'P201',
+        code: 'DT-20230315-001',
+        residentId: 'R002',
+        residentName: 'Lê Thị Lan',
+        doctorId: 'U001',
+        doctorName: 'BS. Lê Minh Khánh',
+        diagnosis: 'Tiểu đường Type 2',
+        prescriptionDate: '2023-03-15',
+        startDate: '2023-03-15',
+        endDate: '2023-12-15',
+        status: 'Active',
+        items: [
+          {
+            id: 'PI201',
+            prescriptionId: 'P201',
+            medicineName: 'Metformin 500mg',
+            dosage: '1 viên',
+            frequency: 'Sáng, Chiều',
+            timesOfDay: ['Sáng', 'Chiều']
+          }
+        ]
+      }
     ],
     medicalVisits: [],
     specialMonitoring: [
@@ -78,7 +135,8 @@ export const INITIAL_RESIDENTS: Resident[] = [
     lastMedicalUpdate: '2023-09-20',
     roomType: '2 Giường',
     dietType: 'Porridge',
-    dietNote: 'Hạn chế tinh bột và đường'
+    dietNote: 'Hạn chế tinh bột và đường',
+    isDiabetic: true
   },
   {
     id: 'R003',
@@ -99,7 +157,29 @@ export const INITIAL_RESIDENTS: Resident[] = [
       { date: '2023-10-05', score: 35, level: 4, assessor: 'BS. Lê Minh Khánh' }
     ],
     prescriptions: [
-      { id: 'P301', medicationName: 'Donepezil 5mg', dosage: '1 viên', frequency: 'Tối', startDate: '2022-11-05', endDate: '2024-11-05', doctor: 'BS. Lê Minh Khánh', status: 'Active' }
+      {
+        id: 'P301',
+        code: 'DT-20221105-001',
+        residentId: 'R003',
+        residentName: 'Trần Thế Hiển',
+        doctorId: 'U001',
+        doctorName: 'BS. Lê Minh Khánh',
+        diagnosis: 'Alzheimer giai đoạn tiến triển',
+        prescriptionDate: '2022-11-05',
+        startDate: '2022-11-05',
+        endDate: '2024-11-05',
+        status: 'Active',
+        items: [
+          {
+            id: 'PI301',
+            prescriptionId: 'P301',
+            medicineName: 'Donepezil 5mg',
+            dosage: '1 viên',
+            frequency: 'Tối',
+            timesOfDay: ['Tối']
+          }
+        ]
+      }
     ],
     medicalVisits: [
       { id: 'V2', date: '2023-10-10', doctor: 'BS. Lê Minh Khánh', complaint: 'Mất định hướng, kích động nhẹ ban đêm', diagnosis: 'Alzheimer giai đoạn tiến triển', treatment: 'Tăng cường giám sát, sử dụng thuốc hỗ trợ thần kinh' }
@@ -121,6 +201,7 @@ export const INITIAL_RESIDENTS: Resident[] = [
     lastMedicalUpdate: '2023-10-10',
     roomType: '4 Giường',
     dietType: 'Pureed',
-    dietNote: 'Thức ăn xay nhuyễn, tránh sặc'
+    dietNote: 'Thức ăn xay nhuyễn, tránh sặc',
+    isDiabetic: false
   }
 ];
