@@ -91,7 +91,7 @@ export const ShiftHandoverForm = ({ onClose, onSuccess }: ShiftHandoverFormProps
 
         if (newStatus === 'Present') {
             newStartDate = undefined; // Clear if back
-        } else if ((currentUpdate.locationStatus as string) === 'Present' && newStatus !== 'Present') {
+        } else if ((currentUpdate.locationStatus ?? 'Present') === 'Present') {
             // Check if just starting absence
             newStartDate = new Date().toISOString();
         }

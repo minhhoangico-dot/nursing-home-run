@@ -21,6 +21,28 @@ const mapInventoryFromDb = (d: any): InventoryItem => ({
     price: Number(d.price)
 });
 
+const mapPurchaseRequestToDb = (r: PurchaseRequest) => ({
+    id: r.id,
+    item_id: r.itemId,
+    item_name: r.itemName,
+    quantity: r.quantity,
+    status: r.status,
+    request_date: r.requestDate,
+    priority: r.priority,
+    estimated_cost: r.estimatedCost
+});
+
+const mapPurchaseRequestFromDb = (d: any): PurchaseRequest => ({
+    id: d.id,
+    itemId: d.item_id,
+    itemName: d.item_name,
+    quantity: Number(d.quantity),
+    status: d.status,
+    requestDate: d.request_date,
+    priority: d.priority,
+    estimatedCost: Number(d.estimated_cost)
+});
+
 export const inventoryService = {
     getAll: async () => {
         const { data, error } = await supabase.from('inventory').select('*').order('name');
@@ -54,14 +76,10 @@ export const inventoryService = {
     getPurchaseRequests: async () => {
         const { data, error } = await supabase.from('purchase_requests').select('*').order('request_date', { ascending: false });
         if (error) throw error;
-        return (data || []).map(d => ({
-            ...d, requestDate: d.request_date, estimatedCost: Number(d.estimated_cost)
-        })) as PurchaseRequest[];
+        return (data || []).map(mapPurchaseRequestFromDb);
     },
     upsertPurchaseRequest: async (r: PurchaseRequest) => {
-        const { error } = await supabase.from('purchase_requests').upsert({
-            ...r, request_date: r.requestDate, estimated_cost: r.estimatedCost
-        });
+        const { error } = await supabase.from('purchase_requests').upsert(mapPurchaseRequestToDb(r));
         if (error) throw error;
     }
 };

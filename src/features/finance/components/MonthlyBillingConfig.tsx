@@ -56,8 +56,7 @@ export const MonthlyBillingConfig = ({ residents, usageRecords, onPrintBill }: M
             // Incurred Costs (Usage Records for selected month)
             const monthlyUsage = usageRecords.filter(u =>
                 u.residentId === resident.id &&
-                u.date.startsWith(selectedMonth) &&
-                u.status !== 'Cancelled'
+                u.date.startsWith(selectedMonth)
             );
 
             const incurredTotal = monthlyUsage.reduce((sum, u) => sum + u.totalAmount, 0);

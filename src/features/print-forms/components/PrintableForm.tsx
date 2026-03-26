@@ -110,10 +110,19 @@ export const PrintableForm = ({ user, residents, type, formId, config, onClose }
                               <td className="border border-slate-900 p-2 text-center font-bold">{r.room}</td>
                               <td className="border border-slate-900 p-2">{r.name}</td>
                               <td className="border border-slate-900 p-2">
-                                 {r.prescriptions.filter(p => p.status === 'Active').map((p, idx) => (
-                                    <div key={idx} className="mb-1">• {p.medicationName} ({p.dosage})</div>
-                                 ))}
-                                 {r.prescriptions.filter(p => p.status === 'Active').length === 0 && <span className="text-slate-400 italic">Không có thuốc</span>}
+                                 {(() => {
+                                    const activeItems = r.prescriptions
+                                       .filter(p => p.status === 'Active')
+                                       .flatMap(p => p.items || []);
+
+                                    if (activeItems.length === 0) {
+                                       return <span className="text-slate-400 italic">Không có thuốc</span>;
+                                    }
+
+                                    return activeItems.map((item, idx) => (
+                                       <div key={idx} className="mb-1">• {item.medicineName} ({item.dosage})</div>
+                                    ));
+                                 })()}
                               </td>
                               <td className="border border-slate-900 p-2"></td>
                               <td className="border border-slate-900 p-2"></td>
