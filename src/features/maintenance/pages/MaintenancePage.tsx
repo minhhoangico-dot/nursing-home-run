@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { PenTool, Plus, Search, Filter, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 import { MaintenanceRequest } from '../../../types/index';
 import { CreateRequestModal } from '../components/CreateRequestModal';
+import { ModuleReadOnlyBanner } from '../../../components/ui/ModuleReadOnlyBanner';
 import { useToast } from '../../../app/providers';
+import { useModuleReadOnly } from '../../../routes/ModuleAccessContext';
 import { useRoomsStore } from '../../../stores/roomsStore';
 import { useAuthStore } from '../../../stores/authStore';
 
@@ -11,8 +13,15 @@ export const MaintenancePage = () => {
    const { addToast } = useToast();
    const { maintenanceRequests, addMaintenanceRequest } = useRoomsStore();
    const { user } = useAuthStore();
+   const readOnly = useModuleReadOnly();
 
    const handleCreate = async (data: any) => {
+      if (readOnly) {
+         setShowModal(false);
+         addToast('error', 'Read-only mode', 'This module does not allow creating requests.');
+         return;
+      }
+
       const newReq: MaintenanceRequest = {
          id: `MT-${Date.now()}`,
          createdAt: new Date().toISOString().split('T')[0],
@@ -38,17 +47,21 @@ export const MaintenancePage = () => {
 
    return (
       <div className="space-y-6">
+         {readOnly && <ModuleReadOnlyBanner />}
+
          <div className="flex justify-between items-center">
             <div>
                <h2 className="text-2xl font-bold text-slate-800">Bảo trì & Sửa chữa</h2>
                <p className="text-slate-500">Quản lý các yêu cầu sửa chữa cơ sở vật chất</p>
             </div>
-            <button
-               onClick={() => setShowModal(true)}
-               className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center gap-2 font-medium shadow-sm"
-            >
-               <Plus className="w-5 h-5" /> Tạo yêu cầu
-            </button>
+            {!readOnly && (
+               <button
+                  onClick={() => setShowModal(true)}
+                  className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center gap-2 font-medium shadow-sm"
+               >
+                  <Plus className="w-5 h-5" /> Tạo yêu cầu
+               </button>
+            )}
          </div>
 
          {/* Requests List */}
@@ -89,7 +102,7 @@ export const MaintenancePage = () => {
             )}
          </div>
 
-         {showModal && <CreateRequestModal onClose={() => setShowModal(false)} onSubmit={handleCreate} />}
+         {!readOnly && showModal && <CreateRequestModal onClose={() => setShowModal(false)} onSubmit={handleCreate} />}
       </div>
    );
 };

@@ -60,12 +60,13 @@ Do not spend a standalone task on the optional cleanup unless those files active
 - A logged-in admin must not be able to deactivate their own account.
 - A logged-in admin must not be able to change their own role.
 - `weight-tracking` must be included in the permission matrix even though it is not currently shown in the sidebar.
-- `profile` remains accessible to any authenticated user and is not part of the admin-managed module matrix.
+- `profile` remains accessible to any authenticated user, stays in the shared route/module registry, and is not part of the admin-managed module matrix.
 - This repo currently has no first-party test harness. Add a minimal Vitest setup for pure permission logic only; use `cmd /c npm run build` plus structured manual checks for the rest.
+- Capture a baseline `cmd /c npx tsc --noEmit` result before implementation work starts. If the repo is already red, do not introduce new type errors in touched files.
 
-## Default Module Matrix To Seed
+## Approved Seed Matrix To Seed
 
-Use the current live route behavior as the seed source of truth, not the sidebar.
+Use this approved matrix as the new single source of truth for the implementation. Do not try to infer it dynamically from the current repo, because the live route rules and sidebar rules are already inconsistent.
 
 - `residents`: `ADMIN`, `DOCTOR`, `SUPERVISOR`, `ACCOUNTANT`, `NURSE`
 - `rooms`: `ADMIN`, `DOCTOR`, `SUPERVISOR`, `ACCOUNTANT`, `NURSE`
@@ -86,6 +87,7 @@ Use the same ordering in:
 - permission UI
 - seed SQL
 - sidebar
+- route guard coverage
 
 ### Task 1: Establish Module Contracts And Minimal Test Harness
 
@@ -120,13 +122,17 @@ import { describe, expect, it } from 'vitest';
 import { MODULES, MODULE_KEYS, DEFAULT_ROLE_PERMISSIONS } from '../constants/modules';
 
 describe('module registry', () => {
-  it('includes weight_tracking but excludes profile from admin-managed permissions', () => {
+  it('includes weight_tracking and profile in the shared registry', () => {
     expect(MODULE_KEYS).toContain('weight_tracking');
-    expect(MODULE_KEYS).not.toContain('profile');
+    expect(MODULE_KEYS).toContain('profile');
   });
 
   it('keeps settings enabled for ADMIN in the default matrix', () => {
     expect(DEFAULT_ROLE_PERMISSIONS.ADMIN.settings).toBe(true);
+  });
+
+  it('keeps profile outside the admin-managed permission matrix', () => {
+    expect('profile' in DEFAULT_ROLE_PERMISSIONS.ADMIN).toBe(false);
   });
 });
 ```
@@ -147,6 +153,7 @@ Create `src/types/permissions.ts` with:
 Create `src/constants/modules.ts` with:
 
 - fixed registry entries for all managed modules
+- a `profile` entry that is routed through the shared registry but excluded from admin-managed toggles
 - labels, paths, titles, sidebar visibility
 - `DEFAULT_ROLE_PERMISSIONS`
 - helpers such as `getModuleByPath` and `getSidebarModulesForRole` if they remain pure
@@ -191,7 +198,16 @@ create table if not exists public.role_permissions (
 
 Seed one row per `role + module_key` from the default matrix above.
 
-- [ ] **Step 2: Mirror the same schema in bootstrap SQL**
+- [ ] **Step 2: Add demo-safe RLS and policies for `role_permissions`**
+
+In the same migration, mirror the repo's demo access style for the new table:
+
+- enable row level security on `public.role_permissions`
+- add the same broad demo read/write policy pattern already used by other app tables
+
+Do the same in `scripts/sql/vostro-bootstrap.sql` so fresh bootstraps and upgraded environments stay aligned.
+
+- [ ] **Step 3: Mirror the same schema in bootstrap SQL**
 
 Update `scripts/sql/vostro-bootstrap.sql` so fresh environments create:
 
@@ -200,16 +216,17 @@ Update `scripts/sql/vostro-bootstrap.sql` so fresh environments create:
 
 and so the bootstrap schema matches the migration shape.
 
-- [ ] **Step 3: Seed permission rows during bootstrap**
+- [ ] **Step 4: Seed permission rows during bootstrap**
 
 Update `scripts/bootstrap-vostro-supabase.mjs` to:
 
 - give seeded users `is_active: true`
 - upsert seeded `role_permissions`
+- wait for `role_permissions` to be visible to PostgREST before any REST upsert, or seed it through SQL instead
 
 Use the same fixed module matrix as the migration.
 
-- [ ] **Step 4: Verify schema/bootstrap consistency manually**
+- [ ] **Step 5: Require disposable bootstrap verification**
 
 Run:
 
@@ -218,13 +235,15 @@ Run:
 
 Expected: both define `users.is_active` and `role_permissions`.
 
-If you have a disposable Supabase environment, optionally run:
+Then run on a disposable environment:
 
 - `cmd /c npm run bootstrap:vostro`
 
+Expected: bootstrap completes successfully and seeds both `users` and `role_permissions`.
+
 Do not point bootstrap at a production database during development.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add migrations/012_user_management_permissions.sql scripts/sql/vostro-bootstrap.sql scripts/bootstrap-vostro-supabase.mjs
@@ -295,9 +314,10 @@ Update `src/services/databaseService.ts` so `db.users` and `db.permissions` prov
 Run:
 
 - `cmd /c npm run test -- src/lib/permissions.test.ts`
+- `cmd /c npx tsc --noEmit`
 - `cmd /c npm run build`
 
-Expected: PASS
+Expected: tests/build PASS, and `tsc` introduces no new errors in touched files.
 
 - [ ] **Step 6: Commit**
 
@@ -327,6 +347,7 @@ Create `src/stores/permissionStore.ts` with:
 - pure selector `canAccessModule(role, moduleKey)`
 
 Initialize from DB, not local storage.
+If permissions fail to load, store enough state for the route guard and sidebar to fail closed instead of silently granting access.
 
 - [ ] **Step 2: Expand the auth store with user mutations**
 
@@ -371,10 +392,14 @@ Update `src/features/profile/pages/ProfilePage.tsx` to use the new user mutation
 
 Keep profile accessible to all authenticated users regardless of the module matrix.
 
-- [ ] **Step 6: Verify build**
+- [ ] **Step 6: Verify build and typecheck**
 
-Run: `cmd /c npm run build`
-Expected: PASS
+Run:
+
+- `cmd /c npx tsc --noEmit`
+- `cmd /c npm run build`
+
+Expected: no new type errors in touched files, build PASS
 
 - [ ] **Step 7: Commit**
 
@@ -439,6 +464,7 @@ Admin safety rules in UI:
 
 - disable edit-role for the currently logged-in admin
 - disable deactivate for the currently logged-in admin
+- translate duplicate-username database errors into form feedback and/or toast text the admin can act on
 
 - [ ] **Step 5: Retire or wrap the old `AddUserModal`**
 
@@ -449,10 +475,14 @@ Either:
 
 Do not leave dead create-only code behind.
 
-- [ ] **Step 6: Verify build**
+- [ ] **Step 6: Verify build and typecheck**
 
-Run: `cmd /c npm run build`
-Expected: PASS
+Run:
+
+- `cmd /c npx tsc --noEmit`
+- `cmd /c npm run build`
+
+Expected: no new type errors in touched files, build PASS
 
 - [ ] **Step 7: Commit**
 
@@ -495,10 +525,14 @@ Show:
 - success toast
 - failure toast while keeping unsaved choices visible
 
-- [ ] **Step 4: Verify build**
+- [ ] **Step 4: Verify build and typecheck**
 
-Run: `cmd /c npm run build`
-Expected: PASS
+Run:
+
+- `cmd /c npx tsc --noEmit`
+- `cmd /c npm run build`
+
+Expected: no new type errors in touched files, build PASS
 
 - [ ] **Step 5: Commit**
 
@@ -531,6 +565,7 @@ Behavior:
 
 - unauthenticated -> redirect `/login`
 - permission loading -> render loading state, not false-deny
+- permission fetch error -> fail closed and render an explanatory unauthorized/error state
 - unauthorized -> render the existing not-authorized experience or redirect safely
 
 - [ ] **Step 2: Convert guarded routes to module keys**
@@ -568,10 +603,14 @@ Update `MainLayout.tsx` so titles come from the shared module registry where pos
 
 Either remove its usage entirely or reduce it to a compatibility wrapper that delegates to `ModuleRoute`. Do not keep two active permission systems.
 
-- [ ] **Step 6: Verify build**
+- [ ] **Step 6: Verify build and typecheck**
 
-Run: `cmd /c npm run build`
-Expected: PASS
+Run:
+
+- `cmd /c npx tsc --noEmit`
+- `cmd /c npm run build`
+
+Expected: no new type errors in touched files, build PASS
 
 - [ ] **Step 7: Commit**
 
@@ -595,11 +634,17 @@ Expected: PASS
 Run: `cmd /c npm run build`
 Expected: PASS
 
-- [ ] **Step 3: Execute the manual verification checklist**
+- [ ] **Step 3: Run the typecheck**
+
+Run: `cmd /c npx tsc --noEmit`
+Expected: no new type errors in touched files; if pre-existing repo errors remain, document them explicitly.
+
+- [ ] **Step 4: Execute the manual verification checklist**
 
 Log in as `admin` and verify:
 
 - create a user with an initial password
+- attempt to create another user with the same username and confirm duplicate-username feedback is shown
 - edit a user
 - reset that user's password
 - deactivate that user
@@ -612,10 +657,11 @@ Log in as `admin` and verify:
 - remove `finance` from `ACCOUNTANT` and confirm sidebar hides it and direct `/finance` access is denied
 - restore `finance` for `ACCOUNTANT`
 - remove `maintenance` from `DOCTOR` and confirm both sidebar and route update
+- simulate or force a permissions-fetch failure in local development and confirm sidebar/routes fail closed
 - confirm `profile` stays accessible for any authenticated user
 - confirm `weight-tracking` is permission-managed even if hidden from sidebar
 
-- [ ] **Step 4: Clean up only if safe**
+- [ ] **Step 5: Clean up only if safe**
 
 If the optional mock-auth files are now misleading and unused:
 
@@ -625,7 +671,7 @@ If the optional mock-auth files are now misleading and unused:
 
 remove or document them in the same commit only if all imports are gone.
 
-- [ ] **Step 5: Commit the verification fixes**
+- [ ] **Step 6: Commit the verification fixes**
 
 ```bash
 git add -A
@@ -655,4 +701,5 @@ Do not let two workers edit the same file set at the same time. In particular:
 
 - This plan intentionally introduces only a small pure-logic test harness. Do not try to add full React DOM testing unless a later defect proves it necessary.
 - Treat `cmd /c npm run build` as the required freshness check before every completion claim.
+- Treat `cmd /c npx tsc --noEmit` as a non-regression gate for touched files after the baseline snapshot.
 - If the implementation needs live database verification, use a disposable environment or clearly confirm before touching shared infrastructure.

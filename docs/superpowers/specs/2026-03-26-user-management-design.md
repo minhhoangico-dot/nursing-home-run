@@ -94,6 +94,7 @@ Initial registry:
 - `visitors`
 - `daily_monitoring`
 - `procedures`
+- `weight_tracking`
 - `incidents`
 - `maintenance`
 - `forms`
@@ -101,7 +102,7 @@ Initial registry:
 - `settings`
 - `profile`
 
-`profile` should remain accessible to authenticated users even if not shown as a sidebar module, but keeping it in the registry makes permission handling explicit and future-proof.
+`profile` should remain accessible to authenticated users even if not shown as a sidebar module or included in the admin-managed permission matrix, but keeping it in the registry makes permission handling explicit and future-proof.
 
 ## Frontend Architecture
 
@@ -176,6 +177,8 @@ Expected behavior:
 - toggles module access on or off
 - saves changes to database
 - changes apply immediately to sidebar and route guards
+
+The `profile` route is excluded from this editable matrix and remains authenticated-only.
 
 ## Access Enforcement
 

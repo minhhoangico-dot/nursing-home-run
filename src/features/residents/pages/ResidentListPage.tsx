@@ -7,12 +7,15 @@ import { ResidentFilters } from '../components/ResidentFilters';
 import { ResidentCard } from '../../../components/shared/ResidentCard';
 import { ResidentList } from '../components/ResidentList';
 import { Button } from '../../../components/ui';
+import { ModuleReadOnlyBanner } from '../../../components/ui/ModuleReadOnlyBanner';
+import { useModuleReadOnly } from '../../../routes/ModuleAccessContext';
 import { useResidentsStore } from '../../../stores/residentsStore';
 import { StatusBadge } from '../../../components/shared/StatusBadge';
 
 export const ResidentListPage = () => {
    const navigate = useNavigate();
    const { residents, addResident, selectResident } = useResidentsStore();
+   const readOnly = useModuleReadOnly();
 
    const [search, setSearch] = useState('');
    const [buildingFilter, setBuildingFilter] = useState('');
@@ -38,6 +41,12 @@ export const ResidentListPage = () => {
    };
 
    const handleAddResident = async (data: any) => {
+      if (readOnly) {
+         setShowWizard(false);
+         toast.error('Module is in read-only mode');
+         return;
+      }
+
       try {
          await addResident(data);
          setShowWizard(false);
@@ -55,7 +64,9 @@ export const ResidentListPage = () => {
 
    return (
       <div className="space-y-4 md:space-y-6 pb-20 md:pb-0">
-         {showWizard && (
+         {readOnly && <ModuleReadOnlyBanner />}
+
+         {showWizard && !readOnly && (
             <AdmissionWizard
                onSave={handleAddResident}
                onCancel={() => setShowWizard(false)}
@@ -89,9 +100,15 @@ export const ResidentListPage = () => {
                      <LayoutGrid className="w-4 h-4" />
                   </button>
                </div>
-               <Button onClick={() => setShowWizard(true)} icon={<Plus className="w-4 h-4" />} className="bg-teal-600 hover:bg-teal-700 shadow-md shadow-teal-200">
-                  Thêm NCT mới
-               </Button>
+               {!readOnly && (
+                  <Button
+                     onClick={() => setShowWizard(true)}
+                     icon={<Plus className="w-4 h-4" />}
+                     className="bg-teal-600 hover:bg-teal-700 shadow-md shadow-teal-200"
+                  >
+                     Thêm NCT mới
+                  </Button>
+               )}
             </div>
 
             {/* Mobile actions row */}
@@ -185,13 +202,15 @@ export const ResidentListPage = () => {
          )}
 
          {/* Mobile FAB - Add new resident */}
-         <button
-            onClick={() => setShowWizard(true)}
-            className="md:hidden fixed bottom-6 right-4 w-14 h-14 bg-teal-600 hover:bg-teal-700 text-white rounded-full shadow-lg shadow-teal-300 flex items-center justify-center z-30 active:scale-95 transition-transform"
+         {!readOnly && (
+            <button
+               onClick={() => setShowWizard(true)}
+               className="md:hidden fixed bottom-6 right-4 w-14 h-14 bg-teal-600 hover:bg-teal-700 text-white rounded-full shadow-lg shadow-teal-300 flex items-center justify-center z-30 active:scale-95 transition-transform"
             aria-label="Thêm NCT mới"
          >
             <Plus className="w-6 h-6" />
-         </button>
+            </button>
+         )}
       </div>
    );
 };

@@ -3,6 +3,8 @@ import { AlertTriangle, Plus, Search, Filter, Eye, FileText } from 'lucide-react
 import { toast } from 'react-hot-toast';
 import { Incident } from '../../../types/index';
 import { ReportIncidentModal } from '../components/ReportIncidentModal';
+import { ModuleReadOnlyBanner } from '../../../components/ui/ModuleReadOnlyBanner';
+import { useModuleReadOnly } from '../../../routes/ModuleAccessContext';
 import { useIncidentsStore } from '../../../stores/incidentsStore';
 import { useAuthStore } from '../../../stores/authStore';
 import { useResidentsStore } from '../../../stores/residentsStore';
@@ -11,11 +13,18 @@ export const IncidentsPage = () => {
    const { user } = useAuthStore();
    const { residents } = useResidentsStore();
    const { incidents, addIncident, updateIncident } = useIncidentsStore();
+   const readOnly = useModuleReadOnly();
    const [showReportModal, setShowReportModal] = useState(false);
 
    if (!user) return null;
 
    const handleReportSubmit = async (incident: Incident) => {
+      if (readOnly) {
+         setShowReportModal(false);
+         toast.error('Module is in read-only mode');
+         return;
+      }
+
       try {
          await addIncident(incident);
          setShowReportModal(false);
@@ -36,17 +45,20 @@ export const IncidentsPage = () => {
 
    return (
       <div className="space-y-6">
+         {readOnly && <ModuleReadOnlyBanner />}
          <div className="flex justify-between items-center">
             <div>
                <h2 className="text-2xl font-bold text-slate-800">Quản lý Sự cố & Rủi ro</h2>
                <p className="text-slate-500">Theo dõi và xử lý các vấn đề phát sinh trong vận hành</p>
             </div>
-            <button
-               onClick={() => setShowReportModal(true)}
-               className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2 font-medium shadow-sm transition-all hover:shadow-md shadow-red-200"
-            >
-               <Plus className="w-5 h-5" /> Báo cáo sự cố
-            </button>
+            {!readOnly && (
+               <button
+                  onClick={() => setShowReportModal(true)}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2 font-medium shadow-sm transition-all hover:shadow-md shadow-red-200"
+               >
+                  <Plus className="w-5 h-5" /> Báo cáo sự cố
+               </button>
+            )}
          </div>
 
          {/* Stats / Filters */}
@@ -131,7 +143,7 @@ export const IncidentsPage = () => {
             </table>
          </div>
 
-         {showReportModal && (
+         {!readOnly && showReportModal && (
             <ReportIncidentModal
                currentUser={user}
                onClose={() => setShowReportModal(false)}
