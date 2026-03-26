@@ -60,12 +60,14 @@ export const BloodSugarInput = ({ initialData, onSave, readOnly = false }: Blood
     const handleClose = () => setIsOpen(false);
 
     const handleChange = (field: keyof typeof formData, value: string) => {
+        if (readOnly) return;
         // Allow only numbers and dots
         if (!/^\d*\.?\d*$/.test(value)) return;
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     const handleSave = async () => {
+        if (readOnly) return;
         const payload: Partial<BloodSugarRecord> = {};
 
         const parse = (val: string) => val ? parseFloat(val) : undefined;
@@ -149,6 +151,7 @@ export const BloodSugarInput = ({ initialData, onSave, readOnly = false }: Blood
                                         placeholder="Trước ăn"
                                         className="w-full text-xs p-1.5 border border-slate-300 rounded focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-all"
                                         value={formData.morningBeforeMeal}
+                                        disabled={readOnly}
                                         onChange={e => handleChange('morningBeforeMeal', e.target.value)}
                                     />
                                 </div>
@@ -157,6 +160,7 @@ export const BloodSugarInput = ({ initialData, onSave, readOnly = false }: Blood
                                         placeholder="Sau ăn"
                                         className="w-full text-xs p-1.5 border border-slate-300 rounded focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-all"
                                         value={formData.morningAfterMeal}
+                                        disabled={readOnly}
                                         onChange={e => handleChange('morningAfterMeal', e.target.value)}
                                     />
                                 </div>
@@ -170,6 +174,7 @@ export const BloodSugarInput = ({ initialData, onSave, readOnly = false }: Blood
                                         placeholder="Trước ăn"
                                         className="w-full text-xs p-1.5 border border-slate-300 rounded focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-all"
                                         value={formData.lunchBeforeMeal}
+                                        disabled={readOnly}
                                         onChange={e => handleChange('lunchBeforeMeal', e.target.value)}
                                     />
                                 </div>
@@ -178,6 +183,7 @@ export const BloodSugarInput = ({ initialData, onSave, readOnly = false }: Blood
                                         placeholder="Sau ăn"
                                         className="w-full text-xs p-1.5 border border-slate-300 rounded focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-all"
                                         value={formData.lunchAfterMeal}
+                                        disabled={readOnly}
                                         onChange={e => handleChange('lunchAfterMeal', e.target.value)}
                                     />
                                 </div>
@@ -191,6 +197,7 @@ export const BloodSugarInput = ({ initialData, onSave, readOnly = false }: Blood
                                         placeholder="Trước ăn"
                                         className="w-full text-xs p-1.5 border border-slate-300 rounded focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-all"
                                         value={formData.dinnerBeforeMeal}
+                                        disabled={readOnly}
                                         onChange={e => handleChange('dinnerBeforeMeal', e.target.value)}
                                     />
                                 </div>
@@ -199,6 +206,7 @@ export const BloodSugarInput = ({ initialData, onSave, readOnly = false }: Blood
                                         placeholder="Sau ăn"
                                         className="w-full text-xs p-1.5 border border-slate-300 rounded focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-all"
                                         value={formData.dinnerAfterMeal}
+                                        disabled={readOnly}
                                         onChange={e => handleChange('dinnerAfterMeal', e.target.value)}
                                     />
                                 </div>
@@ -214,6 +222,7 @@ export const BloodSugarInput = ({ initialData, onSave, readOnly = false }: Blood
                             </button>
                             <button
                                 onClick={handleSave}
+                                disabled={readOnly}
                                 className="px-3 py-1.5 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded flex items-center gap-1 shadow-sm shadow-teal-200"
                             >
                                 <Check className="w-3 h-3" />

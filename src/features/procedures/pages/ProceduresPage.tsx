@@ -8,10 +8,13 @@ import { PROCEDURE_LABELS, ProcedureRecord, IVDripItem } from '@/src/types';
 import { ProcedureGrid } from '../components/ProcedureGrid';
 import { PrintProcedureForm } from '../components/PrintProcedureForm';
 import { toast } from 'react-hot-toast';
+import { ModuleReadOnlyBanner } from '@/src/components/ui/ModuleReadOnlyBanner';
+import { useModuleReadOnly } from '@/src/routes/ModuleAccessContext';
 
 export const ProceduresPage = () => {
     const { fetchAllRecords, upsertRecord, records, isLoading } = useProceduresStore();
     const { residents, fetchResidents } = useResidentsStore();
+    const readOnly = useModuleReadOnly();
 
     // State
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -48,7 +51,7 @@ export const ProceduresPage = () => {
     }, [month, year]);
 
     const handleToggle = async (residentId: string, date: string, checked: boolean, count: number) => {
-        if (!selectedType) return;
+        if (readOnly || isLoading || !selectedType) return;
 
         try {
             await upsertRecord({
@@ -65,6 +68,7 @@ export const ProceduresPage = () => {
     };
 
     const handleDetailedClick = (residentId: string, date: string, record: ProcedureRecord | undefined) => {
+        if (readOnly || isLoading) return;
         const resident = residents.find(r => r.id === residentId);
         setIvDripModal({
             isOpen: true,
@@ -76,7 +80,7 @@ export const ProceduresPage = () => {
     };
 
     const handleSaveIVDrip = async (items: IVDripItem[]) => {
-        if (!ivDripModal.residentId || !ivDripModal.date) return;
+        if (readOnly || isLoading || !ivDripModal.residentId || !ivDripModal.date) return;
 
         const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -109,6 +113,7 @@ export const ProceduresPage = () => {
 
     // Mobile: toggle for a specific resident on selected day
     const handleMobileToggle = async (residentId: string, currentCount: number) => {
+        if (readOnly || isLoading) return;
         const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(mobileSelectedDay).padStart(2, '0')}`;
 
         if (selectedType === 'ivDrip') {
@@ -135,6 +140,7 @@ export const ProceduresPage = () => {
 
     return (
         <div className="h-full flex flex-col">
+            {readOnly && <ModuleReadOnlyBanner />}
             {/* Header */}
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-200 shrink-0 print:hidden">
                 <div className="flex items-center gap-3">
@@ -281,6 +287,7 @@ export const ProceduresPage = () => {
                             records={records}
                             selectedType={selectedType}
                             isLoading={isLoading}
+                            readOnly={readOnly}
                             onToggle={handleToggle}
                             onDetailedClick={handleDetailedClick}
                             mode={mode}
@@ -321,11 +328,11 @@ export const ProceduresPage = () => {
                                         )}
                                         <button
                                             onClick={() => handleMobileToggle(resident.id, count)}
-                                            disabled={isLoading}
+                                            disabled={readOnly || isLoading}
                                             className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${mode === 'add'
                                                 ? 'bg-blue-100 text-blue-600 active:bg-blue-200'
                                                 : 'bg-red-100 text-red-600 active:bg-red-200'
-                                                } ${isLoading ? 'opacity-50' : ''}`}
+                                                } ${readOnly || isLoading ? 'opacity-50' : ''}`}
                                         >
                                             {mode === 'add' ? <Plus className="w-6 h-6" /> : <Minus className="w-6 h-6" />}
                                         </button>
@@ -378,6 +385,7 @@ export const ProceduresPage = () => {
                 initialItems={ivDripModal.items}
                 residentName={ivDripModal.residentName}
                 recordDate={ivDripModal.date}
+                readOnly={readOnly}
             />
 
             {/* Print Form (Hidden normally) */}

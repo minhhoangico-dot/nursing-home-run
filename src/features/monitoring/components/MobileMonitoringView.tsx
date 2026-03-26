@@ -12,6 +12,7 @@ interface MobileMonitoringViewProps {
     dailyRecords: DailyMonitoringRecord[];
     bsRecords: BloodSugarRecord[];
     isLoading: boolean;
+    readOnly?: boolean;
 }
 
 const formatDate = (d: Date) => {
@@ -27,7 +28,8 @@ export const MobileMonitoringView = ({
     residents,
     dailyRecords,
     bsRecords,
-    isLoading
+    isLoading,
+    readOnly = false
 }: MobileMonitoringViewProps) => {
     const { updateRecord } = useMonitoringStore();
     const { addRecord, updateRecord: updateBSRecord } = useBloodSugarStore();
@@ -45,6 +47,7 @@ export const MobileMonitoringView = ({
     };
 
     const handleUpdate = async (residentId: string, field: keyof DailyMonitoringUpdate, value: any) => {
+        if (readOnly) return;
         const update: DailyMonitoringUpdate = {
             resident_id: residentId,
             record_date: dateStr,
@@ -54,6 +57,7 @@ export const MobileMonitoringView = ({
     };
 
     const handleBSSave = async (residentId: string, data: Partial<BloodSugarRecord>) => {
+        if (readOnly) return;
         const existing = bsRecords.find(r => r.residentId === residentId && r.recordDate === dateStr);
         if (existing) {
             await updateBSRecord(existing.id, data);
@@ -134,6 +138,7 @@ export const MobileMonitoringView = ({
                                             className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
                                             placeholder="VD: 72"
                                             defaultValue={record?.pulse || ''}
+                                            disabled={readOnly}
                                             onBlur={(e) => handleUpdate(resident.id, 'pulse', e.target.value ? parseInt(e.target.value) : null)}
                                         />
                                     </div>
@@ -152,6 +157,7 @@ export const MobileMonitoringView = ({
                                             className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
                                             placeholder="VD: 120/80"
                                             defaultValue={record?.bp_morning || ''}
+                                            disabled={readOnly}
                                             onBlur={(e) => handleUpdate(resident.id, 'bp_morning', e.target.value)}
                                         />
                                     </div>
@@ -172,6 +178,7 @@ export const MobileMonitoringView = ({
                                             className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
                                             placeholder="VD: 36.5"
                                             defaultValue={record?.temperature || ''}
+                                            disabled={readOnly}
                                             onBlur={(e) => handleUpdate(resident.id, 'temperature', e.target.value ? parseFloat(e.target.value) : null)}
                                         />
                                     </div>
@@ -191,6 +198,7 @@ export const MobileMonitoringView = ({
                                             className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
                                             placeholder="VD: 98"
                                             defaultValue={record?.sp02 || ''}
+                                            disabled={readOnly}
                                             onBlur={(e) => handleUpdate(resident.id, 'sp02', e.target.value ? parseInt(e.target.value) : null)}
                                         />
                                     </div>
@@ -211,6 +219,7 @@ export const MobileMonitoringView = ({
                                             className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
                                             placeholder="VD: 5.6"
                                             defaultValue={bsRecord?.morningBeforeMeal || ''}
+                                            disabled={readOnly}
                                             onBlur={(e) => handleBSSave(resident.id, { morningBeforeMeal: e.target.value ? parseFloat(e.target.value) : undefined })}
                                         />
                                     </div>
@@ -227,6 +236,7 @@ export const MobileMonitoringView = ({
                                     </div>
                                     <select
                                         value={record?.bowel_movements || ''}
+                                        disabled={readOnly}
                                         onChange={(e) => handleUpdate(resident.id, 'bowel_movements', e.target.value)}
                                         className="h-9 px-3 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-sm font-medium text-slate-700"
                                     >

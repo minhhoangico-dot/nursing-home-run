@@ -10,9 +10,10 @@ interface IVDripModalProps {
     initialItems: IVDripItem[];
     residentName: string;
     recordDate: string;
+    readOnly?: boolean;
 }
 
-export const IVDripModal = ({ isOpen, onClose, onSave, initialItems, residentName, recordDate }: IVDripModalProps) => {
+export const IVDripModal = ({ isOpen, onClose, onSave, initialItems, residentName, recordDate, readOnly = false }: IVDripModalProps) => {
     const [items, setItems] = useState<IVDripItem[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -23,16 +24,19 @@ export const IVDripModal = ({ isOpen, onClose, onSave, initialItems, residentNam
     }, [isOpen, initialItems]);
 
     const handleAddItem = () => {
+        if (readOnly || isSaving) return;
         setItems([...items, { fluid: 'nacl', quantity: 1 }]);
     };
 
     const handleRemoveItem = (index: number) => {
+        if (readOnly || isSaving) return;
         const newItems = [...items];
         newItems.splice(index, 1);
         setItems(newItems);
     };
 
     const handleUpdateItem = (index: number, field: keyof IVDripItem, value: any) => {
+        if (readOnly || isSaving) return;
         const newItems = [...items];
         // @ts-ignore
         newItems[index][field] = value;
@@ -40,6 +44,7 @@ export const IVDripModal = ({ isOpen, onClose, onSave, initialItems, residentNam
     };
 
     const handleSave = async () => {
+        if (readOnly || isSaving) return;
         if (items.length === 0) {
             // Allow saving empty to clear records? Or maybe prompt
             // For now assume user can clear all items to remove IV drip record
@@ -88,6 +93,7 @@ export const IVDripModal = ({ isOpen, onClose, onSave, initialItems, residentNam
                                     <select
                                         className="w-full p-2 text-sm border border-slate-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
                                         value={item.fluid}
+                                        disabled={readOnly || isSaving}
                                         onChange={(e) => handleUpdateItem(index, 'fluid', e.target.value)}
                                     >
                                         {Object.entries(IV_FLUID_LABELS).map(([key, label]) => (
@@ -102,12 +108,14 @@ export const IVDripModal = ({ isOpen, onClose, onSave, initialItems, residentNam
                                         min="1"
                                         className="w-full p-2 text-sm border border-slate-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
                                         value={item.quantity}
+                                        disabled={readOnly || isSaving}
                                         onChange={(e) => handleUpdateItem(index, 'quantity', parseInt(e.target.value) || 0)}
                                     />
                                 </div>
                                 <div className="self-end pb-1">
                                     <button
                                         onClick={() => handleRemoveItem(index)}
+                                        disabled={readOnly || isSaving}
                                         className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors"
                                     >
                                         <Trash2 className="w-4 h-4" />
@@ -119,6 +127,7 @@ export const IVDripModal = ({ isOpen, onClose, onSave, initialItems, residentNam
 
                     <button
                         onClick={handleAddItem}
+                        disabled={readOnly || isSaving}
                         className="w-full py-3 flex items-center justify-center gap-2 text-blue-600 font-medium bg-blue-50 hover:bg-blue-100 rounded-lg border border-dashed border-blue-200 transition-colors"
                     >
                         <Plus className="w-4 h-4" />
@@ -137,7 +146,7 @@ export const IVDripModal = ({ isOpen, onClose, onSave, initialItems, residentNam
                     </button>
                     <button
                         onClick={handleSave}
-                        disabled={isSaving}
+                        disabled={readOnly || isSaving}
                         className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
                     >
                         {isSaving ? (
