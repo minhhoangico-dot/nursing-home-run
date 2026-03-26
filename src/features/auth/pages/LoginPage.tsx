@@ -4,40 +4,52 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Input, Button, Card } from '../../../components/ui';
 import { useAuthStore } from '../../../stores/authStore';
+import { usePermissionStore } from '../../../stores/permissionStore';
 
 export const LoginPage = () => {
   const { login, users } = useAuthStore();
+  const { fetchPermissions } = usePermissionStore();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login attempt:', { username, password });
-    console.log('Available users (count):', users.length);
-    console.log('Available usernames:', users.map(u => u.username));
 
-    const user = users.find(u => u.username === username);
+    const normalizedUsername = username.trim();
+    const user = users.find(u => u.username === normalizedUsername);
+
     if (!user) {
-      console.warn('User not found in store:', username);
       toast.error('Tài khoản không tồn tại.');
       return;
     }
 
-    if (user.password === password) {
-      login(user);
-      toast.success(`Xin chào, ${user.name}`);
-
-      // Redirect based on role
-      if (user.role === 'ADMIN' || user.role === 'SUPERVISOR') {
-        navigate('/rooms');
-      } else {
-        navigate('/residents');
-      }
-    } else {
-      console.warn('Password mismatch for user:', username);
-      toast.error('Mật khẩu không đúng.');
+    if (user.isActive === false) {
+      toast.error('Tài khoản đã bị khóa hoặc ngừng hoạt động.');
+      return;
     }
+
+    if (user.password !== password) {
+      toast.error('Mật khẩu không đúng.');
+      return;
+    }
+
+    login(user);
+
+    try {
+      await fetchPermissions();
+    } catch {
+      // Permission state keeps the failure so later guards can fail closed.
+    }
+
+    toast.success(`Xin chào, ${user.name}`);
+
+    if (user.role === 'ADMIN' || user.role === 'SUPERVISOR') {
+      navigate('/rooms');
+      return;
+    }
+
+    navigate('/residents');
   };
 
   return (
