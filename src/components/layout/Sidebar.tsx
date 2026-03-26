@@ -1,105 +1,144 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
+import type { LucideIcon } from 'lucide-react';
 import {
-  Activity, Users, BedDouble,
-  CreditCard, Settings as SettingsIcon, LogOut,
-  Printer, AlertTriangle, Utensils, UserCheck, Wrench,
-  ClipboardList, Syringe, X
+  Activity,
+  AlertTriangle,
+  BedDouble,
+  ClipboardList,
+  CreditCard,
+  LogOut,
+  Printer,
+  Settings as SettingsIcon,
+  Syringe,
+  UserCheck,
+  Users,
+  Utensils,
+  Wrench,
+  X,
 } from 'lucide-react';
+import { getSidebarModulesForRole, type ModuleKey } from '../../constants/modules';
 import { useAuthStore } from '../../stores/authStore';
+import { usePermissionStore } from '../../stores/permissionStore';
 
 interface SidebarProps {
   onClose?: () => void;
 }
 
+const MODULE_ICONS: Partial<Record<ModuleKey, LucideIcon>> = {
+  residents: Users,
+  rooms: BedDouble,
+  nutrition: Utensils,
+  visitors: UserCheck,
+  daily_monitoring: ClipboardList,
+  procedures: Syringe,
+  incidents: AlertTriangle,
+  maintenance: Wrench,
+  forms: Printer,
+  finance: CreditCard,
+  settings: SettingsIcon,
+};
+
+const ROLE_LABELS: Record<string, string> = {
+  ADMIN: 'Quản trị viên',
+  DOCTOR: 'Bác sĩ',
+  SUPERVISOR: 'Trưởng tầng',
+  ACCOUNTANT: 'Kế toán',
+  NURSE: 'Điều dưỡng',
+  CAREGIVER: 'Hộ lý',
+};
+
 export const Sidebar = ({ onClose }: SidebarProps) => {
   const { user, logout } = useAuthStore();
+  const { permissions, isLoading, error, fetchPermissions } = usePermissionStore();
 
-  if (!user) return null;
+  useEffect(() => {
+    if (user && !permissions && !isLoading && !error) {
+      fetchPermissions().catch(() => undefined);
+    }
+  }, [error, fetchPermissions, isLoading, permissions, user]);
 
-  const menuItems = [
-    { id: 'visitors', label: 'Khách thăm', path: '/visitors', icon: UserCheck, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE', 'CAREGIVER'] },
-    { id: 'daily_monitoring', label: 'Theo dõi ngày', path: '/daily-monitoring', icon: ClipboardList, roles: ['ADMIN', 'SUPERVISOR', 'DOCTOR', 'NURSE'] },
-    { id: 'procedures', label: 'Thủ thuật', path: '/procedures', icon: Syringe, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE'] },
-    { id: 'nutrition', label: 'Dinh dưỡng', path: '/nutrition', icon: Utensils, roles: ['ADMIN', 'DOCTOR', 'NURSE', 'SUPERVISOR', 'CAREGIVER'] },
-    { id: 'residents', label: 'Danh sách NCT', path: '/residents', icon: Users, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'ACCOUNTANT', 'NURSE'] },
-    { id: 'rooms', label: 'Sơ đồ phòng', path: '/rooms', icon: BedDouble, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'ACCOUNTANT', 'NURSE'] },
-    { id: 'maintenance', label: 'Bảo trì', path: '/maintenance', icon: Wrench, roles: ['ADMIN', 'SUPERVISOR', 'ACCOUNTANT', 'DOCTOR'] },
-    { id: 'incidents', label: 'Sự cố & An toàn', path: '/incidents', icon: AlertTriangle, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE', 'CAREGIVER'] },
-    { id: 'forms', label: 'In biểu mẫu', path: '/forms', icon: Printer, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE'] },
-    { id: 'finance', label: 'Tài chính', path: '/finance', icon: CreditCard, roles: ['ADMIN', 'ACCOUNTANT', 'DOCTOR'] },
-    { id: 'settings', label: 'Cài đặt', path: '/settings', icon: SettingsIcon, roles: ['ADMIN', 'ACCOUNTANT', 'SUPERVISOR'] },
-  ];
-
-  const filteredMenu = menuItems.filter(item => item.roles.includes(user.role));
-
-  const roleLabels: Record<string, string> = {
-    ADMIN: 'Quản trị viên',
-    DOCTOR: 'Bác sĩ',
-    SUPERVISOR: 'Trưởng tầng',
-    ACCOUNTANT: 'Kế toán',
-    NURSE: 'Điều dưỡng',
-    CAREGIVER: 'Hộ lý'
-  };
+  if (!user) {
+    return null;
+  }
 
   const handleNavClick = () => {
-    // Close sidebar on navigation (mobile only)
     if (onClose) {
       onClose();
     }
   };
 
+  const visibleModules = permissions ? getSidebarModulesForRole(permissions, user.role) : [];
+
   return (
-    <div className="w-64 bg-slate-900 text-slate-300 flex flex-col h-full">
-      {/* Header with close button for mobile */}
-      <div className="p-4 lg:p-6 flex items-center justify-between text-white">
+    <div className="flex h-full w-64 flex-col bg-slate-900 text-slate-300">
+      <div className="flex items-center justify-between p-4 text-white lg:p-6">
         <div className="flex items-center gap-3">
-          <div className="bg-teal-600 p-2 rounded">
-            <Activity className="w-5 h-5" />
+          <div className="rounded bg-teal-600 p-2">
+            <Activity className="h-5 w-5" />
           </div>
-          <span className="font-bold text-lg">FDC System</span>
+          <span className="text-lg font-bold">FDC System</span>
         </div>
-        {/* Close button - mobile only */}
         {onClose && (
           <button
             onClick={onClose}
-            className="lg:hidden p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            className="rounded-lg p-2 transition-colors hover:bg-slate-800 lg:hidden"
             aria-label="Close menu"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         )}
       </div>
 
-      <nav className="flex-1 px-3 lg:px-4 py-4 space-y-1 overflow-y-auto">
-        {filteredMenu.map(item => (
-          <NavLink
-            key={item.id}
-            to={item.path}
-            onClick={handleNavClick}
-            className={({ isActive }) => `w-full flex items-center gap-3 px-4 py-3.5 lg:py-3 rounded-lg transition-colors ${isActive
-              ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/20'
-              : 'hover:bg-slate-800 hover:text-white'
-              }`}
-          >
-            <item.icon className="w-5 h-5" />
-            <span className="font-medium">{item.label}</span>
-          </NavLink>
-        ))}
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4 lg:px-4">
+        {visibleModules.map((module) => {
+          const Icon = MODULE_ICONS[module.key] ?? Activity;
+
+          return (
+            <NavLink
+              key={module.key}
+              to={module.path}
+              onClick={handleNavClick}
+              className={({ isActive }) =>
+                `flex w-full items-center gap-3 rounded-lg px-4 py-3.5 transition-colors lg:py-3 ${
+                  isActive
+                    ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/20'
+                    : 'hover:bg-slate-800 hover:text-white'
+                }`
+              }
+            >
+              <Icon className="h-5 w-5" />
+              <span className="font-medium">{module.label}</span>
+            </NavLink>
+          );
+        })}
+
+        {!permissions && isLoading && (
+          <div className="px-4 py-3 text-sm text-slate-500">Đang tải menu theo quyền...</div>
+        )}
+
+        {!permissions && error && (
+          <div className="mx-2 rounded-lg border border-amber-900/40 bg-amber-950/30 px-3 py-3 text-sm text-amber-100">
+            Không thể tải menu theo quyền. Vui lòng tải lại.
+          </div>
+        )}
       </nav>
 
-      <div className="p-4 border-t border-slate-800">
-        <div className="flex items-center gap-3 mb-4 px-2">
-          <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white">
+      <div className="border-t border-slate-800 p-4">
+        <div className="mb-4 flex items-center gap-3 px-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 text-xs font-bold text-white">
             {user.name.charAt(0)}
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="text-sm font-medium text-white truncate">{user.name}</p>
-            <p className="text-xs text-slate-500 truncate">{roleLabels[user.role] || user.role}</p>
+            <p className="truncate text-sm font-medium text-white">{user.name}</p>
+            <p className="truncate text-xs text-slate-500">{ROLE_LABELS[user.role] || user.role}</p>
           </div>
         </div>
-        <button onClick={logout} className="w-full flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-white p-2 hover:bg-slate-800 rounded">
-          <LogOut className="w-4 h-4" /> Đăng xuất
+        <button
+          onClick={logout}
+          className="flex w-full items-center justify-center gap-2 rounded p-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white"
+        >
+          <LogOut className="h-4 w-4" /> Đăng xuất
         </button>
       </div>
     </div>

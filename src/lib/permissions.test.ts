@@ -4,7 +4,9 @@ import {
   MANAGED_MODULE_KEYS,
   MODULE_KEYS,
   MODULES,
+  getDefaultModulePathForRole,
   getModuleByPath,
+  getModuleTitleByPath,
   getSidebarModulesForRole,
 } from '../constants/modules';
 
@@ -65,5 +67,13 @@ describe('module registry', () => {
     expect(adminSidebarKeys).not.toContain('profile');
     expect(adminSidebarKeys).not.toContain('weight_tracking');
     expect(caregiverSidebarKeys).toEqual(['nutrition', 'visitors', 'incidents']);
+  });
+
+  it('derives page titles and safe default redirects from the shared registry', () => {
+    expect(getModuleTitleByPath('/daily-monitoring')).toBe('Theo dõi ngày');
+    expect(getModuleTitleByPath('/profile')).toBe('Hồ sơ cá nhân');
+
+    expect(getDefaultModulePathForRole(DEFAULT_ROLE_PERMISSIONS, 'ADMIN')).toBe('/rooms');
+    expect(getDefaultModulePathForRole(DEFAULT_ROLE_PERMISSIONS, 'CAREGIVER')).toBe('/nutrition');
   });
 });

@@ -100,6 +100,25 @@ export const DEFAULT_ROLE_PERMISSIONS: RolePermissionMap = {
   ]),
 };
 
+const DEFAULT_LANDING_PRIORITY: ModuleKey[] = [
+  'rooms',
+  'residents',
+  'nutrition',
+  'visitors',
+  'daily_monitoring',
+  'procedures',
+  'weight_tracking',
+  'incidents',
+  'maintenance',
+  'forms',
+  'finance',
+  'settings',
+  'profile',
+];
+
+export const getModuleByKey = (moduleKey: ModuleKey): ModuleRegistryEntry | undefined =>
+  MODULES.find((module) => module.key === moduleKey);
+
 export const getModuleByPath = (pathname: string): ModuleRegistryEntry | undefined =>
   MODULES.find((module) => pathname === module.path || pathname.startsWith(`${module.path}/`));
 
@@ -124,3 +143,35 @@ export const getSidebarModulesForRole = (
 
     return isModuleEnabledForRole(permissions, role, module.key);
   });
+
+export const getAccessibleModulesForRole = (
+  permissions: RolePermissionMap,
+  role: Role
+): ModuleRegistryEntry[] =>
+  MODULES.filter((module) => {
+    if (!module.permissionManaged) {
+      return true;
+    }
+
+    return isModuleEnabledForRole(permissions, role, module.key);
+  });
+
+export const getModuleTitleByPath = (pathname: string): string =>
+  getModuleByPath(pathname)?.title ?? 'Chi tiết';
+
+export const getDefaultModulePathForRole = (
+  permissions: RolePermissionMap,
+  role: Role
+): string => {
+  const accessibleModuleKeys = new Set(
+    getAccessibleModulesForRole(permissions, role).map((module) => module.key)
+  );
+
+  for (const moduleKey of DEFAULT_LANDING_PRIORITY) {
+    if (accessibleModuleKeys.has(moduleKey)) {
+      return getModuleByKey(moduleKey)?.path ?? '/profile';
+    }
+  }
+
+  return '/profile';
+};
