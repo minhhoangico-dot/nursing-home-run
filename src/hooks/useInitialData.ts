@@ -28,7 +28,9 @@ export const useInitialData = () => {
             try {
                 await fetchUsers();
 
-                if (!userId) {
+                const authenticatedUser = useAuthStore.getState().user;
+
+                if (!authenticatedUser) {
                     return;
                 }
 
