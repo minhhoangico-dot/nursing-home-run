@@ -63,6 +63,7 @@ export const VisitorsPage = () => {
       const timeB = activeTab === 'current' ? b.checkInTime : (b.checkOutTime || b.checkInTime);
       return new Date(timeB).getTime() - new Date(timeA).getTime();
    });
+   const currentColumnCount = readOnly ? 4 : 5;
 
    return (
       <div className="space-y-6">
@@ -141,7 +142,7 @@ export const VisitorsPage = () => {
                      <th className="px-6 py-3">Giờ vào</th>
                      {activeTab === 'history' && <th className="px-6 py-3">Giờ ra</th>}
                      <th className="px-6 py-3">Ghi chú / Đồ mang theo</th>
-                     {activeTab === 'current' && <th className="px-6 py-3 text-right">Thao tác</th>}
+                     {activeTab === 'current' && !readOnly && <th className="px-6 py-3 text-right">Thao tác</th>}
                   </tr>
                </thead>
                <tbody className="divide-y divide-slate-100">
@@ -183,7 +184,7 @@ export const VisitorsPage = () => {
                      </tr>
                   )) : (
                      <tr>
-                        <td colSpan={activeTab === 'current' ? 5 : 5} className="px-6 py-12 text-center text-slate-400 italic">
+                        <td colSpan={activeTab === 'current' ? currentColumnCount : 5} className="px-6 py-12 text-center text-slate-400 italic">
                            {activeTab === 'current' ? 'Hiện không có khách nào trong viện' : 'Chưa có lịch sử thăm'}
                         </td>
                      </tr>

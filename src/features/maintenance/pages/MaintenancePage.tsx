@@ -90,7 +90,7 @@ export const MaintenancePage = () => {
                         </span>
                         <span className="text-xs text-slate-400">{req.createdAt}</span>
                      </div>
-                     {req.status !== 'Completed' && (
+                     {req.status !== 'Completed' && !readOnly && (
                         <button className="text-orange-600 text-sm font-medium hover:underline">Xử lý</button>
                      )}
                   </div>

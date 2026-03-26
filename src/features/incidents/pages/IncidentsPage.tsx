@@ -132,9 +132,11 @@ export const IncidentsPage = () => {
                               <button className="p-2 text-slate-400 hover:text-teal-600 rounded hover:bg-teal-50" title="Xem chi tiết">
                                  <Eye className="w-4 h-4" />
                               </button>
-                              <button className="p-2 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50" title="Cập nhật tiến độ">
-                                 <FileText className="w-4 h-4" />
-                              </button>
+                              {!readOnly && (
+                                 <button className="p-2 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50" title="Cập nhật tiến độ">
+                                    <FileText className="w-4 h-4" />
+                                 </button>
+                              )}
                            </div>
                         </td>
                      </tr>
