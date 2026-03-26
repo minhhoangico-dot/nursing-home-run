@@ -9,6 +9,7 @@ import { medicalService } from './medicalService';
 export const db = {
   residents: residentService,
   users: medicalService.users,
+  permissions: medicalService.permissions,
   finance: financeService,
   incidents: medicalService.incidents,
   visitors: medicalService.visitors,

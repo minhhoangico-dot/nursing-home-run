@@ -8,4 +8,6 @@ export interface User {
   role: Role;
   floor?: string;
   avatar?: string;
+  isActive?: boolean;
+  updatedAt?: string;
 }

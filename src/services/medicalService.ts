@@ -1,5 +1,19 @@
 import { supabase } from '../lib/supabase';
-import { Incident, StaffSchedule, HandoverReport, VisitorLog, MaintenanceRequest, ActivityEvent, MedicationLog, User } from '../types';
+import {
+    Incident,
+    StaffSchedule,
+    HandoverReport,
+    VisitorLog,
+    MaintenanceRequest,
+    ActivityEvent,
+    MedicationLog,
+    User,
+    Role,
+    RolePermission,
+    RolePermissionMap,
+    ManagedModuleKey
+} from '../types';
+import { DEFAULT_ROLE_PERMISSIONS, MANAGED_MODULE_KEYS } from '../constants/modules';
 
 const mapIncidentToDb = (i: Incident) => ({
     id: i.id,
@@ -124,7 +138,9 @@ const mapUserFromDb = (d: any): User => ({
     password: d.password,
     role: d.role,
     floor: d.floor,
-    avatar: d.avatar ?? d.avatar_url
+    avatar: d.avatar ?? d.avatar_url,
+    isActive: d.is_active,
+    updatedAt: d.updated_at
 });
 
 const mapUserToDb = (u: User) => ({
@@ -134,8 +150,39 @@ const mapUserToDb = (u: User) => ({
     password: u.password,
     role: u.role,
     floor: u.floor,
-    avatar: u.avatar
+    avatar: u.avatar,
+    is_active: u.isActive,
+    updated_at: u.updatedAt
 });
+
+const createEmptyRolePermissions = (): RolePermission =>
+    MANAGED_MODULE_KEYS.reduce((permissions, moduleKey) => {
+        permissions[moduleKey] = false;
+        return permissions;
+    }, {} as RolePermission);
+
+const createEmptyRolePermissionMap = (): RolePermissionMap =>
+    (Object.keys(DEFAULT_ROLE_PERMISSIONS) as Role[]).reduce((permissions, role) => {
+        permissions[role] = createEmptyRolePermissions();
+        return permissions;
+    }, {} as RolePermissionMap);
+
+const mapRolePermissionsFromDb = (rows: any[]): RolePermissionMap => {
+    const permissions = createEmptyRolePermissionMap();
+
+    for (const row of rows) {
+        const role = row.role as Role;
+        const moduleKey = row.module_key as ManagedModuleKey;
+
+        if (!(role in permissions) || !MANAGED_MODULE_KEYS.includes(moduleKey)) {
+            continue;
+        }
+
+        permissions[role][moduleKey] = Boolean(row.is_enabled);
+    }
+
+    return permissions;
+};
 
 export const medicalService = {
     incidents: {
@@ -360,6 +407,31 @@ export const medicalService = {
             if (error) throw error;
             return (data || []).map(mapUserFromDb);
         },
+        create: async (u: User) => {
+            const { data, error } = await supabase.from('users').insert(mapUserToDb(u)).select().single();
+            if (error) throw error;
+            return mapUserFromDb(data);
+        },
+        update: async (u: User) => {
+            const { data, error } = await supabase.from('users').update(mapUserToDb(u)).eq('id', u.id).select().single();
+            if (error) throw error;
+            return mapUserFromDb(data);
+        },
+        deactivate: async (id: string) => {
+            const { data, error } = await supabase.from('users').update({ is_active: false }).eq('id', id).select().single();
+            if (error) throw error;
+            return mapUserFromDb(data);
+        },
+        reactivate: async (id: string) => {
+            const { data, error } = await supabase.from('users').update({ is_active: true }).eq('id', id).select().single();
+            if (error) throw error;
+            return mapUserFromDb(data);
+        },
+        resetPassword: async (id: string, password: string) => {
+            const { data, error } = await supabase.from('users').update({ password }).eq('id', id).select().single();
+            if (error) throw error;
+            return mapUserFromDb(data);
+        },
         upsert: async (u: User) => {
             const { error } = await supabase.from('users').upsert(mapUserToDb(u));
             if (error) throw error;
@@ -367,6 +439,24 @@ export const medicalService = {
         bulkUpsert: async (list: User[]) => {
             if (!list.length) return;
             const { error } = await supabase.from('users').upsert(list.map(mapUserToDb));
+            if (error) throw error;
+        }
+    },
+
+    permissions: {
+        getRolePermissions: async () => {
+            const { data, error } = await supabase.from('role_permissions').select('*').order('role', { ascending: true });
+            if (error) throw error;
+            return mapRolePermissionsFromDb(data || []);
+        },
+        replaceRolePermissions: async (role: Role, permissions: RolePermission) => {
+            const records = MANAGED_MODULE_KEYS.map(moduleKey => ({
+                role,
+                module_key: moduleKey,
+                is_enabled: permissions[moduleKey]
+            }));
+
+            const { error } = await supabase.from('role_permissions').upsert(records);
             if (error) throw error;
         }
     }
