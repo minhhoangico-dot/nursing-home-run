@@ -5,6 +5,7 @@ import { getDefaultModulePathForRole } from '../constants/modules';
 import { useAuthStore } from '../stores/authStore';
 import { usePermissionStore } from '../stores/permissionStore';
 import type { ManagedModuleKey } from '../types';
+import { ModuleAccessProvider } from './ModuleAccessContext';
 
 interface ModuleRouteProps {
   moduleKey: ManagedModuleKey;
@@ -63,7 +64,7 @@ export const DefaultModuleRedirect = () => {
 
 export const ModuleRoute = ({ moduleKey, children }: ModuleRouteProps) => {
   const { isAuthenticated, user } = useAuthStore();
-  const { canAccessModule } = usePermissionStore();
+  const { getModuleAccess } = usePermissionStore();
   const { permissions, isLoading, error } = useEnsurePermissions();
 
   if (!isAuthenticated || !user) {
@@ -83,7 +84,9 @@ export const ModuleRoute = ({ moduleKey, children }: ModuleRouteProps) => {
     return <LoadingScreen message="Đang kiểm tra quyền truy cập..." />;
   }
 
-  if (!canAccessModule(user.role, moduleKey)) {
+  const access = getModuleAccess(user.role, moduleKey);
+
+  if (access === 'none') {
     return (
       <PermissionErrorState
         title="Không có quyền truy cập"
@@ -92,5 +95,9 @@ export const ModuleRoute = ({ moduleKey, children }: ModuleRouteProps) => {
     );
   }
 
-  return children ? <>{children}</> : <Outlet />;
+  return (
+    <ModuleAccessProvider value={access}>
+      {children ? <>{children}</> : <Outlet />}
+    </ModuleAccessProvider>
+  );
 };
