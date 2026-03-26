@@ -7,11 +7,23 @@ CREATE TABLE IF NOT EXISTS public.users (
     username TEXT NOT NULL UNIQUE,
     password TEXT,
     role TEXT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     floor TEXT,
     avatar TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE IF EXISTS public.users
+    ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
+
+UPDATE public.users
+SET is_active = TRUE
+WHERE is_active IS NULL;
+
+ALTER TABLE IF EXISTS public.users
+    ALTER COLUMN is_active SET DEFAULT TRUE,
+    ALTER COLUMN is_active SET NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.residents (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -447,6 +459,30 @@ CREATE TABLE IF NOT EXISTS public.service_usage (
     description TEXT,
     status TEXT DEFAULT 'Unbilled'
 );
+
+CREATE TABLE IF NOT EXISTS public.role_permissions (
+    role TEXT NOT NULL,
+    module_key TEXT NOT NULL,
+    is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (role, module_key)
+);
+
+ALTER TABLE IF EXISTS public.role_permissions
+    ALTER COLUMN role SET NOT NULL,
+    ALTER COLUMN module_key SET NOT NULL,
+    ALTER COLUMN is_enabled SET NOT NULL,
+    ALTER COLUMN updated_at SET NOT NULL;
+
+ALTER TABLE IF EXISTS public.role_permissions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public access role_permissions" ON public.role_permissions;
+DROP POLICY IF EXISTS "Public Access Role Permissions" ON public.role_permissions;
+
+CREATE POLICY "Public Access Role Permissions" ON public.role_permissions
+    FOR ALL TO public
+    USING (true)
+    WITH CHECK (true);
 
 CREATE INDEX IF NOT EXISTS idx_blood_sugar_resident_date ON public.blood_sugar_records (resident_id, record_date DESC);
 CREATE INDEX IF NOT EXISTS idx_shift_handover_floor_date ON public.shift_handovers (floor_id, shift_date DESC);
