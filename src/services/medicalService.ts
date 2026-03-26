@@ -1,6 +1,40 @@
 import { supabase } from '../lib/supabase';
 import { Incident, StaffSchedule, HandoverReport, VisitorLog, MaintenanceRequest, ActivityEvent, MedicationLog, User } from '../types';
 
+const mapIncidentToDb = (i: Incident) => ({
+    id: i.id,
+    date: i.date,
+    time: i.time,
+    type: i.type,
+    severity: i.severity,
+    resident_id: i.residentId,
+    resident_name: i.residentName,
+    location: i.location,
+    description: i.description,
+    immediate_action: i.immediateAction,
+    reporter: i.reporter,
+    status: i.status,
+    witnesses: i.witnesses,
+    notes: i.notes
+});
+
+const mapIncidentFromDb = (d: any): Incident => ({
+    id: d.id,
+    date: d.date,
+    time: d.time,
+    type: d.type,
+    severity: d.severity,
+    residentId: d.resident_id,
+    residentName: d.resident_name,
+    location: d.location,
+    description: d.description,
+    immediateAction: d.immediate_action,
+    reporter: d.reporter,
+    status: d.status,
+    witnesses: d.witnesses,
+    notes: d.notes
+});
+
 const mapVisitorToDb = (v: VisitorLog) => ({
     id: v.id,
     visitor_name: v.visitorName,
@@ -28,16 +62,33 @@ const mapVisitorFromDb = (d: any): VisitorLog => ({
 });
 
 const mapMaintenanceToDb = (r: MaintenanceRequest) => ({
-    ...r,
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    location: r.location,
+    priority: r.priority,
+    status: r.status,
+    reporter: r.reporter,
+    assignee: r.assignee,
     created_at: r.createdAt,
-    completed_at: r.completedAt
+    completed_at: r.completedAt,
+    cost: r.cost,
+    note: r.note
 });
 
 const mapMaintenanceFromDb = (d: any): MaintenanceRequest => ({
-    ...d,
+    id: d.id,
+    title: d.title,
+    description: d.description,
+    location: d.location,
+    priority: d.priority,
+    status: d.status,
+    reporter: d.reporter,
+    assignee: d.assignee,
     createdAt: d.created_at,
     completedAt: d.completed_at,
-    cost: d.cost ? Number(d.cost) : undefined
+    cost: d.cost ? Number(d.cost) : undefined,
+    note: d.note
 });
 
 const mapActivityToDb = (a: ActivityEvent) => ({
@@ -54,9 +105,36 @@ const mapActivityToDb = (a: ActivityEvent) => ({
 });
 
 const mapActivityFromDb = (d: any): ActivityEvent => ({
-    ...d,
+    id: d.id,
+    title: d.title,
+    type: d.type,
+    date: d.date,
+    location: d.location,
+    host: d.host,
+    description: d.description,
+    status: d.status,
     startTime: d.start_time,
     endTime: d.end_time
+});
+
+const mapUserFromDb = (d: any): User => ({
+    id: String(d.id),
+    name: d.name ?? d.full_name ?? '',
+    username: d.username ?? '',
+    password: d.password,
+    role: d.role,
+    floor: d.floor,
+    avatar: d.avatar ?? d.avatar_url
+});
+
+const mapUserToDb = (u: User) => ({
+    id: u.id,
+    name: u.name,
+    username: u.username,
+    password: u.password,
+    role: u.role,
+    floor: u.floor,
+    avatar: u.avatar
 });
 
 export const medicalService = {
@@ -64,19 +142,15 @@ export const medicalService = {
         getAll: async () => {
             const { data, error } = await supabase.from('incidents').select('*').order('date', { ascending: false });
             if (error) throw error;
-            return (data || []).map(d => ({ ...d, residentId: d.resident_id, residentName: d.resident_name, immediateAction: d.immediate_action })) as Incident[];
+            return (data || []).map(mapIncidentFromDb);
         },
         upsert: async (i: Incident) => {
-            const { error } = await supabase.from('incidents').upsert({
-                ...i, resident_id: i.residentId, resident_name: i.residentName, immediate_action: i.immediateAction
-            });
+            const { error } = await supabase.from('incidents').upsert(mapIncidentToDb(i));
             if (error) throw error;
         },
         bulkUpsert: async (list: Incident[]) => {
             if (!list.length) return;
-            const { error } = await supabase.from('incidents').upsert(list.map(i => ({
-                ...i, resident_id: i.residentId, resident_name: i.residentName, immediate_action: i.immediateAction
-            })));
+            const { error } = await supabase.from('incidents').upsert(list.map(mapIncidentToDb));
             if (error) throw error;
         }
     },
@@ -284,15 +358,15 @@ export const medicalService = {
         getAll: async () => {
             const { data, error } = await supabase.from('users').select('*');
             if (error) throw error;
-            return data as User[];
+            return (data || []).map(mapUserFromDb);
         },
         upsert: async (u: User) => {
-            const { error } = await supabase.from('users').upsert(u);
+            const { error } = await supabase.from('users').upsert(mapUserToDb(u));
             if (error) throw error;
         },
         bulkUpsert: async (list: User[]) => {
             if (!list.length) return;
-            const { error } = await supabase.from('users').upsert(list);
+            const { error } = await supabase.from('users').upsert(list.map(mapUserToDb));
             if (error) throw error;
         }
     }

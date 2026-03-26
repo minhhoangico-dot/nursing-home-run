@@ -12,10 +12,6 @@ export const MainLayout = () => {
   if (!user) return null;
 
   const getTitle = (pathname: string) => {
-    // if (pathname.includes('/dashboard')) return 'Tổng quan';
-    if (pathname.includes('/activities')) return 'Hoạt động & Sự kiện';
-    if (pathname.includes('/handover')) return 'Sổ giao ban & Trực nhật';
-    if (pathname.includes('/schedule')) return 'Lịch trực & Phân công';
     if (pathname.includes('/medication')) return 'Cấp phát thuốc';
     if (pathname.includes('/nutrition')) return 'Quản lý Dinh dưỡng & Suất ăn';
     if (pathname.includes('/visitors')) return 'Quản lý Khách thăm';
@@ -25,7 +21,6 @@ export const MainLayout = () => {
     if (pathname.includes('/incidents')) return 'Sự cố & An toàn';
     if (pathname.includes('/forms')) return 'In biểu mẫu';
     if (pathname.includes('/finance')) return 'Tài chính';
-    if (pathname.includes('/inventory')) return 'Kho & Vật tư';
     if (pathname.includes('/reports')) return 'Báo cáo';
     if (pathname.includes('/settings')) return 'Cài đặt';
     return 'Chi tiết';

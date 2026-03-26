@@ -5,7 +5,6 @@ import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../../data';
 import { useAuthStore } from '../../stores/authStore';
 import { useResidentsStore } from '../../stores/residentsStore';
-import { useInventoryStore } from '../../stores/inventoryStore';
 import { useIncidentsStore } from '../../stores/incidentsStore';
 import { Resident } from '../../types';
 
@@ -14,14 +13,21 @@ interface HeaderProps {
    onMenuClick?: () => void;
 }
 
+interface NotificationItem {
+   id: string;
+   type: 'finance' | 'info' | 'incident';
+   title: string;
+   message: string;
+   time: string;
+}
+
 export const Header = ({ title, onMenuClick }: HeaderProps) => {
    const navigate = useNavigate();
    const { user, logout } = useAuthStore();
    const { residents, isSyncing: residentsSync } = useResidentsStore();
-   const { inventory, isSyncing: inventorySync } = useInventoryStore();
    const { incidents, isSyncing: incidentsSync } = useIncidentsStore();
 
-   const isSyncing = residentsSync || inventorySync || incidentsSync;
+   const isSyncing = residentsSync || incidentsSync;
 
    const [search, setSearch] = useState('');
    const [showNotifications, setShowNotifications] = useState(false);
@@ -33,12 +39,10 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
    const notifRef = useRef<HTMLDivElement>(null);
    const userRef = useRef<HTMLDivElement>(null);
 
-   // Dynamic Notifications Logic
    const notifications = useMemo(() => {
-      const list = [];
+      const list: NotificationItem[] = [];
       const today = new Date();
 
-      // 1. Debt Alerts (> 5M VND)
       residents.forEach(r => {
          if (r.balance <= -5000000) {
             list.push({
@@ -49,7 +53,7 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
                time: 'Hôm nay'
             });
          }
-         // Birthday Check
+
          const dob = new Date(r.dob);
          if (dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()) {
             list.push({
@@ -62,20 +66,6 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
          }
       });
 
-      // 2. Low Stock Alerts
-      inventory.forEach(item => {
-         if (item.stock <= item.minStock) {
-            list.push({
-               id: `stock-${item.id}`,
-               type: 'inventory',
-               title: 'Sắp hết hàng',
-               message: `${item.name} chỉ còn ${item.stock} ${item.unit} (Định mức: ${item.minStock})`,
-               time: 'Ngay bây giờ'
-            });
-         }
-      });
-
-      // 3. New Incidents
       incidents.forEach(inc => {
          if (inc.status === 'New') {
             list.push({
@@ -89,7 +79,7 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
       });
 
       return list;
-   }, [residents, inventory, incidents]);
+   }, [residents, incidents]);
 
    const filteredResidents = search
       ? residents.filter(r => r.name.toLowerCase().includes(search.toLowerCase()) || r.room.includes(search))
@@ -101,23 +91,28 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
             setShowSearch(false);
             setMobileSearchExpanded(false);
          }
-         if (notifRef.current && !notifRef.current.contains(event.target as Node)) setShowNotifications(false);
-         if (userRef.current && !userRef.current.contains(event.target as Node)) setShowUserMenu(false);
+         if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+            setShowNotifications(false);
+         }
+         if (userRef.current && !userRef.current.contains(event.target as Node)) {
+            setShowUserMenu(false);
+         }
       };
+
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
    }, []);
 
-   const handleNotificationClick = (n: any) => {
-      toast(n.message, {
-         icon: n.type === 'info' ? 'ℹ️' : '⚠️',
+   const handleNotificationClick = (notification: NotificationItem) => {
+      toast(notification.message, {
+         icon: notification.type === 'info' ? 'ℹ️' : '⚠️',
       });
       setShowNotifications(false);
    };
 
-   const handleSelectResident = (r: Resident) => {
-      useResidentsStore.getState().selectResident(r);
-      navigate(`/residents/${r.id}`);
+   const handleSelectResident = (resident: Resident) => {
+      useResidentsStore.getState().selectResident(resident);
+      navigate(`/residents/${resident.id}`);
       setSearch('');
       setShowSearch(false);
       setMobileSearchExpanded(false);
@@ -127,9 +122,7 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
 
    return (
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20 px-4 md:px-6 lg:px-8 py-3 md:py-4 flex justify-between items-center shadow-sm min-h-[60px] md:min-h-[72px]">
-         {/* Left side - Menu + Title + Search */}
          <div className="flex items-center gap-2 md:gap-4 lg:gap-8 flex-1 min-w-0">
-            {/* Hamburger menu button - mobile only */}
             {onMenuClick && (
                <button
                   onClick={onMenuClick}
@@ -140,7 +133,6 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
                </button>
             )}
 
-            {/* Title and sync status */}
             <div className={`flex flex-col min-w-0 ${isMobileSearchExpanded ? 'hidden md:flex' : 'flex'}`}>
                <h1 className="text-base md:text-xl font-bold text-slate-800 whitespace-nowrap truncate">
                   {title}
@@ -158,7 +150,6 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
                </div>
             </div>
 
-            {/* Global Search - Desktop */}
             <div className="relative max-w-md w-full hidden md:block" ref={searchRef}>
                <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -171,18 +162,22 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
                      onFocus={() => setShowSearch(true)}
                   />
                   {search && (
-                     <button onClick={() => { setSearch(''); setShowSearch(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                     <button
+                        onClick={() => { setSearch(''); setShowSearch(false); }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                     >
                         <X className="w-3 h-3" />
                      </button>
                   )}
                </div>
 
-               {/* Search Results Dropdown */}
                {showSearch && search && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 max-h-96 overflow-y-auto z-30 animate-in fade-in zoom-in-95 duration-200">
                      {filteredResidents.length > 0 ? (
                         <div className="py-2">
-                           <div className="px-4 py-2 text-xs font-bold text-slate-400 uppercase">Kết quả tìm kiếm ({filteredResidents.length})</div>
+                           <div className="px-4 py-2 text-xs font-bold text-slate-400 uppercase">
+                              Kết quả tìm kiếm ({filteredResidents.length})
+                           </div>
                            {filteredResidents.map(r => (
                               <div
                                  key={r.id}
@@ -209,7 +204,6 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
                )}
             </div>
 
-            {/* Mobile Expanded Search */}
             {isMobileSearchExpanded && (
                <div className="md:hidden flex-1" ref={searchRef}>
                   <div className="relative">
@@ -231,7 +225,6 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
                      </button>
                   </div>
 
-                  {/* Mobile Search Results */}
                   {showSearch && search && (
                      <div className="absolute left-4 right-4 top-full mt-2 bg-white rounded-xl shadow-xl border border-slate-100 max-h-80 overflow-y-auto z-30">
                         {filteredResidents.length > 0 ? (
@@ -263,9 +256,7 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
             )}
          </div>
 
-         {/* Right side - Actions */}
          <div className="flex items-center gap-1 md:gap-4 flex-shrink-0">
-            {/* Mobile search toggle */}
             {!isMobileSearchExpanded && (
                <button
                   onClick={() => setMobileSearchExpanded(true)}
@@ -276,7 +267,6 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
                </button>
             )}
 
-            {/* Notifications */}
             <div className="relative" ref={notifRef}>
                <button
                   onClick={() => setShowNotifications(!showNotifications)}
@@ -295,23 +285,22 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
                         <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">{notifications.length}</span>
                      </div>
                      <div className="max-h-80 overflow-y-auto">
-                        {notifications.length > 0 ? notifications.map((n, i) => (
+                        {notifications.length > 0 ? notifications.map(notification => (
                            <div
-                              key={i}
-                              onClick={() => handleNotificationClick(n)}
+                              key={notification.id}
+                              onClick={() => handleNotificationClick(notification)}
                               className="px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0 cursor-pointer transition-colors"
                            >
                               <div className="flex gap-3">
-                                 <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${n.type === 'finance' ? 'bg-red-500' :
-                                    n.type === 'inventory' ? 'bg-orange-500' :
-                                       n.type === 'incident' ? 'bg-purple-500' : 'bg-blue-500'
+                                 <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${notification.type === 'finance' ? 'bg-red-500' :
+                                    notification.type === 'incident' ? 'bg-purple-500' : 'bg-blue-500'
                                     }`}></div>
                                  <div>
                                     <div className="flex justify-between items-start">
-                                       <p className="text-sm font-bold text-slate-800">{n.title}</p>
-                                       <span className="text-[10px] text-slate-400">{n.time}</span>
+                                       <p className="text-sm font-bold text-slate-800">{notification.title}</p>
+                                       <span className="text-[10px] text-slate-400">{notification.time}</span>
                                     </div>
-                                    <p className="text-xs text-slate-600 mt-0.5 line-clamp-2">{n.message}</p>
+                                    <p className="text-xs text-slate-600 mt-0.5 line-clamp-2">{notification.message}</p>
                                  </div>
                               </div>
                            </div>
@@ -325,7 +314,6 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
                )}
             </div>
 
-            {/* User Menu */}
             <div className="relative" ref={userRef}>
                <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
@@ -346,13 +334,13 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
                         <p className="font-bold text-slate-800">{user.name}</p>
                         <p className="text-xs text-slate-500">{user.role}</p>
                      </div>
-                     <button 
+                     <button
                         onClick={() => { setShowUserMenu(false); navigate('/profile?tab=info'); }}
                         className="w-full text-left px-4 py-3 md:py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                      >
                         <UserIcon className="w-4 h-4" /> Hồ sơ cá nhân
                      </button>
-                     <button 
+                     <button
                         onClick={() => { setShowUserMenu(false); navigate('/profile?tab=security'); }}
                         className="w-full text-left px-4 py-3 md:py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                      >

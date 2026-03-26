@@ -1,0 +1,13 @@
+name = "vdl"
+main = "worker/index.ts"
+compatibility_date = "2026-03-24"
+account_id = "17d69a41b7134ae1287ca564c9cd2a8b"
+workers_dev = true
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+[[routes]]
+pattern = "vdl.fdc-nhanvien.org"
+custom_domain = true

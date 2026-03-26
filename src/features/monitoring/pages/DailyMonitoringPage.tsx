@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useResidentsStore } from '@/src/stores/residentsStore';
 import { useMonitoringStore } from '@/src/stores/monitoringStore';
-import { useDiabetesStore } from '@/src/stores/diabetesStore';
+import { useBloodSugarStore } from '@/src/stores/bloodSugarStore';
 import { MonitoringGrid } from '../components/MonitoringGrid';
 import { MobileMonitoringView } from '../components/MobileMonitoringView';
 import { ChevronLeft, ChevronRight, Calendar, Table2, LayoutList } from 'lucide-react';
@@ -23,7 +23,7 @@ export const DailyMonitoringPage = () => {
     const { user } = useAuthStore();
     const { residents, fetchResidents } = useResidentsStore();
     const { records: dailyRecords, isLoading: isMonitoringLoading, fetchDailyRecords: fetchRecords, currentMonth, setCurrentMonth } = useMonitoringStore();
-    const { records: bsRecords, isLoading: isBSLoading, fetchAllRecords: fetchBSRecords } = useDiabetesStore();
+    const { records: bsRecords, isLoading: isBSLoading, fetchAllRecords: fetchBSRecords } = useBloodSugarStore();
     const [selectedDay, setSelectedDay] = useState(new Date().getDate());
 
     useEffect(() => {

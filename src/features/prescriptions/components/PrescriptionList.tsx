@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Pill, Plus, History, Calendar, Clock, User as UserIcon, AlertCircle, CheckCircle2, XCircle, FileText, ChevronDown, ChevronUp, Printer } from 'lucide-react';
 import { Table } from '@/src/components/ui';
-import { Prescription, PrescriptionItem, InventoryItem, Resident, User } from '../../../types/index';
+import { Prescription, PrescriptionItem, Resident, User } from '../../../types/index';
 import { PrescriptionForm } from './PrescriptionForm';
 import { usePrescriptionsStore } from '../../../stores/prescriptionStore';
 import { printDailyMedicationSheet, printPrescription } from '../utils/printTemplates';
 
 import { MedicineManager } from './MedicineManager';
 
-export const PrescriptionList = ({ user, resident, inventory, onUpdate }: { user: User, resident: Resident, inventory: InventoryItem[], onUpdate: (r: Resident) => void }) => {
+export const PrescriptionList = ({ user, resident, onUpdate }: { user: User, resident: Resident, onUpdate: (r: Resident) => void }) => {
     const [showModal, setShowModal] = useState(false);
     const [showMedicineManager, setShowMedicineManager] = useState(false);
     const [expandedHistory, setExpandedHistory] = useState<string | null>(null);

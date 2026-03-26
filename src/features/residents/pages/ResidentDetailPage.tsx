@@ -11,14 +11,12 @@ import { EditResidentModal } from '../components/EditResidentModal';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useResidentsStore } from '@/src/stores/residentsStore';
 import { useFinanceStore } from '@/src/stores/financeStore';
-import { useInventoryStore } from '@/src/stores/inventoryStore';
 
 export const ResidentDetailPage = () => {
    const { id } = useParams();
    const navigate = useNavigate();
    const { user } = useAuthStore();
    const { residents, updateResident } = useResidentsStore();
-   const { inventory } = useInventoryStore();
    const { servicePrices, usageRecords, recordUsage } = useFinanceStore();
 
    const [showAssessmentWizard, setShowAssessmentWizard] = useState(false);
@@ -113,7 +111,6 @@ export const ResidentDetailPage = () => {
          <ResidentDetail
             user={user}
             resident={resident}
-            inventory={inventory}
             onUpdateResident={handleMedicalUpdate}
             onOpenAssessment={() => setShowAssessmentWizard(true)}
             onEdit={() => setShowEditModal(true)}

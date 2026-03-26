@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Plus, Upload, FileText, Trash2, Eye, User as UserIcon, Calendar, CreditCard, Home, Bed, Activity, Clock } from 'lucide-react';
 import { Tabs } from '@/src/components/ui';
-import { Resident, InventoryItem, User, ServicePrice, ServiceUsage } from '@/src/types/index';
+import { Resident, User, ServicePrice, ServiceUsage } from '@/src/types/index';
 import { MedicalHistorySection } from '@/src/features/medical/components/MedicalHistorySection';
 import { VitalSignsSection } from '@/src/features/medical/components/VitalSignsSection';
 import { PrescriptionList } from '@/src/features/prescriptions/components/PrescriptionList';
@@ -10,16 +10,12 @@ import { MonitoringPlansSection } from '@/src/features/medical/components/Monito
 // CareLogSection removed
 import { GuardianInfo } from './GuardianInfo';
 import { ResidentNutritionSection } from './ResidentNutritionSection';
-import { ServiceUsageList } from '@/src/features/finance/components/ServiceUsageList'; // Keeping this for now if used elsewhere or remove if unused, but TS might complain if I remove it and it's used elsewhere, but here it was just used in the part I removed.
-// Actually I should remove it if I removed the usage.
 import { ResidentFinanceTab } from './ResidentFinanceTab';
-import { formatCurrency } from '@/src/data/index';
 import { useToast } from '@/src/app/providers';
 
 interface ResidentDetailProps {
    user: User;
    resident: Resident;
-   inventory: InventoryItem[];
    onUpdateResident: (r: Resident) => void;
    onOpenAssessment: () => void;
    onEdit: () => void;
@@ -29,7 +25,7 @@ interface ResidentDetailProps {
 }
 
 export const ResidentDetail = ({
-   user, resident, inventory, onUpdateResident, onOpenAssessment, onEdit,
+   user, resident, onUpdateResident, onOpenAssessment, onEdit,
    servicePrices, usageRecords, onRecordUsage
 }: ResidentDetailProps) => {
    const [activeTab, setActiveTab] = useState('info');
@@ -264,7 +260,7 @@ export const ResidentDetail = ({
 
             {activeTab === 'medication' && (
                <div className="space-y-6">
-                  <PrescriptionList user={user} resident={resident} inventory={inventory} onUpdate={onUpdateResident} />
+                  <PrescriptionList user={user} resident={resident} onUpdate={onUpdateResident} />
                </div>
             )}
 

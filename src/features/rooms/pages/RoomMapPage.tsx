@@ -1,18 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { ShieldAlert, Bed, Stethoscope, ArrowRight, Wrench, X, UserPlus, LogOut, CheckCircle2, AlertTriangle, ArrowRightLeft, Building, ClipboardList } from 'lucide-react';
+import { Bed, Stethoscope, Wrench, X, UserPlus, LogOut, CheckCircle2, AlertTriangle, ArrowRightLeft, Building } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { Resident, Room, User, MaintenanceRequest } from '../../../types/index';
-import { BUILDING_STRUCTURE, getFloorsForBuilding } from '../../../constants/facility';
+import { BUILDING_STRUCTURE } from '../../../constants/facility';
 import { generateRooms } from '../../../data/index';
 import { TransferRoomModal } from '../components/TransferRoomModal';
 import { AssignBedModal } from '../components/AssignBedModal';
 import { useAuthStore } from '../../../stores/authStore';
 import { useResidentsStore } from '../../../stores/residentsStore';
 import { useRoomsStore } from '../../../stores/roomsStore';
-import { useShiftHandoverStore } from '../../../stores/shiftHandoverStore';
-import { ShiftHandoverForm } from '../../shift-handover/components/ShiftHandoverForm';
-import { HandoverHistoryModal } from '../../shift-handover/components/HandoverHistoryModal';
 import { useRoomConfigStore } from '../../../stores/roomConfigStore';
 import { RoomEditModal } from '../components/RoomEditModal';
 import { Edit, Plus } from 'lucide-react';
@@ -62,8 +59,7 @@ const BedDetailModal = ({ bed, roomNumber, roomType, floor, building, user, onCl
                   <div className="space-y-1 text-sm text-slate-600">
                      <p>Tuổi: {new Date().getFullYear() - new Date(resident.dob).getFullYear()}</p>
                      <p>Cấp độ chăm sóc: <span className="font-bold text-teal-700">{resident.careLevel}</span></p>
-                     <p>Tình trạng: {resident.currentConditionNote || 'Ổn định'}</p>
-                     {/* Pass handoverNotes as prop or fetch here if needed, but for now simple check */}
+                      <p>Tình trạng: {resident.currentConditionNote || 'Ổn định'}</p>
                   </div>
                   <div className="mt-4 flex gap-2">
                      <button onClick={() => onAction('view_resident', resident.id)} className="flex-1 bg-white border border-slate-200 text-teal-700 py-2 rounded-lg font-medium hover:bg-teal-50 flex items-center justify-center gap-2 text-sm">
@@ -109,8 +105,7 @@ export const RoomMapPage = () => {
    const { user } = useAuthStore();
    const { residents, updateResident, selectResident } = useResidentsStore();
    const { maintenanceRequests } = useRoomsStore();
-   const { fetchHandovers, handovers } = useShiftHandoverStore();
-   const { configs, updateRoom, addRoom, deleteRoom, updateBuildingConfig } = useRoomConfigStore(); // Store hooks
+   const { configs, updateRoom, addRoom, deleteRoom } = useRoomConfigStore(); // Store hooks
    const navigate = useNavigate();
 
    const [selectedBuilding, setSelectedBuilding] = useState('Tòa A');
@@ -121,32 +116,6 @@ export const RoomMapPage = () => {
    const [selectedBed, setSelectedBed] = useState<{ bed: any, roomNumber: string, roomType: string, building: string, floor: string } | null>(null);
    const [transferResident, setTransferResident] = useState<Resident | null>(null);
    const [assignTarget, setAssignTarget] = useState<any | null>(null);
-
-   // Handover Modal State
-   const [showHandoverForm, setShowHandoverForm] = useState(false);
-   const [showHandoverHistory, setShowHandoverHistory] = useState(false);
-
-   React.useEffect(() => {
-      fetchHandovers();
-   }, []);
-
-   // Get latest handover for selected floor
-   const latestHandover = useMemo(() => {
-      // Assuming floorId matches the selectedFloor string or we filter by notes
-      // Ideally we filter handovers by date/time to get the "current" one
-      return handovers
-         .filter(h => h.floorId === selectedFloor) // Adjust if floorId format differs
-         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-   }, [handovers, selectedFloor]);
-
-   const handoverNotes = useMemo(() => {
-      if (!latestHandover) return {};
-      const notesMap: Record<string, string> = {};
-      latestHandover.notes.forEach(n => {
-         if (n.residentId) notesMap[n.residentId] = n.content;
-      });
-      return notesMap;
-   }, [latestHandover]);
 
 
    // Live generation based on residents AND maintenance state
@@ -279,28 +248,6 @@ export const RoomMapPage = () => {
 
    return (
       <div className="space-y-6">
-         {/* Handover Modals */}
-         {showHandoverForm && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-               <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-                  <ShiftHandoverForm
-                     onClose={() => setShowHandoverForm(false)}
-                     onSuccess={() => {
-                        fetchHandovers();
-                        // Optionally refresh residents if status changed
-                     }}
-                  />
-               </div>
-            </div>
-         )}
-
-         {showHandoverHistory && (
-            <HandoverHistoryModal
-               handovers={handovers.filter(h => h.floorId === selectedFloor)} // Filter by current floor? Or all? Let's filter by current floor context to match "Room Map" view.
-               onClose={() => setShowHandoverHistory(false)}
-            />
-         )}
-
          {selectedBed && (
             <BedDetailModal
                bed={selectedBed.bed}
@@ -377,20 +324,6 @@ export const RoomMapPage = () => {
                {/* Action Buttons - Supervisor only */}
                {isSupervisor && (
                   <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
-                     <button
-                        onClick={() => setShowHandoverHistory(true)}
-                        className="px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 shadow-sm flex items-center gap-2 font-medium transition-all text-sm whitespace-nowrap shrink-0"
-                     >
-                        <ClipboardList className="w-4 h-4" />
-                        <span className="hidden sm:inline">Lịch sử</span>
-                     </button>
-                     <button
-                        onClick={() => setShowHandoverForm(true)}
-                        className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-2 font-medium transition-all text-sm whitespace-nowrap shrink-0"
-                     >
-                        <ClipboardList className="w-4 h-4" />
-                        Giao Ca
-                     </button>
                      <button
                         onClick={() => navigate('/incidents')}
                         className="px-3 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 shadow-sm flex items-center gap-2 font-medium transition-all text-sm whitespace-nowrap shrink-0"
@@ -477,31 +410,17 @@ export const RoomMapPage = () => {
                         <div
                            key={bed.id}
                            onClick={() => !isEditMode && setSelectedBed({ bed, roomNumber: room.number, roomType: room.type, building: room.building, floor: room.floor })}
-                           className={`p-2 rounded-lg border text-center transition-all cursor-pointer relative
-                                       ${bed.status === 'Occupied'
-                                 ? handoverNotes[bed.residentId!]
-                                    ? 'bg-white border-orange-400 shadow-[0_0_0_1px_rgba(251,146,60,1)]'
-                                    : 'bg-teal-50 border-teal-200 hover:bg-teal-100'
-                                 : bed.status === 'Maintenance'
-                                    ? 'bg-orange-50 border-orange-200 hover:bg-orange-100'
-                                    : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-slate-300'
-                              }`}
+                            className={`p-2 rounded-lg border text-center transition-all cursor-pointer relative
+                                        ${bed.status === 'Occupied'
+                                  ? 'bg-teal-50 border-teal-200 hover:bg-teal-100'
+                                  : bed.status === 'Maintenance'
+                                     ? 'bg-orange-50 border-orange-200 hover:bg-orange-100'
+                                     : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-slate-300'
+                               }`}
                         >
-                           {/* Handover Indicator */}
-                           {bed.status === 'Occupied' && handoverNotes[bed.residentId!] && (
-                              <div className="absolute -top-1 -right-1">
-                                 <span className="relative flex h-3 w-3">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
-                                 </span>
-                              </div>
-                           )}
-
                            <div className="flex justify-between items-center mb-1">
                               <span className="text-xs text-slate-400 font-medium">{bed.id.split('-')[2]}</span>
-                              {bed.status === 'Occupied' && (
-                                 <Stethoscope className={`w-3 h-3 ${handoverNotes[bed.residentId!] ? 'text-orange-500' : 'text-teal-500'}`} />
-                              )}
+                              {bed.status === 'Occupied' && <Stethoscope className="w-3 h-3 text-teal-500" />}
                               {bed.status === 'Maintenance' && <Wrench className="w-3 h-3 text-orange-500" />}
                            </div>
                            {bed.status === 'Occupied' ? (
@@ -510,14 +429,6 @@ export const RoomMapPage = () => {
                               </div>
                            ) : (
                               <div className="text-xs text-slate-400 italic">Trống</div>
-                           )}
-
-                           {/* Handover Note Snippet */}
-                           {bed.status === 'Occupied' && handoverNotes[bed.residentId!] && (
-                              <div className="mt-1 pt-1 border-t border-orange-100 text-[10px] text-orange-700 flex items-start gap-1 line-clamp-1 text-left">
-                                 <ClipboardList className="w-3 h-3 shrink-0" />
-                                 <span className="truncate">{handoverNotes[bed.residentId!]}</span>
-                              </div>
                            )}
                         </div>
                      ))}

@@ -3,7 +3,7 @@ import { Resident, BloodSugarRecord } from '@/src/types';
 import { DailyMonitoringRecord, DailyMonitoringUpdate } from '@/src/types/dailyMonitoring';
 import { Loader2 } from 'lucide-react';
 import { useMonitoringStore } from '@/src/stores/monitoringStore';
-import { useDiabetesStore } from '@/src/stores/diabetesStore';
+import { useBloodSugarStore } from '@/src/stores/bloodSugarStore';
 import { BloodSugarInput } from './BloodSugarInput';
 
 interface MonitoringGridProps {
@@ -23,7 +23,7 @@ const formatDate = (d: Date) => {
 
 export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLoading }: MonitoringGridProps) => {
     const { updateRecord } = useMonitoringStore();
-    const { addRecord, updateRecord: updateBSRecord } = useDiabetesStore();
+    const { addRecord, updateRecord: updateBSRecord } = useBloodSugarStore();
     const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 

@@ -3,7 +3,7 @@ import { Resident, BloodSugarRecord } from '@/src/types';
 import { DailyMonitoringRecord, DailyMonitoringUpdate } from '@/src/types/dailyMonitoring';
 import { Loader2, Heart, Thermometer, Wind, Check, Droplets, ChevronDown, ChevronUp } from 'lucide-react';
 import { useMonitoringStore } from '@/src/stores/monitoringStore';
-import { useDiabetesStore } from '@/src/stores/diabetesStore';
+import { useBloodSugarStore } from '@/src/stores/bloodSugarStore';
 
 interface MobileMonitoringViewProps {
     month: Date;
@@ -30,7 +30,7 @@ export const MobileMonitoringView = ({
     isLoading
 }: MobileMonitoringViewProps) => {
     const { updateRecord } = useMonitoringStore();
-    const { addRecord, updateRecord: updateBSRecord } = useDiabetesStore();
+    const { addRecord, updateRecord: updateBSRecord } = useBloodSugarStore();
     const [expandedResident, setExpandedResident] = useState<string | null>(null);
 
     const date = new Date(month.getFullYear(), month.getMonth(), selectedDay);
