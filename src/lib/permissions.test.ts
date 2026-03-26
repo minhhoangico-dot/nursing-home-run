@@ -39,6 +39,7 @@ describe('module registry', () => {
   });
 
   it('derives read_only access from a directly full source module', () => {
+    expect(getModuleAccess(DEFAULT_ROLE_PERMISSIONS, 'ADMIN', 'rooms')).toBe('full');
     expect(MODULE_READONLY_LINKS.rooms).toEqual(['residents', 'incidents', 'maintenance']);
     expect(getModuleAccess(DEFAULT_ROLE_PERMISSIONS, 'CAREGIVER', 'residents')).toBe('read_only');
   });
