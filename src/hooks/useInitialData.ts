@@ -34,24 +34,15 @@ export const useInitialData = () => {
                     return;
                 }
 
-                const [permissionsResult, dataResult] = await Promise.allSettled([
-                    fetchPermissions(),
-                    Promise.all([
-                        fetchResidents(),
-                        fetchMaintenanceRequests(),
-                        fetchFinanceData(),
-                        fetchIncidents(),
-                        fetchVisitors(),
-                    ]),
+                await fetchPermissions();
+
+                await Promise.all([
+                    fetchResidents(),
+                    fetchMaintenanceRequests(),
+                    fetchFinanceData(),
+                    fetchIncidents(),
+                    fetchVisitors(),
                 ]);
-
-                if (dataResult.status === 'rejected') {
-                    throw dataResult.reason;
-                }
-
-                if (permissionsResult.status === 'rejected') {
-                    console.error('Error fetching role permissions:', permissionsResult.reason);
-                }
             } catch (err) {
                 console.error('Error fetching initial data:', err);
                 setError(err instanceof Error ? err : new Error('Unknown error'));

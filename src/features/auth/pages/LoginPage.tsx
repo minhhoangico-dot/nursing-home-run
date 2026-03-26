@@ -34,14 +34,14 @@ export const LoginPage = () => {
       return;
     }
 
-    login(user);
-
     try {
       await fetchPermissions();
     } catch {
-      // Permission state keeps the failure so later guards can fail closed.
+      toast.error('Không thể tải quyền truy cập. Vui lòng thử lại.');
+      return;
     }
 
+    login(user);
     toast.success(`Xin chào, ${user.name}`);
 
     if (user.role === 'ADMIN' || user.role === 'SUPERVISOR') {
