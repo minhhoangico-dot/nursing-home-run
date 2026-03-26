@@ -53,6 +53,12 @@ const createPermissionsUpsertBuilder = () => ({
   upsert: vi.fn(() => Promise.resolve({ data: null, error: null })),
 });
 
+const createMaintenanceSelectBuilder = (rows: unknown[]) => ({
+  select: vi.fn(() => ({
+    order: vi.fn(() => Promise.resolve({ data: rows, error: null })),
+  })),
+});
+
 describe('medicalService user and permission contracts', () => {
   beforeEach(() => {
     fromMock.mockReset();
@@ -63,11 +69,15 @@ describe('medicalService user and permission contracts', () => {
       if (table === 'users') {
         return createUsersSelectBuilder([
           {
-            id: 7,
+            id: 'user-7',
             name: 'Alice',
             username: 'alice',
+            password: 'secret',
             role: 'ADMIN',
+            floor: 'Tầng 2',
+            avatar: 'alice.png',
             is_active: false,
+            created_at: '2026-03-25T10:00:00.000Z',
             updated_at: '2026-03-26T10:00:00.000Z',
           },
         ]);
@@ -80,10 +90,13 @@ describe('medicalService user and permission contracts', () => {
 
     expect(users).toEqual([
       expect.objectContaining({
-        id: '7',
+        id: 'user-7',
         name: 'Alice',
         username: 'alice',
+        password: 'secret',
         role: 'ADMIN',
+        floor: 'Tầng 2',
+        avatar: 'alice.png',
         isActive: false,
         updatedAt: '2026-03-26T10:00:00.000Z',
       }),
@@ -95,6 +108,9 @@ describe('medicalService user and permission contracts', () => {
     expect(typeof db.users.resetPassword).toBe('function');
     expect(typeof db.permissions.getRolePermissions).toBe('function');
     expect(typeof db.permissions.replaceRolePermissions).toBe('function');
+    expect(typeof db.schedules.getAll).toBe('function');
+    expect(typeof db.activities.getAll).toBe('function');
+    expect(typeof db.handovers.getAll).toBe('function');
   });
 
   it('writes explicit user mutations with database field names', async () => {
@@ -219,5 +235,39 @@ describe('medicalService user and permission contracts', () => {
         expect.objectContaining({ role: 'ADMIN', module_key: 'finance', is_enabled: false }),
       ])
     );
+  });
+
+  it('keeps maintenance cost zero when reading rows from the database', async () => {
+    fromMock.mockImplementation((table: string) => {
+      if (table === 'maintenance_requests') {
+        return createMaintenanceSelectBuilder([
+          {
+            id: 'm1',
+            title: 'Fix rail',
+            description: 'Tighten the bed rail',
+            location: 'Room 201',
+            priority: 'LOW',
+            status: 'OPEN',
+            reporter: 'Alice',
+            assignee: 'Bob',
+            created_at: '2026-03-26T12:00:00.000Z',
+            completed_at: null,
+            cost: 0,
+            note: 'No parts needed',
+          },
+        ]);
+      }
+
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    const requests = await medicalService.maintenance.getAll();
+
+    expect(requests).toEqual([
+      expect.objectContaining({
+        id: 'm1',
+        cost: 0,
+      }),
+    ]);
   });
 });

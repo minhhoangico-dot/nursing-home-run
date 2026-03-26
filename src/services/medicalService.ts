@@ -101,7 +101,7 @@ const mapMaintenanceFromDb = (d: any): MaintenanceRequest => ({
     assignee: d.assignee,
     createdAt: d.created_at,
     completedAt: d.completed_at,
-    cost: d.cost ? Number(d.cost) : undefined,
+    cost: d.cost == null ? undefined : Number(d.cost),
     note: d.note
 });
 
