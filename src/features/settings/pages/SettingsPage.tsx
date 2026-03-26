@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Building, CreditCard, Users } from 'lucide-react';
+import { ArrowLeft, Building, CreditCard, ShieldCheck, Users } from 'lucide-react';
 import type { User } from '../../../types';
 import { useToast } from '../../../app/providers';
 import { useAuthStore } from '../../../stores/authStore';
@@ -8,11 +8,12 @@ import { ServiceCatalog } from '../../finance/components/ServiceCatalog';
 import { AddUserModal } from '../components/AddUserModal';
 import { FacilityConfig } from '../components/FacilityConfig';
 import { ResetPasswordModal } from '../components/ResetPasswordModal';
+import { RolePermissionsPanel } from '../components/RolePermissionsPanel';
 import { UserFormModal, type UserFormValues } from '../components/UserFormModal';
 import { UserManagementPanel } from '../components/UserManagementPanel';
 import { requiresFloor, translateUserMutationError } from '../lib/userManagement';
 
-type SettingsView = 'menu' | 'users' | 'facility' | 'prices';
+type SettingsView = 'menu' | 'users' | 'roles' | 'facility' | 'prices';
 
 const normalizeFloor = (role: User['role'], floor?: string): string | undefined =>
   requiresFloor(role) ? floor?.trim() || undefined : undefined;
@@ -186,7 +187,7 @@ export const SettingsPage = () => {
       {view === 'menu' ? (
         <>
           <h2 className="text-2xl font-bold text-slate-800">Cài đặt hệ thống</h2>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
             <button
               type="button"
               className="rounded-xl border border-slate-100 bg-white p-6 text-left shadow-sm transition-colors hover:border-teal-200"
@@ -202,6 +203,23 @@ export const SettingsPage = () => {
                 Thêm, cập nhật, khóa tài khoản và đặt lại mật khẩu cho nhân viên.
               </p>
               <div className="text-sm font-medium text-teal-600">Quản lý &rarr;</div>
+            </button>
+
+            <button
+              type="button"
+              className="rounded-xl border border-slate-100 bg-white p-6 text-left shadow-sm transition-colors hover:border-teal-200"
+              onClick={() => setView('roles')}
+            >
+              <div className="mb-4 flex items-center gap-3">
+                <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <h3 className="font-bold text-slate-800">Vai trò & phân quyền</h3>
+              </div>
+              <p className="mb-4 text-sm text-slate-500">
+                Điều chỉnh quyền truy cập module cho từng vai trò hiện có trong hệ thống.
+              </p>
+              <div className="text-sm font-medium text-teal-600">Thiết lập &rarr;</div>
             </button>
 
             <button
@@ -269,6 +287,8 @@ export const SettingsPage = () => {
               onToggleActive={handleToggleActive}
             />
           )}
+
+          {view === 'roles' && <RolePermissionsPanel />}
 
           {view === 'prices' && (
             <ServiceCatalog

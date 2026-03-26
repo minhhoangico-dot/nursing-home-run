@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { User } from '../../../types';
-import { sortUsersForManagement, translateUserMutationError } from './userManagement';
+import {
+  MANAGED_SETTINGS_MODULES,
+  ROLE_ORDER,
+  sortUsersForManagement,
+  translateUserMutationError,
+} from './userManagement';
 
 describe('user management helpers', () => {
   it('translates duplicate username errors into actionable feedback', () => {
@@ -21,5 +26,19 @@ describe('user management helpers', () => {
     ];
 
     expect(sortUsersForManagement(users).map((user) => user.id)).toEqual(['2', '1', '3']);
+  });
+
+  it('keeps fixed role order and excludes non-managed modules from the settings matrix', () => {
+    expect(ROLE_ORDER).toEqual([
+      'ADMIN',
+      'DOCTOR',
+      'SUPERVISOR',
+      'ACCOUNTANT',
+      'NURSE',
+      'CAREGIVER',
+    ]);
+
+    expect(MANAGED_SETTINGS_MODULES.map((module) => module.key)).not.toContain('profile');
+    expect(MANAGED_SETTINGS_MODULES.at(-1)?.key).toBe('settings');
   });
 });

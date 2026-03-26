@@ -2,6 +2,15 @@ import { BUILDING_STRUCTURE } from '../../../constants/facility';
 import { MODULES } from '../../../constants/modules';
 import type { ManagedModuleKey, Role, User } from '../../../types';
 
+export const ROLE_ORDER: Role[] = [
+  'ADMIN',
+  'DOCTOR',
+  'SUPERVISOR',
+  'ACCOUNTANT',
+  'NURSE',
+  'CAREGIVER',
+];
+
 export const ROLE_LABELS: Record<Role, string> = {
   ADMIN: 'Quan tri vien',
   DOCTOR: 'Bac si',
@@ -11,9 +20,9 @@ export const ROLE_LABELS: Record<Role, string> = {
   CAREGIVER: 'Ho ly',
 };
 
-export const ROLE_OPTIONS = Object.entries(ROLE_LABELS).map(([value, label]) => ({
+export const ROLE_OPTIONS = ROLE_ORDER.map((value) => ({
   value,
-  label,
+  label: ROLE_LABELS[value],
 }));
 
 export const USER_STATUS_OPTIONS = [
