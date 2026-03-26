@@ -24,17 +24,21 @@ export const getModuleAccess = (
   role: Role,
   moduleKey: ManagedModuleKey
 ): ModuleAccessLevel => {
-  if (!permissions?.[role]?.[moduleKey]) {
-    for (const [sourceModuleKey, linkedModuleKeys] of Object.entries(MODULE_READONLY_LINKS) as Array<
-      [ManagedModuleKey, readonly ManagedModuleKey[]]
-    >) {
-      if (linkedModuleKeys.includes(moduleKey) && permissions?.[role]?.[sourceModuleKey]) {
-        return 'read_only';
-      }
-    }
+  if (permissions?.[role]?.[moduleKey]) {
+    return 'full';
+  }
 
+  if (moduleKey === 'finance' || moduleKey === 'settings') {
     return 'none';
   }
 
-  return 'full';
+  for (const [sourceModuleKey, linkedModuleKeys] of Object.entries(MODULE_READONLY_LINKS) as Array<
+    [ManagedModuleKey, readonly ManagedModuleKey[]]
+  >) {
+    if (linkedModuleKeys.includes(moduleKey) && permissions?.[role]?.[sourceModuleKey]) {
+      return 'read_only';
+    }
+  }
+
+  return 'none';
 };

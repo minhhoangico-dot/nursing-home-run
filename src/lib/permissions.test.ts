@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_ROLE_PERMISSIONS,
   MANAGED_MODULE_KEYS,
+  type ManagedModuleKey,
   MODULE_KEYS,
   MODULES,
   getDefaultModulePathForRole,
@@ -47,6 +48,20 @@ describe('module registry', () => {
   it('denies finance and settings without direct full access', () => {
     expect(getModuleAccess(DEFAULT_ROLE_PERMISSIONS, 'CAREGIVER', 'finance')).toBe('none');
     expect(getModuleAccess(DEFAULT_ROLE_PERMISSIONS, 'CAREGIVER', 'settings')).toBe('none');
+  });
+
+  it('keeps finance and settings denied even if read_only links expand later', () => {
+    const mutableLinks = MODULE_READONLY_LINKS as unknown as Record<ManagedModuleKey, ManagedModuleKey[]>;
+    const originalRoomsLinks = [...mutableLinks.rooms];
+
+    try {
+      mutableLinks.rooms = [...originalRoomsLinks, 'finance', 'settings'];
+
+      expect(getModuleAccess(DEFAULT_ROLE_PERMISSIONS, 'DOCTOR', 'finance')).toBe('none');
+      expect(getModuleAccess(DEFAULT_ROLE_PERMISSIONS, 'DOCTOR', 'settings')).toBe('none');
+    } finally {
+      mutableLinks.rooms = originalRoomsLinks;
+    }
   });
 
   it('does not chain read_only access transitively', () => {
