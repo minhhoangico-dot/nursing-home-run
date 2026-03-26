@@ -99,6 +99,12 @@ export const useAuthStore = create<AuthState>()(
                     throw new Error(message);
                 }
 
+                if (currentUser?.id === user.id && user.isActive === false) {
+                    const message = 'You cannot deactivate your own account.';
+                    set({ error: message });
+                    throw new Error(message);
+                }
+
                 set({ isLoading: true, error: null });
 
                 try {
