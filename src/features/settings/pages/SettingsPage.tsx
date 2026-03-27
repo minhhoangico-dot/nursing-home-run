@@ -1,181 +1,273 @@
 import React, { useState } from 'react';
-import { Users, CreditCard, ArrowLeft, Plus, Edit2, Trash2, Building } from 'lucide-react';
-import { User, ServicePrice } from '../../../types/index';
+import {
+  ArrowLeft,
+  Building,
+  CreditCard,
+  Edit2,
+  Pill,
+  Plus,
+  Trash2,
+  Users,
+} from 'lucide-react';
+import { User } from '../../../types/index';
 import { AddUserModal } from '../components/AddUserModal';
 import { ServiceCatalog } from '../../finance/components/ServiceCatalog';
 import { FacilityConfig } from '../components/FacilityConfig';
+import { MedicineCatalogManager } from '../../prescriptions/components/MedicineCatalogManager';
 import { useToast } from '../../../app/providers';
 import { db } from '../../../services/databaseService';
 import { useAuthStore } from '../../../stores/authStore';
 import { useFinanceStore } from '../../../stores/financeStore';
 
 export const SettingsPage = () => {
-   const [view, setView] = useState<'menu' | 'users' | 'facility' | 'prices'>('menu');
-   const [showAddUserModal, setShowAddUserModal] = useState(false);
-   const { addToast } = useToast();
+  const [view, setView] = useState<
+    'menu' | 'users' | 'facility' | 'prices' | 'medicines'
+  >('menu');
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const { addToast } = useToast();
 
-   // Store Data
-   const { users } = useAuthStore();
-   const { servicePrices, updateServicePrice, deleteServicePrice } = useFinanceStore();
+  const { users } = useAuthStore();
+  const { servicePrices, updateServicePrice, deleteServicePrice } =
+    useFinanceStore();
 
-   const handleAddUser = async (user: User) => {
-      try {
-         // Mock add user since authStore doesn't expose it
-         // In real app we would call db.users.add(user)
-         await db.users.upsert(user);
-         addToast('success', 'Thành công', 'Đã thêm người dùng mới');
-      } catch (e) {
-         addToast('error', 'Lỗi', 'Thêm người dùng thất bại');
-      }
-      setShowAddUserModal(false);
-   };
+  const handleAddUser = async (user: User) => {
+    try {
+      await db.users.upsert(user);
+      addToast('success', 'Thành công', 'Đã thêm người dùng mới');
+    } catch (error) {
+      addToast('error', 'Lỗi', 'Thêm người dùng thất bại');
+    }
+    setShowAddUserModal(false);
+  };
 
-   const UserManagement = () => (
-      <div>
-         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-            <h3 className="text-lg font-bold text-slate-800">Quản lý người dùng</h3>
-            <button
-               onClick={() => setShowAddUserModal(true)}
-               className="bg-teal-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-teal-700 shadow-sm w-full sm:w-auto justify-center"
-            >
-               <Plus className="w-4 h-4" /> Thêm người dùng
-            </button>
-         </div>
-         <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-            {/* Desktop Table */}
-            <table className="hidden md:table w-full text-left text-sm">
-               <thead className="bg-slate-50 text-slate-500 font-medium">
-                  <tr>
-                     <th className="px-6 py-3">Họ và tên</th>
-                     <th className="px-6 py-3">Tên đăng nhập</th>
-                     <th className="px-6 py-3">Vai trò</th>
-                     <th className="px-6 py-3">Khu vực</th>
-                     <th className="px-6 py-3 text-right">Thao tác</th>
-                  </tr>
-               </thead>
-               <tbody className="divide-y divide-slate-100">
-                  {users.length > 0 ? users.map(u => (
-                     <tr key={u.id} className="hover:bg-slate-50">
-                        <td className="px-6 py-4 font-medium">{u.name}</td>
-                        <td className="px-6 py-4">{u.username}</td>
-                        <td className="px-6 py-4">
-                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.role === 'ADMIN' ? 'bg-slate-800 text-white' :
-                              u.role === 'DOCTOR' ? 'bg-blue-100 text-blue-700' :
-                                 u.role === 'SUPERVISOR' ? 'bg-green-100 text-green-700' :
-                                    'bg-purple-100 text-purple-700'
-                              }`}>
-                              {u.role === 'ADMIN' ? 'Quản trị viên' :
-                                 u.role === 'DOCTOR' ? 'Bác sĩ' :
-                                    u.role === 'SUPERVISOR' ? 'Trưởng tầng' : 'Kế toán'}
-                           </span>
-                        </td>
-                        <td className="px-6 py-4">{u.floor || '-'}</td>
-                        <td className="px-6 py-4 text-right flex justify-end gap-2">
-                           <button className="text-slate-400 hover:text-teal-600"><Edit2 className="w-4 h-4" /></button>
-                           <button onClick={() => { }} className="text-slate-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
-                        </td>
-                     </tr>
-                  )) : (
-                     <tr>
-                        <td colSpan={5} className="text-center py-8 text-slate-500 italic">Chưa có người dùng nào</td>
-                     </tr>
-                  )}
-               </tbody>
-            </table>
+  const UserManagement = () => (
+    <div>
+      <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+        <h3 className="text-lg font-bold text-slate-800">
+          Quản lý người dùng
+        </h3>
+        <button
+          type="button"
+          onClick={() => setShowAddUserModal(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-teal-700 sm:w-auto"
+        >
+          <Plus className="h-4 w-4" />
+          Thêm người dùng
+        </button>
+      </div>
+      <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
+        <table className="hidden w-full text-left text-sm md:table">
+          <thead className="bg-slate-50 font-medium text-slate-500">
+            <tr>
+              <th className="px-6 py-3">Họ và tên</th>
+              <th className="px-6 py-3">Tên đăng nhập</th>
+              <th className="px-6 py-3">Vai trò</th>
+              <th className="px-6 py-3">Khu vực</th>
+              <th className="px-6 py-3 text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {users.length > 0 ? (
+              users.map((user) => (
+                <tr key={user.id} className="hover:bg-slate-50">
+                  <td className="px-6 py-4 font-medium">{user.name}</td>
+                  <td className="px-6 py-4">{user.username}</td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs font-medium ${
+                        user.role === 'ADMIN'
+                          ? 'bg-slate-800 text-white'
+                          : user.role === 'DOCTOR'
+                            ? 'bg-blue-100 text-blue-700'
+                            : user.role === 'SUPERVISOR'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-purple-100 text-purple-700'
+                      }`}
+                    >
+                      {user.role === 'ADMIN'
+                        ? 'Quản trị viên'
+                        : user.role === 'DOCTOR'
+                          ? 'Bác sĩ'
+                          : user.role === 'SUPERVISOR'
+                            ? 'Trưởng tầng'
+                            : 'Kế toán'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">{user.floor || '-'}</td>
+                  <td className="flex justify-end gap-2 px-6 py-4 text-right">
+                    <button className="text-slate-400 hover:text-teal-600">
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button className="text-slate-400 hover:text-red-600">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={5} className="py-8 text-center italic text-slate-500">
+                  Chưa có người dùng nào
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
 
-            {/* Mobile Card View */}
-            <div className="md:hidden divide-y divide-slate-100">
-               {users.length > 0 ? users.map(u => (
-                  <div key={u.id} className="p-4 hover:bg-slate-50">
-                     <div className="flex justify-between items-start mb-2">
-                        <div>
-                           <p className="font-bold text-slate-800">{u.name}</p>
-                           <p className="text-xs text-slate-500">@{u.username}</p>
-                        </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.role === 'ADMIN' ? 'bg-slate-800 text-white' :
-                           u.role === 'DOCTOR' ? 'bg-blue-100 text-blue-700' :
-                              u.role === 'SUPERVISOR' ? 'bg-green-100 text-green-700' :
-                                 'bg-purple-100 text-purple-700'
-                           }`}>
-                           {u.role === 'ADMIN' ? 'Admin' :
-                              u.role === 'DOCTOR' ? 'Bác sĩ' :
-                                 u.role === 'SUPERVISOR' ? 'Trưởng tầng' : 'Kế toán'}
-                        </span>
-                     </div>
-                     {u.floor && <p className="text-sm text-slate-500">Khu vực: {u.floor}</p>}
-                     <div className="flex justify-end gap-3 mt-3">
-                        <button className="text-teal-600 text-sm font-medium">Sửa</button>
-                        <button className="text-red-500 text-sm font-medium">Xóa</button>
-                     </div>
+        <div className="divide-y divide-slate-100 md:hidden">
+          {users.length > 0 ? (
+            users.map((user) => (
+              <div key={user.id} className="p-4 hover:bg-slate-50">
+                <div className="mb-2 flex items-start justify-between">
+                  <div>
+                    <p className="font-bold text-slate-800">{user.name}</p>
+                    <p className="text-xs text-slate-500">@{user.username}</p>
                   </div>
-               )) : (
-                  <div className="text-center py-8 text-slate-500 italic">Chưa có người dùng nào</div>
-               )}
+                  <span
+                    className={`rounded-full px-2 py-1 text-xs font-medium ${
+                      user.role === 'ADMIN'
+                        ? 'bg-slate-800 text-white'
+                        : user.role === 'DOCTOR'
+                          ? 'bg-blue-100 text-blue-700'
+                          : user.role === 'SUPERVISOR'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-purple-100 text-purple-700'
+                    }`}
+                  >
+                    {user.role === 'ADMIN'
+                      ? 'Admin'
+                      : user.role === 'DOCTOR'
+                        ? 'Bác sĩ'
+                        : user.role === 'SUPERVISOR'
+                          ? 'Trưởng tầng'
+                          : 'Kế toán'}
+                  </span>
+                </div>
+                {user.floor && (
+                  <p className="text-sm text-slate-500">Khu vực: {user.floor}</p>
+                )}
+                <div className="mt-3 flex justify-end gap-3">
+                  <button className="text-sm font-medium text-teal-600">
+                    Sửa
+                  </button>
+                  <button className="text-sm font-medium text-red-500">Xóa</button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="py-8 text-center italic text-slate-500">
+              Chưa có người dùng nào
             </div>
-         </div>
+          )}
+        </div>
       </div>
-   );
+    </div>
+  );
 
-   return (
-      <div className="space-y-6">
-         {showAddUserModal && <AddUserModal onClose={() => setShowAddUserModal(false)} onSave={handleAddUser} />}
-
-         {view === 'menu' ? (
-            <>
-               <h2 className="text-2xl font-bold text-slate-800">Cài đặt hệ thống</h2>
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:border-teal-200 transition-colors cursor-pointer" onClick={() => setView('users')}>
-                     <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
-                           <Users className="w-5 h-5" />
-                        </div>
-                        <h3 className="font-bold text-slate-800">Quản lý người dùng</h3>
-                     </div>
-                     <p className="text-sm text-slate-500 mb-4">Thêm, xóa, sửa tài khoản nhân viên và phân quyền truy cập.</p>
-                     <div className="text-sm font-medium text-teal-600">Quản lý &rarr;</div>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:border-teal-200 transition-colors cursor-pointer" onClick={() => setView('prices')}>
-                     <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-teal-100 p-2 rounded-lg text-teal-600">
-                           <CreditCard className="w-5 h-5" />
-                        </div>
-                        <h3 className="font-bold text-slate-800">Bảng giá dịch vụ</h3>
-                     </div>
-                     <p className="text-sm text-slate-500 mb-4">Cập nhật đơn giá dịch vụ chăm sóc, ăn uống và phụ phí.</p>
-                     <div className="text-sm font-medium text-teal-600">Cập nhật &rarr;</div>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:border-teal-200 transition-colors cursor-pointer" onClick={() => setView('facility')}>
-                     <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-purple-100 p-2 rounded-lg text-purple-600">
-                           <Building className="w-5 h-5" />
-                        </div>
-                        <h3 className="font-bold text-slate-800">Thông tin đơn vị</h3>
-                     </div>
-                     <p className="text-sm text-slate-500 mb-4">Cập nhật thông tin cơ sở, địa chỉ, mã số thuế và liên hệ.</p>
-                     <div className="text-sm font-medium text-teal-600">Cập nhật &rarr;</div>
-                  </div>
-               </div>
-            </>
-         ) : (
-            <>
-               <button onClick={() => setView('menu')} className="flex items-center gap-2 text-slate-500 hover:text-teal-600 mb-4">
-                  <ArrowLeft className="w-4 h-4" /> Quay lại cài đặt
-               </button>
-               {view === 'users' && <UserManagement />}
-               {view === 'prices' && (
-                  <ServiceCatalog
-                     services={servicePrices}
-                     onAdd={updateServicePrice}
-                     onUpdate={updateServicePrice}
-                     onDelete={deleteServicePrice}
-                  />
-               )}
-               {view === 'facility' && <FacilityConfig />}
-            </>
-         )}
+  const renderMenuCard = ({
+    icon,
+    iconClassName,
+    title,
+    description,
+    onClick,
+    actionText,
+  }: {
+    icon: React.ReactNode;
+    iconClassName: string;
+    title: string;
+    description: string;
+    onClick: () => void;
+    actionText: string;
+  }) => (
+    <div
+      className="cursor-pointer rounded-xl border border-slate-100 bg-white p-6 shadow-sm transition-colors hover:border-teal-200"
+      onClick={onClick}
+    >
+      <div className="mb-4 flex items-center gap-3">
+        <div className={`rounded-lg p-2 ${iconClassName}`}>{icon}</div>
+        <h3 className="font-bold text-slate-800">{title}</h3>
       </div>
-   );
+      <p className="mb-4 text-sm text-slate-500">{description}</p>
+      <div className="text-sm font-medium text-teal-600">{actionText} &rarr;</div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      {showAddUserModal && (
+        <AddUserModal
+          onClose={() => setShowAddUserModal(false)}
+          onSave={handleAddUser}
+        />
+      )}
+
+      {view === 'menu' ? (
+        <>
+          <h2 className="text-2xl font-bold text-slate-800">
+            Cài đặt hệ thống
+          </h2>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {renderMenuCard({
+              icon: <Users className="h-5 w-5" />,
+              iconClassName: 'bg-blue-100 text-blue-600',
+              title: 'Quản lý người dùng',
+              description:
+                'Thêm, xóa, sửa tài khoản nhân viên và phân quyền truy cập.',
+              onClick: () => setView('users'),
+              actionText: 'Quản lý',
+            })}
+            {renderMenuCard({
+              icon: <CreditCard className="h-5 w-5" />,
+              iconClassName: 'bg-teal-100 text-teal-600',
+              title: 'Bảng giá dịch vụ',
+              description:
+                'Cập nhật đơn giá dịch vụ chăm sóc, ăn uống và phụ phí.',
+              onClick: () => setView('prices'),
+              actionText: 'Cập nhật',
+            })}
+            {renderMenuCard({
+              icon: <Building className="h-5 w-5" />,
+              iconClassName: 'bg-purple-100 text-purple-600',
+              title: 'Thông tin đơn vị',
+              description:
+                'Cập nhật thông tin cơ sở, địa chỉ, mã số thuế và liên hệ.',
+              onClick: () => setView('facility'),
+              actionText: 'Cập nhật',
+            })}
+            {renderMenuCard({
+              icon: <Pill className="h-5 w-5" />,
+              iconClassName: 'bg-amber-100 text-amber-600',
+              title: 'Danh mục thuốc',
+              description:
+                'Quản lý thuốc kê đơn nội bộ, tra cứu mã thuốc và nguồn nhập.',
+              onClick: () => setView('medicines'),
+              actionText: 'Quản lý',
+            })}
+          </div>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={() => setView('menu')}
+            className="mb-4 flex items-center gap-2 text-slate-500 hover:text-teal-600"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Quay lại cài đặt
+          </button>
+          {view === 'users' && <UserManagement />}
+          {view === 'prices' && (
+            <ServiceCatalog
+              services={servicePrices}
+              onAdd={updateServicePrice}
+              onUpdate={updateServicePrice}
+              onDelete={deleteServicePrice}
+            />
+          )}
+          {view === 'facility' && <FacilityConfig />}
+          {view === 'medicines' && <MedicineCatalogManager />}
+        </>
+      )}
+    </div>
+  );
 };
-
