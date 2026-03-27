@@ -12,7 +12,10 @@ export const normalizeMedicineUnit = (value?: string | null) => {
   const normalized = normalizeMedicineText(value);
   if (!normalized) return '';
   const withoutDiacritics = normalized.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  return withoutDiacritics.charAt(0).toUpperCase() + withoutDiacritics.slice(1).toLowerCase();
+  if (withoutDiacritics === withoutDiacritics.toLowerCase()) {
+    return withoutDiacritics.charAt(0).toUpperCase() + withoutDiacritics.slice(1);
+  }
+  return withoutDiacritics;
 };
 
 export const buildMedicineDisplayName = (
