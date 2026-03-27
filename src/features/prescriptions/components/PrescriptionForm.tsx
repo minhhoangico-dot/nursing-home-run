@@ -18,9 +18,21 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
    const [diagnosis, setDiagnosis] = useState('');
    const [notes, setNotes] = useState('');
    const [duration, setDuration] = useState(7);
+   const [isCatalogReady, setIsCatalogReady] = useState(medicines.length > 0);
 
    useEffect(() => {
-      fetchMedicines();
+      let isMounted = true;
+      setIsCatalogReady(medicines.length > 0);
+
+      Promise.resolve(fetchMedicines()).finally(() => {
+         if (isMounted) {
+            setIsCatalogReady(true);
+         }
+      });
+
+      return () => {
+         isMounted = false;
+      };
    }, [fetchMedicines]);
 
    const getMedicineDisplayName = (medicine: Medicine) =>
@@ -64,6 +76,26 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
       return matches.length === 1 ? matches[0] : undefined;
    };
 
+   const bindItemToCatalogMedicine = (
+      item: Partial<PrescriptionItem>,
+      catalog: Medicine[] = medicines,
+   ): Partial<PrescriptionItem> => {
+      if (item.medicineId || !item.medicineName?.trim()) {
+         return item;
+      }
+
+      const selectedMedicine = findUniqueMedicineByDisplayName(item.medicineName, catalog);
+      if (!selectedMedicine) {
+         return item;
+      }
+
+      return {
+         ...item,
+         medicineId: selectedMedicine.id,
+         medicineName: getMedicineDisplayName(selectedMedicine),
+      };
+   };
+
    useEffect(() => {
       if (medicines.length === 0) {
          return;
@@ -73,21 +105,11 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
          let hasChanges = false;
 
          const nextItems = currentItems.map((item) => {
-            if (item.medicineId || !item.medicineName?.trim()) {
-               return item;
+            const nextItem = bindItemToCatalogMedicine(item, medicines);
+            if (nextItem !== item) {
+               hasChanges = true;
             }
-
-            const selectedMedicine = findUniqueMedicineByDisplayName(item.medicineName, medicines);
-            if (!selectedMedicine) {
-               return item;
-            }
-
-            hasChanges = true;
-            return {
-               ...item,
-               medicineId: selectedMedicine.id,
-               medicineName: getMedicineDisplayName(selectedMedicine),
-            };
+            return nextItem;
          });
 
          return hasChanges ? nextItems : currentItems;
@@ -151,11 +173,22 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
    };
 
    const handleSubmit = async () => {
+      if (!isCatalogReady) {
+         setError('Danh mục thuốc đang tải, vui lòng thử lại sau giây lát');
+         return;
+      }
+
+      const resolvedItems = items.map((item) => bindItemToCatalogMedicine(item));
+      const hasReconciledItems = resolvedItems.some((item, index) => item !== items[index]);
+      if (hasReconciledItems) {
+         setItems(resolvedItems);
+      }
+
       if (!selectedResidentId || !diagnosis) {
          setError('Vui lòng chọn NCT và nhập chẩn đoán');
          return;
       }
-      if (items.some(i => !i.medicineId || !i.medicineName || !i.dosage)) {
+      if (resolvedItems.some(i => !i.medicineId || !i.medicineName || !i.dosage)) {
          setError('Vui lòng chọn thuốc từ danh mục nội bộ và điền đầy đủ thông tin thuốc');
          return;
       }
@@ -179,7 +212,7 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
             endDate: endDate.toISOString().split('T')[0],
             status: 'Active',
             notes
-         }, items as any[]); // Cast for now as types align roughly
+         }, resolvedItems as any[]); // Cast for now as types align roughly
 
          onSave();
          onClose();
@@ -378,7 +411,7 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
                </button>
                <button
                   onClick={handleSubmit}
-                  disabled={loading}
+                  disabled={loading || !isCatalogReady}
                   className="px-6 py-2.5 bg-teal-600 text-white font-bold rounded-xl hover:bg-teal-700 shadow-lg shadow-teal-200 flex items-center gap-2 transition-all disabled:opacity-70"
                >
                   {loading ? 'Đang lưu...' : <><Save className="w-5 h-5" /> Lưu đơn thuốc</>}

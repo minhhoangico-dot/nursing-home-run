@@ -47,6 +47,7 @@ describe('PrescriptionForm', () => {
   beforeEach(() => {
     storeState.medicines = [...defaultMedicines];
     storeState.fetchMedicines.mockReset();
+    storeState.fetchMedicines.mockResolvedValue(undefined);
     storeState.createPrescription.mockReset();
     storeState.createPrescription.mockResolvedValue(undefined);
   });
@@ -114,6 +115,12 @@ describe('PrescriptionForm', () => {
 
   it('reconciles a typed catalog name into a bound medicine after medicines finish loading', async () => {
     storeState.medicines = [];
+    let resolveFetch: (() => void) | undefined;
+    storeState.fetchMedicines.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveFetch = resolve;
+      }),
+    );
 
     const view = renderForm();
 
@@ -133,6 +140,7 @@ describe('PrescriptionForm', () => {
         name: 'Desloratadine (Aerius 0.5mg/ml)',
       },
     ];
+    resolveFetch?.();
 
     view.rerender(
       <PrescriptionForm
@@ -142,6 +150,12 @@ describe('PrescriptionForm', () => {
         onSave={vi.fn()}
       />,
     );
+
+    expect(getSaveButton()).toBeDisabled();
+
+    await waitFor(() => {
+      expect(getSaveButton()).not.toBeDisabled();
+    });
 
     fireEvent.click(getSaveButton());
 
@@ -155,6 +169,26 @@ describe('PrescriptionForm', () => {
           }),
         ],
       );
+    });
+  });
+
+  it('keeps submit disabled until the catalog fetch is ready to bind medicines', async () => {
+    storeState.medicines = [];
+    let resolveFetch: (() => void) | undefined;
+    storeState.fetchMedicines.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveFetch = resolve;
+      }),
+    );
+
+    renderForm();
+
+    expect(getSaveButton()).toBeDisabled();
+
+    resolveFetch?.();
+
+    await waitFor(() => {
+      expect(getSaveButton()).not.toBeDisabled();
     });
   });
 
