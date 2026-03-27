@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, X, Save, Printer, AlertCircle, Search, Pill, User as UserIcon } from 'lucide-react';
-import { Prescription, PrescriptionItem, Resident, User, InventoryItem } from '../../../types/index';
-// Assuming InventoryItem matches Medicine interface roughly or we map it
+import { Medicine, Prescription, PrescriptionItem, Resident, User } from '../../../types/index';
 import { usePrescriptionsStore } from '../../../stores/prescriptionStore';
+import { buildMedicineDisplayName } from '../utils/medicineCatalog';
 
 interface PrescriptionFormProps {
    user: User;
@@ -51,6 +51,60 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
       const newItems = [...items];
       newItems[index] = { ...newItems[index], [field]: value };
       setItems(newItems);
+   };
+
+   const findMedicineByDisplayName = (value: string) => {
+      const normalizedValue = value.trim();
+      if (!normalizedValue) return undefined;
+
+      return medicines.find((medicine: Medicine) => {
+         const displayName = medicine.name || buildMedicineDisplayName(medicine.activeIngredient, medicine.tradeName);
+         return displayName === normalizedValue;
+      });
+   };
+
+   const handleMedicineNameChange = (index: number, value: string) => {
+      const currentItem = items[index];
+      const trimmedValue = value.trim();
+
+      if (!trimmedValue) {
+         setItems((currentItems) => {
+            const nextItems = [...currentItems];
+            nextItems[index] = {
+               ...nextItems[index],
+               medicineId: undefined,
+               medicineName: '',
+            };
+            return nextItems;
+         });
+         return;
+      }
+
+      if (currentItem?.medicineId) {
+         if (currentItem.medicineName !== trimmedValue) {
+            return;
+         }
+         return;
+      }
+
+      const selectedMedicine = findMedicineByDisplayName(value);
+
+      if (selectedMedicine) {
+         setItems((currentItems) => {
+            const nextItems = [...currentItems];
+            nextItems[index] = {
+               ...nextItems[index],
+               medicineId: selectedMedicine.id,
+               medicineName:
+                  selectedMedicine.name ||
+                  buildMedicineDisplayName(selectedMedicine.activeIngredient, selectedMedicine.tradeName),
+            };
+            return nextItems;
+         });
+         return;
+      }
+
+      updateItem(index, 'medicineName', value);
    };
 
    const calculateQuantity = (item: Partial<PrescriptionItem>) => {
@@ -218,7 +272,7 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
                                        className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-teal-500 outline-none bg-white"
                                        placeholder="Tìm tên thuốc..."
                                        value={item.medicineName}
-                                       onChange={e => updateItem(index, 'medicineName', e.target.value)}
+                                       onChange={e => handleMedicineNameChange(index, e.target.value)}
                                     />
                                     <datalist id="med-suggestions">
                                        {medicines.map(m => (
