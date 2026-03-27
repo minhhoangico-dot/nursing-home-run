@@ -23,7 +23,7 @@ END $$;
 UPDATE public.medicines
 SET
     source = COALESCE(source, 'MANUAL'),
-    name = canonical.canonical_name
+    name = COALESCE(NULLIF(BTRIM(public.medicines.name), ''), canonical.canonical_name)
 FROM (
     SELECT
         id,
@@ -46,28 +46,48 @@ FROM (
 WHERE public.medicines.id = canonical.id
   AND (
       public.medicines.source IS NULL
-      OR (
-          canonical.canonical_name IS NOT NULL
-          AND public.medicines.name IS DISTINCT FROM canonical.canonical_name
-      )
+      OR NULLIF(BTRIM(public.medicines.name), '') IS NULL
   );
 
-CREATE OR REPLACE FUNCTION public.set_medicines_updated_at()
+CREATE OR REPLACE FUNCTION public.sync_medicines_derived_fields()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    canonical_name TEXT;
 BEGIN
+    canonical_name := NULLIF(
+        TRIM(
+            CASE
+                WHEN NULLIF(BTRIM(NEW.active_ingredient), '') IS NOT NULL AND NULLIF(BTRIM(NEW.trade_name), '') IS NOT NULL
+                    THEN BTRIM(NEW.active_ingredient) || ' (' || BTRIM(NEW.trade_name) || ')'
+                WHEN NULLIF(BTRIM(NEW.active_ingredient), '') IS NOT NULL
+                    THEN BTRIM(NEW.active_ingredient)
+                WHEN NULLIF(BTRIM(NEW.trade_name), '') IS NOT NULL
+                    THEN BTRIM(NEW.trade_name)
+                ELSE ''
+            END
+        ),
+        ''
+    );
+
+    IF canonical_name IS NOT NULL THEN
+        NEW.name = canonical_name;
+    ELSIF NULLIF(BTRIM(NEW.name), '') IS NOT NULL THEN
+        NEW.name = BTRIM(NEW.name);
+    END IF;
+
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
 $$;
 
-DROP TRIGGER IF EXISTS set_medicines_updated_at ON public.medicines;
+DROP TRIGGER IF EXISTS sync_medicines_derived_fields ON public.medicines;
 
-CREATE TRIGGER set_medicines_updated_at
-BEFORE UPDATE ON public.medicines
+CREATE TRIGGER sync_medicines_derived_fields
+BEFORE INSERT OR UPDATE ON public.medicines
 FOR EACH ROW
-EXECUTE FUNCTION public.set_medicines_updated_at();
+EXECUTE FUNCTION public.sync_medicines_derived_fields();
 
 CREATE INDEX IF NOT EXISTS idx_medicines_code ON public.medicines (code);
 CREATE INDEX IF NOT EXISTS idx_medicines_source ON public.medicines (source);
