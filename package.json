@@ -10,6 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "bootstrap:vostro": "node scripts/bootstrap-vostro-supabase.mjs",
+    "medicines:import:dry-run": "node scripts/import-his-medicines.mjs --dry-run",
+    "medicines:import": "node scripts/import-his-medicines.mjs --apply",
     "deploy:worker": "npm run build && npx wrangler deploy"
   },
   "dependencies": {
@@ -22,6 +24,7 @@
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^6.30.2",
     "recharts": "^3.6.0",
+    "pg": "^8.16.3",
     "zod": "^4.2.1",
     "zustand": "^5.0.9"
   },
