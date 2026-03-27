@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { Prescription, PrescriptionItem, Medicine } from '../types/medical';
+import {
+    mapMedicineRowFromDb,
+    mapMedicineRowToDb
+} from '../features/prescriptions/utils/medicineMappers';
 
 interface PrescriptionsState {
     prescriptions: Prescription[];
@@ -159,14 +163,7 @@ export const usePrescriptionsStore = create<PrescriptionsState>((set, get) => ({
             const { data, error } = await supabase.from('medicines').select('*').order('name');
             if (error) throw error;
 
-            const mapped: Medicine[] = data.map((m: any) => ({
-                id: m.id,
-                name: m.name,
-                activeIngredient: m.active_ingredient,
-                unit: m.unit,
-                defaultDosage: m.default_dosage,
-                price: m.price
-            }));
+            const mapped: Medicine[] = (data || []).map(mapMedicineRowFromDb);
             set({ medicines: mapped });
         } catch (e: any) {
             console.error('Fetch medicines error', e);
@@ -175,13 +172,7 @@ export const usePrescriptionsStore = create<PrescriptionsState>((set, get) => ({
 
     createMedicine: async (medicine) => {
         try {
-            const { error } = await supabase.from('medicines').insert({
-                name: medicine.name,
-                active_ingredient: medicine.activeIngredient,
-                unit: medicine.unit,
-                default_dosage: medicine.defaultDosage,
-                price: medicine.price
-            });
+            const { error } = await supabase.from('medicines').insert(mapMedicineRowToDb(medicine));
             if (error) throw error;
             await get().fetchMedicines();
         } catch (e: any) {
@@ -192,13 +183,7 @@ export const usePrescriptionsStore = create<PrescriptionsState>((set, get) => ({
 
     updateMedicine: async (id, medicine) => {
         try {
-            const { error } = await supabase.from('medicines').update({
-                name: medicine.name,
-                active_ingredient: medicine.activeIngredient,
-                unit: medicine.unit,
-                default_dosage: medicine.defaultDosage,
-                price: medicine.price
-            }).eq('id', id);
+            const { error } = await supabase.from('medicines').update(mapMedicineRowToDb(medicine)).eq('id', id);
             if (error) throw error;
             await get().fetchMedicines();
         } catch (e: any) {

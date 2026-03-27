@@ -9,11 +9,16 @@ export type PrescriptionStatus = 'Active' | 'Completed' | 'Cancelled';
 
 export interface Medicine {
   id: string;
+  code?: string;
   name: string;
+  tradeName?: string;
   activeIngredient?: string;
   unit: string;
+  route?: string;
   defaultDosage?: string;
   price?: number;
+  source?: 'HIS_IMPORT' | 'MANUAL';
+  hisServiceId?: number | null;
 }
 
 export interface PrescriptionItem {

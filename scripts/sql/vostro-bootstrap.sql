@@ -306,11 +306,16 @@ CREATE TABLE IF NOT EXISTS public.daily_monitoring (
 
 CREATE TABLE IF NOT EXISTS public.medicines (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code TEXT,
     name TEXT NOT NULL,
+    trade_name TEXT,
     active_ingredient TEXT,
     unit TEXT,
+    route TEXT,
     default_dosage TEXT,
     price NUMERIC DEFAULT 0,
+    source TEXT NOT NULL DEFAULT 'MANUAL',
+    his_service_id BIGINT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -454,6 +459,8 @@ CREATE INDEX IF NOT EXISTS idx_procedure_resident_date ON public.procedure_recor
 CREATE INDEX IF NOT EXISTS idx_weight_resident_month ON public.weight_records (resident_id, record_month DESC);
 CREATE INDEX IF NOT EXISTS idx_daily_monitoring_resident_date ON public.daily_monitoring (resident_id, record_date DESC);
 CREATE INDEX IF NOT EXISTS idx_service_usage_resident_date ON public.service_usage (resident_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_medicines_code ON public.medicines (code);
+CREATE INDEX IF NOT EXISTS idx_medicines_source ON public.medicines (source);
 
 INSERT INTO public.room_prices (room_type, room_type_vi, price_monthly, description) VALUES
     ('1-bed', 'Phòng 1 người', 15000000, 'Phòng riêng một giường'),
