@@ -64,7 +64,7 @@ export const normalizeHisMedicineRow = (row) => {
   const tradeName = normalizeMedicineText(row?.servicename);
   const activeIngredient = normalizeMedicineText(row?.listmedicinehoatchat);
 
-  if (!code || !tradeName || !activeIngredient || activeIngredient === '.') {
+  if (!code || !activeIngredient || activeIngredient === '.') {
     return null;
   }
 
@@ -73,7 +73,7 @@ export const normalizeHisMedicineRow = (row) => {
 
   return {
     code,
-    tradeName,
+    tradeName: tradeName || null,
     activeIngredient,
     unit,
     route,
@@ -209,20 +209,38 @@ export const upsertMedicinesToSupabase = async (
 ) => {
   const codes = medicines.map((medicine) => medicine.code);
   const existingByCode = new Map();
+  const nonHisCollisions = [];
 
   for (const codeGroup of chunk(codes, 500)) {
     const { data, error } = await supabase
       .from('medicines')
-      .select('id, code')
-      .eq('source', HIS_SOURCE)
+      .select('id, code, source, name')
       .in('code', codeGroup);
 
     if (error) throw error;
     for (const row of data ?? []) {
+      if (row.source && row.source !== HIS_SOURCE) {
+        nonHisCollisions.push({
+          code: row.code,
+          existingId: row.id,
+          existingSource: row.source,
+          existingName: row.name ?? null,
+        });
+        continue;
+      }
+
       if (!existingByCode.has(row.code)) {
         existingByCode.set(row.code, row.id);
       }
     }
+  }
+
+  if (nonHisCollisions.length > 0) {
+    const error = new Error(
+      `Found ${nonHisCollisions.length} manual-code collisions in medicines catalog`,
+    );
+    error.collisions = nonHisCollisions;
+    throw error;
   }
 
   const inserts = [];

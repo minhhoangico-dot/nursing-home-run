@@ -6,6 +6,7 @@ import {
   normalizeHisMedicineRow,
   prepareHisMedicineImport,
   runImport,
+  upsertMedicinesToSupabase,
 } from './import-his-medicines.mjs';
 
 const fixturePath = path.resolve(
@@ -48,6 +49,28 @@ describe('normalizeHisMedicineRow', () => {
       }),
     ).toBeNull();
   });
+
+  it('keeps rows with blank trade names when code and active ingredient exist', () => {
+    expect(
+      normalizeHisMedicineRow({
+        serviceid: 50003,
+        servicecode: 'BSGD00998',
+        servicename: '',
+        listmedicinehoatchat: 'Missing Trade',
+        serviceunit: 'vien',
+        dm_medicine_duongdung: 'Uong',
+      }),
+    ).toEqual({
+      code: 'BSGD00998',
+      tradeName: null,
+      activeIngredient: 'Missing Trade',
+      unit: 'Vien',
+      route: 'Uong',
+      name: 'Missing Trade',
+      source: 'HIS_IMPORT',
+      hisServiceId: 50003,
+    });
+  });
 });
 
 describe('prepareHisMedicineImport', () => {
@@ -86,6 +109,16 @@ describe('prepareHisMedicineImport', () => {
         name: 'Gamma (Route Optional)',
         source: 'HIS_IMPORT',
         hisServiceId: 40001,
+      },
+      {
+        code: 'BSGD00998',
+        tradeName: null,
+        activeIngredient: 'Missing Trade',
+        unit: 'Vien',
+        route: 'Uong',
+        name: 'Missing Trade',
+        source: 'HIS_IMPORT',
+        hisServiceId: 50003,
       },
     ]);
     expect(result.conflicts).toEqual([
@@ -127,11 +160,73 @@ describe('prepareHisMedicineImport', () => {
     ]);
     expect(result.stats).toMatchObject({
       totalRows: 8,
-      validRows: 5,
-      filteredRows: 3,
-      uniqueCodes: 3,
+      validRows: 6,
+      filteredRows: 2,
+      uniqueCodes: 4,
       conflicts: 1,
     });
+  });
+});
+
+describe('upsertMedicinesToSupabase', () => {
+  it('rejects code collisions against non-HIS medicines instead of duplicating them', async () => {
+    const updates = [];
+    const inserts = [];
+    const supabase = {
+      from: (tableName) => {
+        expect(tableName).toBe('medicines');
+        return {
+          select: () => ({
+            in: async () => ({
+              data: [
+                { id: 'manual-1', code: 'BSGD00012', source: 'MANUAL', name: 'Legacy custom name' },
+              ],
+              error: null,
+            }),
+          }),
+          insert: async (payload) => {
+            inserts.push(payload);
+            return { error: null };
+          },
+          update: (payload) => ({
+            eq: async () => {
+              updates.push(payload);
+              return { error: null };
+            },
+          }),
+        };
+      },
+    };
+
+    await expect(
+      upsertMedicinesToSupabase(
+        [
+          {
+            code: 'BSGD00012',
+            tradeName: 'Aerius 0.5mg/ml',
+            activeIngredient: 'Desloratadine',
+            unit: 'Lo',
+            route: 'Uong',
+            name: 'Desloratadine (Aerius 0.5mg/ml)',
+            source: 'HIS_IMPORT',
+            hisServiceId: 11254,
+          },
+        ],
+        {},
+        supabase,
+      ),
+    ).rejects.toMatchObject({
+      message: expect.stringContaining('manual-code collisions'),
+      collisions: [
+        expect.objectContaining({
+          code: 'BSGD00012',
+          existingSource: 'MANUAL',
+        }),
+      ],
+    });
+
+    expect(inserts).toEqual([]);
+    expect(updates).toEqual([]);
   });
 });
 
@@ -158,8 +253,8 @@ describe('runImport', () => {
     expect(result.summary).toContain('dry-run');
     expect(result.stats).toMatchObject({
       totalRows: 8,
-      validRows: 5,
-      uniqueCodes: 3,
+      validRows: 6,
+      uniqueCodes: 4,
       conflicts: 1,
       applied: 0,
     });
