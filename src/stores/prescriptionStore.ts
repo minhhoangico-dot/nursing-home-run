@@ -183,7 +183,7 @@ export const usePrescriptionsStore = create<PrescriptionsState>((set, get) => ({
 
     updateMedicine: async (id, medicine) => {
         try {
-            const { error } = await supabase.from('medicines').update(mapMedicineRowToDb(medicine)).eq('id', id);
+            const { error } = await supabase.from('medicines').update(mapMedicineRowToDb(medicine, { forUpdate: true })).eq('id', id);
             if (error) throw error;
             await get().fetchMedicines();
         } catch (e: any) {

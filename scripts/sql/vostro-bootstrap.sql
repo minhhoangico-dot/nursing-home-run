@@ -314,7 +314,7 @@ CREATE TABLE IF NOT EXISTS public.medicines (
     route TEXT,
     default_dosage TEXT,
     price NUMERIC DEFAULT 0,
-    source TEXT NOT NULL DEFAULT 'MANUAL',
+    source TEXT NOT NULL DEFAULT 'MANUAL' CHECK (source IN ('HIS_IMPORT', 'MANUAL')),
     his_service_id BIGINT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -461,6 +461,23 @@ CREATE INDEX IF NOT EXISTS idx_daily_monitoring_resident_date ON public.daily_mo
 CREATE INDEX IF NOT EXISTS idx_service_usage_resident_date ON public.service_usage (resident_id, date DESC);
 CREATE INDEX IF NOT EXISTS idx_medicines_code ON public.medicines (code);
 CREATE INDEX IF NOT EXISTS idx_medicines_source ON public.medicines (source);
+
+CREATE OR REPLACE FUNCTION public.set_medicines_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS set_medicines_updated_at ON public.medicines;
+
+CREATE TRIGGER set_medicines_updated_at
+BEFORE UPDATE ON public.medicines
+FOR EACH ROW
+EXECUTE FUNCTION public.set_medicines_updated_at();
 
 INSERT INTO public.room_prices (room_type, room_type_vi, price_monthly, description) VALUES
     ('1-bed', 'Phòng 1 người', 15000000, 'Phòng riêng một giường'),
