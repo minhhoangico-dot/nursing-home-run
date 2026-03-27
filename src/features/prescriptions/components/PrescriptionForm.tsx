@@ -23,6 +23,9 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
       fetchMedicines();
    }, [fetchMedicines]);
 
+   const getMedicineDisplayName = (medicine: Medicine) =>
+      medicine.name || buildMedicineDisplayName(medicine.activeIngredient, medicine.tradeName);
+
    // Items state
    const [items, setItems] = useState<Partial<PrescriptionItem>[]>([
       { id: Date.now().toString(), medicineName: '', dosage: '', frequency: '2 lần/ngày', timesOfDay: ['Sáng', 'Chiều'], quantity: 0 }
@@ -53,15 +56,43 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
       setItems(newItems);
    };
 
-   const findMedicineByDisplayName = (value: string) => {
+   const findUniqueMedicineByDisplayName = (value: string, catalog: Medicine[] = medicines) => {
       const normalizedValue = value.trim();
       if (!normalizedValue) return undefined;
 
-      return medicines.find((medicine: Medicine) => {
-         const displayName = medicine.name || buildMedicineDisplayName(medicine.activeIngredient, medicine.tradeName);
-         return displayName === normalizedValue;
-      });
+      const matches = catalog.filter((medicine: Medicine) => getMedicineDisplayName(medicine) === normalizedValue);
+      return matches.length === 1 ? matches[0] : undefined;
    };
+
+   useEffect(() => {
+      if (medicines.length === 0) {
+         return;
+      }
+
+      setItems((currentItems) => {
+         let hasChanges = false;
+
+         const nextItems = currentItems.map((item) => {
+            if (item.medicineId || !item.medicineName?.trim()) {
+               return item;
+            }
+
+            const selectedMedicine = findUniqueMedicineByDisplayName(item.medicineName, medicines);
+            if (!selectedMedicine) {
+               return item;
+            }
+
+            hasChanges = true;
+            return {
+               ...item,
+               medicineId: selectedMedicine.id,
+               medicineName: getMedicineDisplayName(selectedMedicine),
+            };
+         });
+
+         return hasChanges ? nextItems : currentItems;
+      });
+   }, [medicines]);
 
    const handleMedicineNameChange = (index: number, value: string) => {
       const currentItem = items[index];
@@ -87,7 +118,7 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
          return;
       }
 
-      const selectedMedicine = findMedicineByDisplayName(value);
+      const selectedMedicine = findUniqueMedicineByDisplayName(value);
 
       if (selectedMedicine) {
          setItems((currentItems) => {
@@ -95,16 +126,22 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
             nextItems[index] = {
                ...nextItems[index],
                medicineId: selectedMedicine.id,
-               medicineName:
-                  selectedMedicine.name ||
-                  buildMedicineDisplayName(selectedMedicine.activeIngredient, selectedMedicine.tradeName),
+               medicineName: getMedicineDisplayName(selectedMedicine),
             };
             return nextItems;
          });
          return;
       }
 
-      updateItem(index, 'medicineName', value);
+      setItems((currentItems) => {
+         const nextItems = [...currentItems];
+         nextItems[index] = {
+            ...nextItems[index],
+            medicineId: undefined,
+            medicineName: value,
+         };
+         return nextItems;
+      });
    };
 
    const calculateQuantity = (item: Partial<PrescriptionItem>) => {
@@ -118,8 +155,8 @@ export const PrescriptionForm = ({ user, resident: initialResident, residents, o
          setError('Vui lòng chọn NCT và nhập chẩn đoán');
          return;
       }
-      if (items.some(i => !i.medicineName || !i.dosage)) {
-         setError('Vui lòng điền đầy đủ thông tin thuốc');
+      if (items.some(i => !i.medicineId || !i.medicineName || !i.dosage)) {
+         setError('Vui lòng chọn thuốc từ danh mục nội bộ và điền đầy đủ thông tin thuốc');
          return;
       }
 
