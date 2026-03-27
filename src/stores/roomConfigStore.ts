@@ -28,6 +28,7 @@ export interface FacilityInfo {
     address: string;
     phone: string;
     email: string;
+    website?: string;
     // We can probably drop structure info from "Setting" if we are doing dynamic structure.
 }
 
@@ -51,7 +52,8 @@ export const useRoomConfigStore = create<RoomConfigState>()(
                 address: '123 Đường ABC, Quận 7, TP.HCM',
                 phone: '028 1234 5678',
                 email: 'contact@fdc.vn',
-                taxCode: '0123456789'
+                taxCode: '0123456789',
+                website: ''
             },
 
             updateRoom: (building, floor, updatedRoom) => set((state) => {

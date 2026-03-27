@@ -1,5 +1,7 @@
 
 import { Prescription, PrescriptionItem, Resident } from '../../../types/index';
+import { useRoomConfigStore } from '../../../stores/roomConfigStore';
+import { buildPrescriptionPrintHtml } from './buildPrescriptionPrintHtml';
 
 const PRINT_STYLES = `
     @media print {
@@ -27,97 +29,30 @@ const PRINT_STYLES = `
 export const printPrescription = (prescription: Prescription, resident: Resident) => {
     const win = window.open('', '_blank');
     if (!win) return;
-
-    const itemsHtml = prescription.items?.map((item, index) => `
-        <tr>
-            <td style="text-align: center;">${index + 1}</td>
-            <td>
-                <strong>${item.medicineName}</strong>
-                ${item.instructions ? `<br/><i style="font-size: 9pt;">(${item.instructions})</i>` : ''}
-            </td>
-            <td>${item.dosage}</td>
-            <td>${item.frequency}</td>
-            <td>${item.timesOfDay?.join(', ') || ''}</td>
-            <td style="text-align: center;">${item.quantity}</td>
-        </tr>
-    `).join('') || '';
-
-    const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>In Đơn Thuốc - ${prescription.code}</title>
-            <style>${PRINT_STYLES}</style>
-        </head>
-        <body>
-            <div class="header">
-                <div>
-                    <div class="logo-text">VIỆN DƯỠNG LÃO FDC</div>
-                    <div class="sub-text">Địa chỉ: 123 Đường ABC, Quận XYZ, TP.HCM</div>
-                    <div class="sub-text">Điện thoại: (028) 3838 8383</div>
-                </div>
-                <div style="text-align: right;">
-                    <div class="sub-text">Mã đơn: <strong>${prescription.code}</strong></div>
-                    <div class="sub-text">Ngày: ${new Date(prescription.prescriptionDate).toLocaleDateString('vi-VN')}</div>
-                </div>
-            </div>
-
-            <h1>ĐƠN THUỐC</h1>
-            
-            <div style="margin-bottom: 20px;">
-                <div class="info-row">
-                    <span class="info-label">Họ và tên:</span>
-                    <span class="info-value"><strong>${resident.name.toUpperCase()}</strong></span>
-                    <span class="info-label">Năm sinh:</span>
-                    <span class="info-value">${new Date(resident.dob).getFullYear()} (${new Date().getFullYear() - new Date(resident.dob).getFullYear()} tuổi)</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Giới tính:</span>
-                    <span class="info-value">${resident.gender}</span>
-                    <span class="info-label">Phòng:</span>
-                    <span class="info-value">${resident.room}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Chẩn đoán:</span>
-                    <span class="info-value">${prescription.diagnosis}</span>
-                </div>
-                ${prescription.notes ? `
-                <div class="info-row">
-                    <span class="info-label">Ghi chú:</span>
-                    <span class="info-value">${prescription.notes}</span>
-                </div>` : ''}
-            </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 40px; text-align: center;">STT</th>
-                        <th>Tên thuốc / Hàm lượng</th>
-                        <th style="width: 100px;">Liều lượng</th>
-                        <th style="width: 100px;">Tần suất</th>
-                        <th style="width: 120px;">Thời điểm</th>
-                        <th style="width: 60px; text-align: center;">SL</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${itemsHtml}
-                </tbody>
-            </table>
-
-            <div style="margin-top: 10px; font-style: italic; font-size: 10pt;">
-                * Quý khách vui lòng kiểm tra kỹ thuốc trước khi rời quầy.
-            </div>
-
-            <div class="footer">
-                <div class="signature-box">
-                    <div class="date-line">Ngày ...... tháng ...... năm 20......</div>
-                    <div style="font-weight: bold; margin-bottom: 60px;">Bác sĩ kê đơn</div>
-                    <div>${prescription.doctorName || '................................'}</div>
-                </div>
-            </div>
-        </body>
-        </html>
-    `;
+    const facility = useRoomConfigStore.getState().facility;
+    const html = buildPrescriptionPrintHtml({
+        facility,
+        resident: {
+            name: resident.name,
+            dob: resident.dob,
+            gender: resident.gender,
+            room: resident.room,
+            bed: resident.bed,
+        },
+        prescription: {
+            code: prescription.code,
+            diagnosis: prescription.diagnosis,
+            prescriptionDate: prescription.prescriptionDate,
+            doctorName: prescription.doctorName,
+            notes: prescription.notes,
+        },
+        medicineRows: (prescription.items || []).map((item) => ({
+            name: item.medicineName,
+            instructions: item.instructions || [item.dosage, item.frequency].filter(Boolean).join(' - '),
+            quantity: item.quantity,
+            unit: null,
+        })),
+    });
 
     win.document.write(html);
     win.document.close();

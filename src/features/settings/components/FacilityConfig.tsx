@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building, Save, MapPin, Phone, Mail, Hash } from 'lucide-react';
+import { Building, Save, MapPin, Phone, Mail, Hash, Globe } from 'lucide-react';
 import { Card } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui';
@@ -53,6 +53,12 @@ export const FacilityConfig = () => {
             value={config.email}
             onChange={e => setConfig({ ...config, email: e.target.value })}
             icon={<Mail className="w-4 h-4" />}
+          />
+          <Input
+            label="Website"
+            value={config.website || ''}
+            onChange={e => setConfig({ ...config, website: e.target.value })}
+            icon={<Globe className="w-4 h-4" />}
           />
         </div>
       </Card>
