@@ -1,4 +1,5 @@
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -259,6 +260,28 @@ describe('runImport', () => {
       applied: 0,
     });
     expect(writes).toHaveLength(1);
+  });
+
+  it('creates missing parent directories for the conflicts report path', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'his-import-'));
+    const conflictsPath = path.join(tempDir, 'nested', 'his-conflicts.json');
+
+    try {
+      const result = await runImport({
+        dryRun: true,
+        fixture: fixturePath,
+        conflictsFile: conflictsPath,
+      });
+
+      expect(result.stats.conflicts).toBe(1);
+      const written = JSON.parse(await readFile(conflictsPath, 'utf8'));
+      expect(written).toHaveLength(1);
+      expect(written[0]).toMatchObject({
+        code: 'BSGD00077',
+      });
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
   });
 
   it('loads fixture rows from disk', async () => {

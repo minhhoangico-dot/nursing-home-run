@@ -1,4 +1,4 @@
-import { readFile, writeFile as writeFileFs } from 'node:fs/promises';
+import { mkdir, readFile, writeFile as writeFileFs } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
@@ -306,6 +306,7 @@ export const runImport = async (
   deps = {},
 ) => {
   const env = options.env ?? process.env;
+  const ensureDir = deps.mkdir ?? mkdir;
   const writeFile = deps.writeFile ?? writeFileFs;
   const sourceRows = options.fixture
     ? await loadFixtureRows(options.fixture)
@@ -317,6 +318,7 @@ export const runImport = async (
 
   if (options.conflictsFile) {
     const resolvedConflictsPath = path.resolve(process.cwd(), options.conflictsFile);
+    await ensureDir(path.dirname(resolvedConflictsPath), { recursive: true });
     await writeFile(
       resolvedConflictsPath,
       JSON.stringify(prepared.conflicts, null, 2),
