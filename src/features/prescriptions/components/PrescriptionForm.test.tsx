@@ -34,10 +34,9 @@ const renderForm = () =>
     />,
   );
 
-const getDiagnosisInput = () =>
-  screen.getByPlaceholderText('VD: Tăng huyết áp, Đau dạ dày...');
-const getMedicineInput = () => screen.getByPlaceholderText('Tìm tên thuốc...');
-const getDosageInput = () => screen.getByPlaceholderText('VD: 1 viên');
+const getDiagnosisInput = () => screen.getAllByRole('textbox')[0];
+const getMedicineInput = () => screen.getByRole('combobox');
+const getDosageInput = () => screen.getByPlaceholderText(/1 vi/i);
 const getSaveButton = () => {
   const buttons = screen.getAllByRole('button');
   return buttons[buttons.length - 1];
@@ -224,8 +223,25 @@ describe('PrescriptionForm', () => {
 
     expect(
       screen.getByText((content) =>
-        content.includes('Vui lòng chọn thuốc từ danh mục nội bộ'),
+        content.includes('Vui lÃ²ng chá»n thuá»‘c tá»« danh má»¥c ná»™i bá»™'),
       ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows matched catalog suggestions while typing a partial medicine query', () => {
+    renderForm();
+
+    const medicineInput = getMedicineInput();
+    fireEvent.focus(medicineInput);
+    fireEvent.change(medicineInput, {
+      target: { value: 'Aerius' },
+    });
+
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', {
+        name: /Desloratadine \(Aerius 0\.5mg\/ml\)/,
+      }),
     ).toBeInTheDocument();
   });
 });
