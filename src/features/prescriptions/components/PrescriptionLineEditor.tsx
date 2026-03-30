@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pill, Trash2 } from 'lucide-react';
 
+import { MedicineAutocomplete } from './MedicineAutocomplete';
 import { Medicine, PrescriptionItem } from '@/src/types/medical';
 
 export type PrescriptionLineDraft = Omit<PrescriptionItem, 'prescriptionId'>;
@@ -38,8 +39,6 @@ export const PrescriptionLineEditor = ({
   onRemove,
   onChange,
 }: PrescriptionLineEditorProps) => {
-  const datalistId = `medicine-suggestions-${index}`;
-
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
@@ -72,28 +71,13 @@ export const PrescriptionLineEditor = ({
           <label className="mb-1 block text-sm font-medium text-slate-700">
             Tên thuốc
           </label>
-          <input
-            list={datalistId}
+          <MedicineAutocomplete
+            medicines={medicines}
             value={line.medicineName}
-            onChange={(event) =>
-              onChange(index, 'medicineName', event.currentTarget.value)
-            }
-            placeholder="Gõ tên thuốc hoặc hoạt chất"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+            onChange={(nextValue) => onChange(index, 'medicineName', nextValue)}
+            onSelect={(medicine) => onChange(index, 'medicineName', medicine.name)}
+            autoFocus={index === 0}
           />
-          <datalist id={datalistId}>
-            {medicines.map((medicine) => (
-              <option key={medicine.id} value={medicine.name}>
-                {[
-                  medicine.strength,
-                  medicine.activeIngredient,
-                  medicine.route,
-                ]
-                  .filter(Boolean)
-                  .join(' / ')}
-              </option>
-            ))}
-          </datalist>
         </div>
 
         <div className="md:col-span-2">
