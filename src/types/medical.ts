@@ -5,14 +5,27 @@ export interface Assessment {
   assessor: string;
 }
 
-export type PrescriptionStatus = 'Active' | 'Completed' | 'Cancelled';
+export type PrescriptionStatus = 'Active' | 'Paused' | 'Completed';
+export type LegacyPrescriptionStatus = PrescriptionStatus | 'Cancelled';
+
+export function normalizePrescriptionStatus(
+  status?: string | null,
+): PrescriptionStatus {
+  if (status === 'Cancelled' || status === 'Paused') return 'Paused';
+  if (status === 'Completed') return 'Completed';
+  return 'Active';
+}
 
 export interface Medicine {
   id: string;
   name: string;
   activeIngredient?: string;
+  strength?: string;
   unit: string;
+  route?: string;
+  drugGroup?: string;
   defaultDosage?: string;
+  defaultFrequency?: number;
   price?: number;
 }
 
@@ -21,20 +34,32 @@ export interface PrescriptionItem {
   prescriptionId: string;
   medicineId?: string;
   medicineName: string;
-  dosage: string; // e.g., "1 viên"
-  frequency: string; // e.g., "2 lần/ngày"
-  timesOfDay: string[]; // e.g., ["Sáng", "Chiều"]
+  activeIngredientSnapshot?: string;
+  strengthSnapshot?: string;
+  routeSnapshot?: string;
+  dosePerTime?: number;
+  doseUnit?: string;
+  dosage: string;
+  timesPerDay?: number;
+  frequency: string;
+  timesOfDay: string[];
+  quantityDispensed?: number;
   quantity?: number;
-  instructions?: string; // e.g., "Uống sau ăn"
+  daysSupply?: number;
+  startDate?: string;
+  endDate?: string;
+  isContinuous?: boolean;
+  instructions?: string;
+  specialInstructions?: string;
 }
 
 export interface Prescription {
   id: string;
-  code: string; // DT-20231226-001
+  code: string;
   residentId: string;
-  residentName?: string; // Computed/Joined
-  doctorId: string; // User ID
-  doctorName?: string; // Cache
+  residentName?: string;
+  doctorId: string;
+  doctorName?: string;
   diagnosis: string;
   prescriptionDate: string;
   startDate: string;
@@ -50,8 +75,8 @@ export interface MedicationLog {
   prescriptionId: string;
   medicationName: string;
   dose: string;
-  time: string; // 'Morning', 'Noon', 'Afternoon', 'Night'
-  date: string; // YYYY-MM-DD
+  time: string;
+  date: string;
   status: 'Given' | 'Refused' | 'Pending';
   performer: string;
   note?: string;
