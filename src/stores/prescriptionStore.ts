@@ -1,220 +1,411 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
-import { Prescription, PrescriptionItem, Medicine } from '../types/medical';
+
+import {
+  buildActiveMedicationSummary,
+  type ActiveMedicationSummaryRow,
+} from '@/src/features/prescriptions/utils/activeMedicationSummary';
+import {
+  buildLegacyMedicineRowPayload,
+  buildLegacyPrescriptionItemRowPayload,
+  buildMedicineRowPayload,
+  buildPrescriptionItemRowPayload,
+  buildPrescriptionRowPayload,
+  mapMedicineRow,
+  mapPrescriptionRow,
+} from '@/src/features/prescriptions/utils/prescriptionMappers';
+import { supabase } from '@/src/lib/supabase';
+import { Medicine, Prescription, PrescriptionItem } from '@/src/types/medical';
+
+type PrescriptionDraft = Omit<Prescription, 'id' | 'items'>;
+type PrescriptionItemDraft = Omit<PrescriptionItem, 'id' | 'prescriptionId'>;
 
 interface PrescriptionsState {
-    prescriptions: Prescription[];
-    isLoading: boolean;
-    error: string | null;
-    medicines: Medicine[];
+  prescriptions: Prescription[];
+  isLoading: boolean;
+  error: string | null;
+  medicines: Medicine[];
+  fetchPrescriptions: (residentId?: string) => Promise<void>;
+  createPrescription: (
+    prescription: PrescriptionDraft,
+    items: PrescriptionItemDraft[],
+  ) => Promise<void>;
+  updatePrescription: (
+    id: string,
+    prescription: PrescriptionDraft,
+    items: PrescriptionItemDraft[],
+  ) => Promise<void>;
+  duplicatePrescription: (
+    id: string,
+    overrides?: Partial<PrescriptionDraft>,
+  ) => Promise<Prescription | null>;
+  pausePrescription: (id: string) => Promise<void>;
+  cancelPrescription: (id: string) => Promise<void>;
+  completePrescription: (id: string) => Promise<void>;
+  getResidentActiveMedicationRows: (
+    residentId: string,
+  ) => ActiveMedicationSummaryRow[];
+  fetchMedicines: () => Promise<void>;
+  createMedicine: (medicine: Partial<Medicine>) => Promise<void>;
+  updateMedicine: (id: string, medicine: Partial<Medicine>) => Promise<void>;
+  deleteMedicine: (id: string) => Promise<void>;
+}
 
-    // Actions
-    fetchPrescriptions: (residentId?: string) => Promise<void>;
-    createPrescription: (prescription: Omit<Prescription, 'id' | 'items'>, items: Omit<PrescriptionItem, 'id' | 'prescriptionId'>[]) => Promise<void>;
-    cancelPrescription: (id: string) => Promise<void>;
-    completePrescription: (id: string) => Promise<void>;
-    fetchMedicines: () => Promise<void>;
-    createMedicine: (medicine: Partial<Medicine>) => Promise<void>;
-    updateMedicine: (id: string, medicine: Partial<Medicine>) => Promise<void>;
-    deleteMedicine: (id: string) => Promise<void>;
+const PRESCRIPTION_SELECT = `
+  *,
+  items:prescription_items(*)
+`;
+
+function isMissingColumnError(error: any): boolean {
+  const message = `${error?.message ?? ''} ${error?.details ?? ''}`.toLowerCase();
+
+  return (
+    message.includes('could not find the') ||
+    message.includes('schema cache') ||
+    (message.includes('column') && message.includes('does not exist'))
+  );
+}
+
+function buildFallbackPrescriptionCode(dateString?: string): string {
+  const stampSource = (dateString ?? new Date().toISOString().slice(0, 10)).replaceAll(
+    '-',
+    '',
+  );
+  const suffix = Date.now().toString().slice(-4);
+
+  return `DT-${stampSource}-${suffix}`;
+}
+
+function isItemCurrentlyActive(
+  item: PrescriptionItem,
+  prescription: Prescription,
+  today: string,
+): boolean {
+  const effectiveStartDate = item.startDate ?? prescription.startDate;
+  const effectiveEndDate = item.endDate ?? prescription.endDate;
+
+  if (effectiveStartDate && effectiveStartDate > today) {
+    return false;
+  }
+
+  if (item.isContinuous) {
+    return true;
+  }
+
+  if (effectiveEndDate && effectiveEndDate < today) {
+    return false;
+  }
+
+  return true;
+}
+
+async function insertPrescriptionItems(
+  prescriptionId: string,
+  items: PrescriptionItemDraft[],
+) {
+  const enhancedPayload = items.map((item) =>
+    buildPrescriptionItemRowPayload(item, prescriptionId),
+  );
+
+  const enhancedResult = await supabase
+    .from('prescription_items')
+    .insert(enhancedPayload);
+
+  if (!enhancedResult.error) {
+    return;
+  }
+
+  if (!isMissingColumnError(enhancedResult.error)) {
+    throw enhancedResult.error;
+  }
+
+  const legacyPayload = items.map((item) =>
+    buildLegacyPrescriptionItemRowPayload(item, prescriptionId),
+  );
+  const legacyResult = await supabase.from('prescription_items').insert(legacyPayload);
+
+  if (legacyResult.error) {
+    throw legacyResult.error;
+  }
+}
+
+async function upsertMedicineWithFallback(
+  mode: 'insert' | 'update',
+  medicine: Partial<Medicine>,
+  id?: string,
+) {
+  const enhancedPayload = buildMedicineRowPayload(medicine);
+  const enhancedQuery =
+    mode === 'insert'
+      ? supabase.from('medicines').insert(enhancedPayload)
+      : supabase.from('medicines').update(enhancedPayload).eq('id', id);
+
+  const enhancedResult = await enhancedQuery;
+
+  if (!enhancedResult.error) {
+    return;
+  }
+
+  if (!isMissingColumnError(enhancedResult.error)) {
+    throw enhancedResult.error;
+  }
+
+  const legacyPayload = buildLegacyMedicineRowPayload(medicine);
+  const legacyQuery =
+    mode === 'insert'
+      ? supabase.from('medicines').insert(legacyPayload)
+      : supabase.from('medicines').update(legacyPayload).eq('id', id);
+
+  const legacyResult = await legacyQuery;
+
+  if (legacyResult.error) {
+    throw legacyResult.error;
+  }
 }
 
 export const usePrescriptionsStore = create<PrescriptionsState>((set, get) => ({
-    prescriptions: [],
-    isLoading: false,
-    error: null,
-    medicines: [],
+  prescriptions: [],
+  isLoading: false,
+  error: null,
+  medicines: [],
 
-    fetchPrescriptions: async (residentId) => {
-        set({ isLoading: true, error: null });
-        try {
-            let query = supabase
-                .from('prescriptions')
-                .select(`
-          *,
-          items:prescription_items(*)
-        `)
-                .order('prescription_date', { ascending: false });
+  fetchPrescriptions: async (residentId) => {
+    set({ isLoading: true, error: null });
 
-            if (residentId) {
-                query = query.eq('resident_id', residentId);
-            }
+    try {
+      let query = supabase
+        .from('prescriptions')
+        .select(PRESCRIPTION_SELECT)
+        .order('prescription_date', { ascending: false });
 
-            const { data, error } = await query;
+      if (residentId) {
+        query = query.eq('resident_id', residentId);
+      }
 
-            if (error) throw error;
+      const { data, error } = await query;
 
-            // Transform snake_case to camelCase mapping manually or ensure types match DB
-            // For now assuming the types need mapping if DB is snake_case (which my migration used)
-            const mappedData: Prescription[] = (data || []).map((p: any) => ({
-                id: p.id,
-                code: p.code,
-                residentId: p.resident_id,
-                doctorId: p.doctor_id,
-                doctorName: p.doctor_name,
-                diagnosis: p.diagnosis,
-                prescriptionDate: p.prescription_date,
-                startDate: p.start_date,
-                endDate: p.end_date,
-                status: p.status,
-                notes: p.notes,
-                items: (p.items || []).map((i: any) => ({
-                    id: i.id,
-                    prescriptionId: i.prescription_id,
-                    medicineId: i.medicine_id,
-                    medicineName: i.medicine_name,
-                    dosage: i.dosage,
-                    frequency: i.frequency,
-                    timesOfDay: i.times_of_day || [],
-                    quantity: i.quantity,
-                    instructions: i.instructions
-                }))
-            }));
+      if (error) throw error;
 
-            set({ prescriptions: mappedData });
-        } catch (err: any) {
-            console.error('Error fetching prescriptions:', err);
-            set({ error: err.message });
-            // Fallback for demo if DB doesn't exist yet
-            if (err.message?.includes('relation "prescriptions" does not exist')) {
-                console.warn('Using mock data for prescriptions');
-                set({ prescriptions: [] });
-            }
-        } finally {
-            set({ isLoading: false });
-        }
-    },
+      set({ prescriptions: (data ?? []).map(mapPrescriptionRow) });
+    } catch (err: any) {
+      console.error('Error fetching prescriptions:', err);
+      set({ error: err.message });
 
-    createPrescription: async (prescriptionData, itemsData) => {
-        set({ isLoading: true, error: null });
-        try {
-            // 1. Insert Header
-            const { data: pData, error: pError } = await supabase
-                .from('prescriptions')
-                .insert({
-                    code: prescriptionData.code,
-                    resident_id: prescriptionData.residentId,
-                    doctor_id: prescriptionData.doctorId,
-                    doctor_name: prescriptionData.doctorName,
-                    diagnosis: prescriptionData.diagnosis,
-                    prescription_date: prescriptionData.prescriptionDate,
-                    start_date: prescriptionData.startDate,
-                    end_date: prescriptionData.endDate,
-                    status: prescriptionData.status,
-                    notes: prescriptionData.notes
-                })
-                .select()
-                .single();
-
-            if (pError) throw pError;
-
-            // 2. Insert Items with returned ID
-            const itemsToInsert = itemsData.map(item => ({
-                prescription_id: pData.id,
-                medicine_id: item.medicineId,
-                medicine_name: item.medicineName,
-                dosage: item.dosage,
-                frequency: item.frequency,
-                times_of_day: item.timesOfDay,
-                quantity: item.quantity,
-                instructions: item.instructions
-            }));
-
-            const { error: iError } = await supabase
-                .from('prescription_items')
-                .insert(itemsToInsert);
-
-            if (iError) throw iError;
-
-            // Reload
-            await get().fetchPrescriptions(prescriptionData.residentId);
-
-        } catch (err: any) {
-            console.error('Create prescription error', err);
-            set({ error: err.message });
-            throw err;
-        } finally {
-            set({ isLoading: false });
-        }
-    },
-
-    cancelPrescription: async (id) => {
-        try {
-            await supabase.from('prescriptions').update({ status: 'Cancelled' }).eq('id', id);
-            const current = get().prescriptions;
-            set({ prescriptions: current.map(p => p.id === id ? { ...p, status: 'Cancelled' } : p) });
-        } catch (e: any) { set({ error: e.message }); }
-    },
-
-    completePrescription: async (id) => {
-        try {
-            await supabase.from('prescriptions').update({ status: 'Completed' }).eq('id', id);
-            const current = get().prescriptions;
-            set({ prescriptions: current.map(p => p.id === id ? { ...p, status: 'Completed' } : p) });
-        } catch (e: any) { set({ error: e.message }); }
-    },
-
-    fetchMedicines: async () => {
-        try {
-            const { data, error } = await supabase.from('medicines').select('*').order('name');
-            if (error) throw error;
-
-            const mapped: Medicine[] = data.map((m: any) => ({
-                id: m.id,
-                name: m.name,
-                activeIngredient: m.active_ingredient,
-                unit: m.unit,
-                defaultDosage: m.default_dosage,
-                price: m.price
-            }));
-            set({ medicines: mapped });
-        } catch (e: any) {
-            console.error('Fetch medicines error', e);
-        }
-    },
-
-    createMedicine: async (medicine) => {
-        try {
-            const { error } = await supabase.from('medicines').insert({
-                name: medicine.name,
-                active_ingredient: medicine.activeIngredient,
-                unit: medicine.unit,
-                default_dosage: medicine.defaultDosage,
-                price: medicine.price
-            });
-            if (error) throw error;
-            await get().fetchMedicines();
-        } catch (e: any) {
-            set({ error: e.message });
-            throw e;
-        }
-    },
-
-    updateMedicine: async (id, medicine) => {
-        try {
-            const { error } = await supabase.from('medicines').update({
-                name: medicine.name,
-                active_ingredient: medicine.activeIngredient,
-                unit: medicine.unit,
-                default_dosage: medicine.defaultDosage,
-                price: medicine.price
-            }).eq('id', id);
-            if (error) throw error;
-            await get().fetchMedicines();
-        } catch (e: any) {
-            set({ error: e.message });
-            throw e;
-        }
-    },
-
-    deleteMedicine: async (id) => {
-        try {
-            const { error } = await supabase.from('medicines').delete().eq('id', id);
-            if (error) throw error;
-            await get().fetchMedicines();
-        } catch (e: any) {
-            set({ error: e.message });
-            throw e;
-        }
+      if (err.message?.includes('relation "prescriptions" does not exist')) {
+        set({ prescriptions: [] });
+      }
+    } finally {
+      set({ isLoading: false });
     }
+  },
+
+  createPrescription: async (prescriptionData, itemsData) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      const { data: createdPrescription, error: prescriptionError } = await supabase
+        .from('prescriptions')
+        .insert(buildPrescriptionRowPayload(prescriptionData))
+        .select(PRESCRIPTION_SELECT)
+        .single();
+
+      if (prescriptionError) throw prescriptionError;
+
+      await insertPrescriptionItems(createdPrescription.id, itemsData);
+      await get().fetchPrescriptions(prescriptionData.residentId);
+    } catch (err: any) {
+      console.error('Create prescription error', err);
+      set({ error: err.message });
+      throw err;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  updatePrescription: async (id, prescriptionData, itemsData) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      const { error: prescriptionError } = await supabase
+        .from('prescriptions')
+        .update(buildPrescriptionRowPayload(prescriptionData))
+        .eq('id', id);
+
+      if (prescriptionError) throw prescriptionError;
+
+      const { error: deleteItemsError } = await supabase
+        .from('prescription_items')
+        .delete()
+        .eq('prescription_id', id);
+
+      if (deleteItemsError) throw deleteItemsError;
+
+      await insertPrescriptionItems(id, itemsData);
+      await get().fetchPrescriptions(prescriptionData.residentId);
+    } catch (err: any) {
+      console.error('Update prescription error', err);
+      set({ error: err.message });
+      throw err;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  duplicatePrescription: async (id, overrides = {}) => {
+    const sourcePrescription = get().prescriptions.find(
+      (prescription) => prescription.id === id,
+    );
+
+    if (!sourcePrescription) {
+      return null;
+    }
+
+    const prescriptionDate =
+      overrides.prescriptionDate ?? new Date().toISOString().slice(0, 10);
+    const duplicatedDraft: PrescriptionDraft = {
+      ...sourcePrescription,
+      ...overrides,
+      code: overrides.code ?? buildFallbackPrescriptionCode(prescriptionDate),
+      prescriptionDate,
+      startDate: overrides.startDate ?? prescriptionDate,
+      status: overrides.status ?? 'Active',
+      items: undefined as never,
+      id: undefined as never,
+    };
+
+    const duplicatedItems: PrescriptionItemDraft[] = sourcePrescription.items.map(
+      ({ id: _id, prescriptionId: _prescriptionId, ...item }) => ({
+        ...item,
+        startDate: item.startDate ?? duplicatedDraft.startDate,
+      }),
+    );
+
+    await get().createPrescription(duplicatedDraft, duplicatedItems);
+
+    return (
+      get().prescriptions.find(
+        (prescription) => prescription.code === duplicatedDraft.code,
+      ) ?? null
+    );
+  },
+
+  pausePrescription: async (id) => {
+    try {
+      const { error } = await supabase
+        .from('prescriptions')
+        .update({ status: 'Paused' })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      set({
+        prescriptions: get().prescriptions.map((prescription) =>
+          prescription.id === id
+            ? { ...prescription, status: 'Paused' }
+            : prescription,
+        ),
+      });
+    } catch (err: any) {
+      set({ error: err.message });
+      throw err;
+    }
+  },
+
+  cancelPrescription: async (id) => {
+    await get().pausePrescription(id);
+  },
+
+  completePrescription: async (id) => {
+    try {
+      const { error } = await supabase
+        .from('prescriptions')
+        .update({ status: 'Completed' })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      set({
+        prescriptions: get().prescriptions.map((prescription) =>
+          prescription.id === id
+            ? { ...prescription, status: 'Completed' }
+            : prescription,
+        ),
+      });
+    } catch (err: any) {
+      set({ error: err.message });
+      throw err;
+    }
+  },
+
+  getResidentActiveMedicationRows: (residentId) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const activeSourceRows = get()
+      .prescriptions.filter(
+        (prescription) =>
+          prescription.residentId === residentId && prescription.status === 'Active',
+      )
+      .flatMap((prescription) =>
+        (prescription.items ?? [])
+          .filter((item) => isItemCurrentlyActive(item, prescription, today))
+          .map((item) => ({
+            ...item,
+            prescriptionCode: prescription.code,
+            sourcePrescriptionId: prescription.id,
+            sourcePrescriptionCode: prescription.code,
+            sourcePrescriptionStartDate: prescription.startDate,
+            sourcePrescriptionEndDate: prescription.endDate,
+            sourcePrescriptionStatus: prescription.status,
+          })),
+      );
+
+    return buildActiveMedicationSummary(activeSourceRows, { asOfDate: today });
+  },
+
+  fetchMedicines: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('medicines')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+
+      set({ medicines: (data ?? []).map(mapMedicineRow) });
+    } catch (err: any) {
+      console.error('Fetch medicines error', err);
+      set({ error: err.message });
+    }
+  },
+
+  createMedicine: async (medicine) => {
+    try {
+      await upsertMedicineWithFallback('insert', medicine);
+      await get().fetchMedicines();
+    } catch (err: any) {
+      set({ error: err.message });
+      throw err;
+    }
+  },
+
+  updateMedicine: async (id, medicine) => {
+    try {
+      await upsertMedicineWithFallback('update', medicine, id);
+      await get().fetchMedicines();
+    } catch (err: any) {
+      set({ error: err.message });
+      throw err;
+    }
+  },
+
+  deleteMedicine: async (id) => {
+    try {
+      const { error } = await supabase.from('medicines').delete().eq('id', id);
+
+      if (error) throw error;
+
+      await get().fetchMedicines();
+    } catch (err: any) {
+      set({ error: err.message });
+      throw err;
+    }
+  },
 }));
