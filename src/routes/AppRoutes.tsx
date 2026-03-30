@@ -8,6 +8,7 @@ import { MainLayout } from '../components/layout/MainLayout';
 const LoginPage = React.lazy(() => import('../features/auth/pages/LoginPage').then(module => ({ default: module.LoginPage })));
 const ResidentListPage = React.lazy(() => import('../features/residents/pages/ResidentListPage').then(module => ({ default: module.ResidentListPage })));
 const ResidentDetailPage = React.lazy(() => import('../features/residents/pages/ResidentDetailPage').then(module => ({ default: module.ResidentDetailPage })));
+const PrescriptionEditorPage = React.lazy(() => import('../features/prescriptions/pages/PrescriptionEditorPage').then(module => ({ default: module.PrescriptionEditorPage })));
 const RoomMapPage = React.lazy(() => import('../features/rooms/pages/RoomMapPage').then(module => ({ default: module.RoomMapPage })));
 const IncidentsPage = React.lazy(() => import('../features/incidents/pages/IncidentsPage').then(module => ({ default: module.IncidentsPage })));
 const NutritionPage = React.lazy(() => import('../features/nutrition/pages/NutritionPage').then(module => ({ default: module.NutritionPage })));
@@ -39,6 +40,9 @@ export const AppRoutes = () => {
 
                             <Route path="/residents" element={<ResidentListPage />} />
                             <Route path="/residents/:id" element={<ResidentDetailPage />} />
+                            <Route path="/residents/:residentId/medications/new" element={<PrescriptionEditorPage />} />
+                            <Route path="/residents/:residentId/medications/:prescriptionId/edit" element={<PrescriptionEditorPage />} />
+                            <Route path="/residents/:residentId/medications/:prescriptionId/duplicate" element={<PrescriptionEditorPage />} />
 
                             <Route path="/rooms" element={<RoomMapPage />} />
                             <Route path="/nutrition" element={<NutritionPage />} />
