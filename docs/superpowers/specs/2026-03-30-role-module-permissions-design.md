@@ -105,6 +105,7 @@ Define a normalized module registry in shared code. Initial keys should match th
 - `maintenance`
 - `incidents`
 - `forms`
+- `weightTracking`
 - `settings`
 - `finance`
 
@@ -146,6 +147,7 @@ type RoleModulePermissions = {
   maintenance: { visible: boolean };
   incidents: { visible: boolean };
   forms: { visible: boolean };
+  weightTracking: { visible: boolean };
   settings: { visible: boolean };
   finance: { view: boolean; edit: boolean };
 };
@@ -162,6 +164,32 @@ The editor must normalize and enforce these rules:
 - if `finance.edit` is turned `true`, the system must automatically set `finance.view` to `true`
 
 These rules prevent the permission UI from locking the system out of its own administration path.
+
+### Default Permission Matrix
+
+The first seeded matrix and the `Khoi phuc mac dinh` action must restore the exact baseline below.
+
+This baseline intentionally resolves current sidebar-vs-route drift in favor of the effective guarded behavior the system should standardize on:
+
+- `settings` is `ADMIN` only
+- `finance` is `ADMIN` and `ACCOUNTANT` only
+- `incidents` excludes `CAREGIVER`
+
+| Role | visitors | dailyMonitoring | procedures | nutrition | residents | rooms | maintenance | incidents | forms | weightTracking | settings | finance.view | finance.edit |
+|------|----------|-----------------|------------|-----------|-----------|-------|-------------|-----------|-------|----------------|----------|--------------|--------------|
+| `ADMIN` | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `DOCTOR` | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no | no |
+| `SUPERVISOR` | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no | no |
+| `ACCOUNTANT` | no | no | no | no | yes | yes | yes | no | no | no | no | yes | yes |
+| `NURSE` | yes | yes | yes | yes | yes | yes | no | yes | yes | yes | no | no | no |
+| `CAREGIVER` | yes | no | no | yes | no | no | no | no | no | no | no | no | no |
+
+Interpretation rules:
+
+- standard modules marked `yes` seed as `{ visible: true }`
+- standard modules marked `no` seed as `{ visible: false }`
+- finance seeds as `{ view: yes/no, edit: yes/no }`
+- `Khoi phuc mac dinh` restores this matrix exactly, not the current in-memory state
 
 ## Shared Settings Persistence
 
@@ -278,6 +306,8 @@ Permissions must be applied consistently at four layers.
 
 [ResidentDetail.tsx](C:\Users\Minh\Desktop\VDL\src\features\residents\components\ResidentDetail.tsx) must hide the finance tab when `finance.view` is disabled.
 
+Routed but non-sidebar modules such as `/weight-tracking` must still read from the same shared permission model even if they do not have a primary sidebar entry.
+
 ### 2. Route-Level Enforcement
 
 Introduce a permission-aware route guard alongside or in place of pure role-list gating.
@@ -290,13 +320,31 @@ The route guard must support:
 Behavior for standard modules:
 
 - if the role can access the module, render normally
-- if the role cannot edit but the page can be safely shown, render a read-only restricted surface
-- if the page cannot sensibly render in read-only mode, show a consistent restricted-access panel
+- if the role hits a direct link to a module that is hidden from navigation, apply the deterministic table below instead of ad hoc route decisions
 
 Behavior for finance:
 
 - if `finance.view` is `false`, deny entry to finance surfaces entirely
 - if `finance.view` is `true` but `finance.edit` is `false`, allow entry in read-only mode
+
+Deterministic direct-link rule table for iteration 1:
+
+| Module | Direct-link behavior when hidden or restricted |
+|--------|-----------------------------------------------|
+| `residents` | render list/detail in read-only mode and disable create/edit actions |
+| `rooms` | render room map in read-only mode and disable assignment, transfer, and room-edit actions |
+| `finance` | if `view=false`, show restricted panel; if `view=true` and `edit=false`, render read-only |
+| `visitors` | show restricted panel |
+| `dailyMonitoring` | show restricted panel |
+| `procedures` | show restricted panel |
+| `nutrition` | show restricted panel |
+| `weightTracking` | show restricted panel |
+| `maintenance` | show restricted panel |
+| `incidents` | show restricted panel |
+| `forms` | show restricted panel |
+| `settings` | show restricted panel |
+
+This keeps read-only support narrow and explicit in the first iteration. Only `residents`, `rooms`, and finance are required to support direct-link viewing. All other hidden modules fail into the shared restricted panel.
 
 ### 3. Component-Level Edit Locks
 
