@@ -19,6 +19,9 @@ import { db } from '../../../services/databaseService';
 import { useAuthStore } from '../../../stores/authStore';
 import { useFinanceStore } from '../../../stores/financeStore';
 import { useAppSettingsStore } from '@/src/stores/appSettingsStore';
+import { ReadOnlyBanner } from '@/src/components/ui/ReadOnlyBanner';
+import { RestrictedAccessPanel } from '@/src/components/ui/RestrictedAccessPanel';
+import { useModuleAccess } from '@/src/hooks/useModuleAccess';
 import type { RoleModulePermissionMatrix } from '@/src/types/appSettings';
 
 type SettingsView = 'menu' | 'users' | 'facility' | 'prices' | 'permissions';
@@ -60,6 +63,7 @@ export const SettingsPage = () => {
 
   const { user, users } = useAuthStore();
   const { servicePrices, updateServicePrice, deleteServicePrice } = useFinanceStore();
+  const financeAccess = useModuleAccess('finance');
   const {
     permissions,
     savePermissions,
@@ -281,12 +285,22 @@ export const SettingsPage = () => {
 
           {view === 'users' && <UserManagement />}
           {view === 'prices' && (
-            <ServiceCatalog
-              services={servicePrices}
-              onAdd={updateServicePrice}
-              onUpdate={updateServicePrice}
-              onDelete={deleteServicePrice}
-            />
+            !financeAccess.canViewFinance ? (
+              <RestrictedAccessPanel moduleKey="finance" />
+            ) : (
+              <div className="space-y-4">
+                {financeAccess.mode === 'readOnly' && (
+                  <ReadOnlyBanner message="Bạn có thể xem bảng giá dịch vụ nhưng không thể chỉnh sửa." />
+                )}
+                <ServiceCatalog
+                  services={servicePrices}
+                  onAdd={updateServicePrice}
+                  onUpdate={updateServicePrice}
+                  onDelete={deleteServicePrice}
+                  readOnly={!financeAccess.canEditFinance}
+                />
+              </div>
+            )
           )}
           {view === 'facility' && <FacilityConfig />}
           {view === 'permissions' && (

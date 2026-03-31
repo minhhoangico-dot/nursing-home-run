@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Plus, Upload, FileText, Trash2, Eye, User as UserIcon, Calendar, CreditCard, Home, Bed, Activity, Clock } from 'lucide-react';
 import { Tabs } from '@/src/components/ui';
 import { Resident, User, ServicePrice, ServiceUsage } from '@/src/types/index';
@@ -12,6 +12,8 @@ import { GuardianInfo } from './GuardianInfo';
 import { ResidentNutritionSection } from './ResidentNutritionSection';
 import { ResidentFinanceTab } from './ResidentFinanceTab';
 import { useToast } from '@/src/app/providers';
+import { ReadOnlyBanner } from '@/src/components/ui/ReadOnlyBanner';
+import { useModuleAccess } from '@/src/hooks/useModuleAccess';
 
 interface ResidentDetailProps {
    user: User;
@@ -36,6 +38,15 @@ export const ResidentDetail = ({
    ]);
    const fileInputRef = useRef<HTMLInputElement>(null);
    const { addToast } = useToast();
+   const financeAccess = useModuleAccess('finance');
+   const canViewFinance = financeAccess.canViewFinance;
+   const isFinanceReadOnly = canViewFinance && !financeAccess.canEditFinance;
+
+   useEffect(() => {
+      if (activeTab === 'finance' && !canViewFinance) {
+         setActiveTab('info');
+      }
+   }, [activeTab, canViewFinance]);
 
    const handleAddService = (service: ServicePrice) => {
       const usage: ServiceUsage = {
@@ -82,6 +93,10 @@ export const ResidentDetail = ({
       { id: 'finance', label: 'Tài chính' },
 
    ];
+
+   if (!canViewFinance) {
+      tabs.pop();
+   }
 
    return (
       <>
@@ -307,13 +322,19 @@ export const ResidentDetail = ({
                </div>
             )}
 
-            {activeTab === 'finance' && (
-               <ResidentFinanceTab
-                  resident={resident}
-                  servicePrices={servicePrices}
-                  usageRecords={usageRecords}
-                  onRecordUsage={onRecordUsage}
-               />
+            {activeTab === 'finance' && canViewFinance && (
+               <div className="space-y-4">
+                  {isFinanceReadOnly && (
+                     <ReadOnlyBanner message="Bạn có thể xem dữ liệu tài chính nhưng không thể thêm dịch vụ phát sinh." />
+                  )}
+                  <ResidentFinanceTab
+                     resident={resident}
+                     servicePrices={servicePrices}
+                     usageRecords={usageRecords}
+                     onRecordUsage={onRecordUsage}
+                     readOnly={isFinanceReadOnly}
+                  />
+               </div>
             )}
 
 
