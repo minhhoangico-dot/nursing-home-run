@@ -8,6 +8,7 @@ export * from './incident';
 export * from './schedule';
 export * from './handover';
 export * from './visitor';
+export * from './appSettings';
 // =============================================
 // BLOOD SUGAR MONITORING
 // =============================================
