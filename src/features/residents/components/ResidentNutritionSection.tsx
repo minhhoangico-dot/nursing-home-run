@@ -11,29 +11,39 @@ const DIET_CONFIG: Record<string, { label: string; color: string; icon: any; des
     Cut: { label: 'Cắt cơm', color: 'bg-slate-100 text-slate-800', icon: FileText, description: 'Ngừng cung cấp suất ăn (Về nhà/Nhập viện).' },
 };
 
-export const ResidentNutritionSection = ({ resident, onEdit }: { resident: Resident, onEdit: () => void }) => {
+interface ResidentNutritionSectionProps {
+    resident: Resident;
+    onEdit: () => void;
+    readOnly?: boolean;
+}
+
+export const ResidentNutritionSection = ({
+    resident,
+    onEdit,
+    readOnly = false,
+}: ResidentNutritionSectionProps) => {
     const diet = DIET_CONFIG[resident.dietType || 'Normal'] || DIET_CONFIG.Normal;
 
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Main Diet Status */}
                 <div className={`p-6 rounded-xl border ${diet.color} bg-opacity-30 flex flex-col items-center text-center`}>
-                    <div className={`p-4 rounded-full bg-white mb-4 shadow-sm`}>
+                    <div className="p-4 rounded-full bg-white mb-4 shadow-sm">
                         <diet.icon className="w-8 h-8" />
                     </div>
                     <h3 className="text-xl font-bold mb-2">{diet.label}</h3>
                     <p className="text-sm opacity-80 mb-6">{diet.description}</p>
 
-                    <button
-                        onClick={onEdit}
-                        className="bg-white text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 border border-slate-200"
-                    >
-                        Thay đổi chế độ
-                    </button>
+                    {!readOnly && (
+                        <button
+                            onClick={onEdit}
+                            className="bg-white text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 border border-slate-200"
+                        >
+                            Thay đổi chế độ
+                        </button>
+                    )}
                 </div>
 
-                {/* Notes & Allergies */}
                 <div className="space-y-6">
                     <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
                         <h4 className="font-bold text-slate-800 mb-3 flex items-center gap-2">

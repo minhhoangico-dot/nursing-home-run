@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, LayoutGrid, List as ListIcon, Filter, X, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -9,10 +9,13 @@ import { ResidentList } from '../components/ResidentList';
 import { Button } from '../../../components/ui';
 import { useResidentsStore } from '../../../stores/residentsStore';
 import { StatusBadge } from '../../../components/shared/StatusBadge';
+import { useModuleAccess } from '@/src/hooks/useModuleAccess';
 
 export const ResidentListPage = () => {
    const navigate = useNavigate();
    const { residents, addResident, selectResident } = useResidentsStore();
+   const residentsAccess = useModuleAccess('residents');
+   const isReadOnly = residentsAccess.mode === 'readOnly';
 
    const [search, setSearch] = useState('');
    const [buildingFilter, setBuildingFilter] = useState('');
@@ -21,6 +24,12 @@ export const ResidentListPage = () => {
    const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
    const [showWizard, setShowWizard] = useState(false);
    const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+   useEffect(() => {
+      if (isReadOnly) {
+         setShowWizard(false);
+      }
+   }, [isReadOnly]);
 
    const filtered = useMemo(() => residents.filter(r => {
       const matchSearch = r.name.toLowerCase().includes(search.toLowerCase()) || r.room.includes(search);
@@ -55,7 +64,7 @@ export const ResidentListPage = () => {
 
    return (
       <div className="space-y-4 md:space-y-6 pb-20 md:pb-0">
-         {showWizard && (
+         {showWizard && !isReadOnly && (
             <AdmissionWizard
                onSave={handleAddResident}
                onCancel={() => setShowWizard(false)}
@@ -63,7 +72,6 @@ export const ResidentListPage = () => {
             />
          )}
 
-         {/* Header - Responsive */}
          <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-end pb-2 border-b border-slate-200">
             <div>
                <h2 className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">Danh sách NCT</h2>
@@ -73,7 +81,6 @@ export const ResidentListPage = () => {
                </p>
             </div>
 
-            {/* Desktop actions */}
             <div className="hidden md:flex gap-3 items-center">
                <div className="flex bg-slate-100 p-1 rounded-lg">
                   <button
@@ -89,12 +96,13 @@ export const ResidentListPage = () => {
                      <LayoutGrid className="w-4 h-4" />
                   </button>
                </div>
-               <Button onClick={() => setShowWizard(true)} icon={<Plus className="w-4 h-4" />} className="bg-teal-600 hover:bg-teal-700 shadow-md shadow-teal-200">
-                  Thêm NCT mới
-               </Button>
+               {!isReadOnly && (
+                  <Button onClick={() => setShowWizard(true)} icon={<Plus className="w-4 h-4" />} className="bg-teal-600 hover:bg-teal-700 shadow-md shadow-teal-200">
+                     Thêm NCT mới
+                  </Button>
+               )}
             </div>
 
-            {/* Mobile actions row */}
             <div className="flex md:hidden gap-2 items-center justify-between">
                <button
                   onClick={() => setShowMobileFilters(!showMobileFilters)}
@@ -129,7 +137,6 @@ export const ResidentListPage = () => {
             </div>
          </div>
 
-         {/* Filters - Desktop always visible, Mobile collapsible */}
          <div className={`${showMobileFilters ? 'block' : 'hidden'} md:block`}>
             <ResidentFilters
                search={search} onSearchChange={setSearch}
@@ -137,7 +144,6 @@ export const ResidentListPage = () => {
                floorFilter={floorFilter} onFloorFilterChange={setFloorFilter}
                statusFilter={statusFilter} onStatusFilterChange={setStatusFilter}
             />
-            {/* Clear filters link on mobile */}
             {activeFilterCount > 0 && (
                <div className="md:hidden mt-2 flex justify-end">
                   <button
@@ -150,15 +156,12 @@ export const ResidentListPage = () => {
             )}
          </div>
 
-         {/* Content */}
          {viewMode === 'list' ? (
             <>
-               {/* Desktop: Table view */}
                <div className="hidden md:block">
                   <ResidentList data={filtered} onSelect={handleSelect} />
                </div>
 
-               {/* Mobile: Card list view */}
                <div className="md:hidden space-y-3">
                   {filtered.length > 0 ? (
                      filtered.map(r => (
@@ -184,19 +187,19 @@ export const ResidentListPage = () => {
             </div>
          )}
 
-         {/* Mobile FAB - Add new resident */}
-         <button
-            onClick={() => setShowWizard(true)}
-            className="md:hidden fixed bottom-6 right-4 w-14 h-14 bg-teal-600 hover:bg-teal-700 text-white rounded-full shadow-lg shadow-teal-300 flex items-center justify-center z-30 active:scale-95 transition-transform"
-            aria-label="Thêm NCT mới"
-         >
-            <Plus className="w-6 h-6" />
-         </button>
+         {!isReadOnly && (
+            <button
+               onClick={() => setShowWizard(true)}
+               className="md:hidden fixed bottom-6 right-4 w-14 h-14 bg-teal-600 hover:bg-teal-700 text-white rounded-full shadow-lg shadow-teal-300 flex items-center justify-center z-30 active:scale-95 transition-transform"
+               aria-label="Thêm NCT mới"
+            >
+               <Plus className="w-6 h-6" />
+            </button>
+         )}
       </div>
    );
 };
 
-// Mobile-optimized resident list item
 const MobileResidentCard = ({ resident, onClick }: { resident: any; onClick: () => void }) => {
    const age = new Date().getFullYear() - new Date(resident.dob).getFullYear();
    const avatarColors = [

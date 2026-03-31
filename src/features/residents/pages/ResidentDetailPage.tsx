@@ -11,6 +11,7 @@ import { EditResidentModal } from '../components/EditResidentModal';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useResidentsStore } from '@/src/stores/residentsStore';
 import { useFinanceStore } from '@/src/stores/financeStore';
+import { useModuleAccess } from '@/src/hooks/useModuleAccess';
 
 export const ResidentDetailPage = () => {
    const { id } = useParams();
@@ -18,6 +19,8 @@ export const ResidentDetailPage = () => {
    const { user } = useAuthStore();
    const { residents, updateResident } = useResidentsStore();
    const { servicePrices, usageRecords, recordUsage } = useFinanceStore();
+   const residentsAccess = useModuleAccess('residents');
+   const isReadOnly = residentsAccess.mode === 'readOnly';
 
    const [showAssessmentWizard, setShowAssessmentWizard] = useState(false);
    const [showEditModal, setShowEditModal] = useState(false);
@@ -81,7 +84,7 @@ export const ResidentDetailPage = () => {
 
    return (
       <div className="space-y-6">
-         {showAssessmentWizard && (
+         {showAssessmentWizard && !isReadOnly && (
             <AssessmentWizard
                resident={resident}
                onSave={handleSaveAssessment}
@@ -89,7 +92,7 @@ export const ResidentDetailPage = () => {
             />
          )}
 
-         {showEditModal && (
+         {showEditModal && !isReadOnly && (
             <EditResidentModal
                resident={resident}
                onClose={() => setShowEditModal(false)}
@@ -104,19 +107,33 @@ export const ResidentDetailPage = () => {
 
          <ResidentBasicInfo
             resident={resident}
-            onEdit={() => setShowEditModal(true)}
+            onEdit={() => {
+               if (!isReadOnly) {
+                  setShowEditModal(true);
+               }
+            }}
             onPrint={() => window.print()}
+            readOnly={isReadOnly}
          />
 
          <ResidentDetail
             user={user}
             resident={resident}
             onUpdateResident={handleMedicalUpdate}
-            onOpenAssessment={() => setShowAssessmentWizard(true)}
-            onEdit={() => setShowEditModal(true)}
+            onOpenAssessment={() => {
+               if (!isReadOnly) {
+                  setShowAssessmentWizard(true);
+               }
+            }}
+            onEdit={() => {
+               if (!isReadOnly) {
+                  setShowEditModal(true);
+               }
+            }}
             servicePrices={servicePrices}
             usageRecords={usageRecords}
             onRecordUsage={recordUsage} // Directly function from store
+            readOnly={isReadOnly}
          />
       </div>
    );

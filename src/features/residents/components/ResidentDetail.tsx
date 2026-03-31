@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Plus, Upload, FileText, Trash2, Eye, User as UserIcon, Calendar, CreditCard, Home, Bed, Activity, Clock } from 'lucide-react';
 import { Tabs } from '@/src/components/ui';
 import { Resident, User, ServicePrice, ServiceUsage } from '@/src/types/index';
@@ -7,7 +7,6 @@ import { VitalSignsSection } from '@/src/features/medical/components/VitalSignsS
 import { PrescriptionList } from '@/src/features/prescriptions/components/PrescriptionList';
 import { MedicalVisitsSection } from '@/src/features/medical/components/MedicalVisitsSection';
 import { MonitoringPlansSection } from '@/src/features/medical/components/MonitoringPlansSection';
-// CareLogSection removed
 import { GuardianInfo } from './GuardianInfo';
 import { ResidentNutritionSection } from './ResidentNutritionSection';
 import { ResidentFinanceTab } from './ResidentFinanceTab';
@@ -24,14 +23,22 @@ interface ResidentDetailProps {
    servicePrices: ServicePrice[];
    usageRecords: ServiceUsage[];
    onRecordUsage: (u: ServiceUsage) => void;
+   readOnly?: boolean;
 }
 
 export const ResidentDetail = ({
-   user, resident, onUpdateResident, onOpenAssessment, onEdit,
-   servicePrices, usageRecords, onRecordUsage
+   user,
+   resident,
+   onUpdateResident,
+   onOpenAssessment,
+   onEdit,
+   servicePrices,
+   usageRecords,
+   onRecordUsage,
+   readOnly = false,
 }: ResidentDetailProps) => {
    const [activeTab, setActiveTab] = useState('info');
-   const [documents, setDocuments] = useState<{ id: string, name: string, type: string }[]>([
+   const [documents, setDocuments] = useState<{ id: string; name: string; type: string }[]>([
       { id: '1', name: 'CCCD Mặt trước.jpg', type: 'image' },
       { id: '2', name: 'CCCD Mặt sau.jpg', type: 'image' },
       { id: '3', name: 'BHYT.jpg', type: 'image' }
@@ -48,28 +55,14 @@ export const ResidentDetail = ({
       }
    }, [activeTab, canViewFinance]);
 
-   const handleAddService = (service: ServicePrice) => {
-      const usage: ServiceUsage = {
-         id: `USG-${Date.now()}`,
-         residentId: resident.id,
-         serviceId: service.id,
-         serviceName: service.name,
-         date: new Date().toISOString(),
-         quantity: 1,
-         unitPrice: service.price,
-         totalAmount: service.price,
-         status: 'Unbilled'
-      };
-
-      onRecordUsage(usage);
-      addToast('success', 'Đã ghi nhận dịch vụ', `Đã thêm ${service.name}`);
-   };
-
    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (readOnly) {
+         return;
+      }
+
       const files = e.target.files;
       if (files && files.length > 0) {
          const file = files[0];
-         // Mock upload
          setTimeout(() => {
             setDocuments(prev => [...prev, {
                id: Math.random().toString(36).substr(2, 9),
@@ -83,24 +76,16 @@ export const ResidentDetail = ({
 
    const tabs = [
       { id: 'info', label: 'Thông tin cá nhân' },
-      // Removed care log tab
-
       { id: 'medical_record', label: 'Bệnh án' },
       { id: 'medication', label: 'Thuốc' },
       { id: 'vital_signs', label: 'Chỉ số sinh hiệu' },
       { id: 'monitoring', label: 'Theo dõi' },
       { id: 'assessment', label: 'Đánh giá cấp độ' },
-      { id: 'finance', label: 'Tài chính' },
-
+      ...(canViewFinance ? [{ id: 'finance', label: 'Tài chính' }] : []),
    ];
-
-   if (!canViewFinance) {
-      tabs.pop();
-   }
 
    return (
       <>
-         {/* Tabs */}
          <div className="mb-6 no-print">
             <Tabs
                tabs={tabs}
@@ -109,11 +94,9 @@ export const ResidentDetail = ({
             />
          </div>
 
-         {/* Tab Content */}
          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 min-h-[400px]">
             {activeTab === 'info' && (
                <div className="grid grid-cols-12 gap-6">
-                  {/* General Info Card - Span 8 */}
                   <div className="col-span-12 md:col-span-8 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                      <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
                         <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center text-teal-600">
@@ -143,7 +126,9 @@ export const ResidentDetail = ({
                            <label className="text-xs text-slate-500 font-medium uppercase tracking-wide flex items-center gap-1">
                               <Calendar className="w-3 h-3" /> Ngày sinh
                            </label>
-                           <p className="font-medium text-slate-800">{resident.dob} <span className="text-slate-400 text-sm font-normal">(75 tuổi)</span></p>
+                           <p className="font-medium text-slate-800">
+                              {resident.dob} <span className="text-slate-400 text-sm font-normal">(75 tuổi)</span>
+                           </p>
                         </div>
 
                         <div className="space-y-1">
@@ -169,7 +154,6 @@ export const ResidentDetail = ({
                      </div>
                   </div>
 
-                  {/* Admission Info Card - Span 4 */}
                   <div className="col-span-12 md:col-span-4 space-y-6">
                      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                         <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
@@ -210,14 +194,12 @@ export const ResidentDetail = ({
                      </div>
                   </div>
 
-                  {/* Guardian Info - Span 6 */}
                   <div className="col-span-12 md:col-span-6">
                      <div className="h-full bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                         <GuardianInfo resident={resident} />
                      </div>
                   </div>
 
-                  {/* Documents - Span 6 */}
                   <div className="col-span-12 md:col-span-6">
                      <div className="h-full bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                         <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
@@ -230,13 +212,17 @@ export const ResidentDetail = ({
                                  <p className="text-xs text-slate-500">CCCD, BHYT, Hợp đồng...</p>
                               </div>
                            </div>
-                           <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
-                           <button
-                              onClick={() => fileInputRef.current?.click()}
-                              className="text-xs bg-slate-100 text-slate-700 px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-200 transition-colors font-medium"
-                           >
-                              <Upload className="w-3 h-3" /> Tải lên
-                           </button>
+                           {!readOnly && (
+                              <>
+                                 <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+                                 <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="text-xs bg-slate-100 text-slate-700 px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-200 transition-colors font-medium"
+                                 >
+                                    <Upload className="w-3 h-3" /> Tải lên
+                                 </button>
+                              </>
+                           )}
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                            {documents.map(doc => (
@@ -246,8 +232,20 @@ export const ResidentDetail = ({
                                  </div>
                                  <span className="text-xs text-slate-600 font-medium truncate w-full px-1">{doc.name}</span>
                                  <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center gap-2 transition-all backdrop-blur-[1px]">
-                                    <button className="p-2 bg-white text-slate-800 rounded-full hover:bg-orange-50 shadow-lg transform hover:scale-105 transition-all"><Eye className="w-4 h-4" /></button>
-                                    <button onClick={(e) => { e.stopPropagation(); setDocuments(documents.filter(d => d.id !== doc.id)); }} className="p-2 bg-white text-red-500 rounded-full hover:bg-red-50 shadow-lg transform hover:scale-105 transition-all"><Trash2 className="w-4 h-4" /></button>
+                                    <button className="p-2 bg-white text-slate-800 rounded-full hover:bg-orange-50 shadow-lg transform hover:scale-105 transition-all">
+                                       <Eye className="w-4 h-4" />
+                                    </button>
+                                    {!readOnly && (
+                                       <button
+                                          onClick={(e) => {
+                                             e.stopPropagation();
+                                             setDocuments(documents.filter(d => d.id !== doc.id));
+                                          }}
+                                          className="p-2 bg-white text-red-500 rounded-full hover:bg-red-50 shadow-lg transform hover:scale-105 transition-all"
+                                       >
+                                          <Trash2 className="w-4 h-4" />
+                                       </button>
+                                    )}
                                  </div>
                               </div>
                            ))}
@@ -263,19 +261,17 @@ export const ResidentDetail = ({
                </div>
             )}
 
-
-
             {activeTab === 'medical_record' && (
                <div className="space-y-8">
-                  <MedicalHistorySection user={user} resident={resident} onUpdate={onUpdateResident} />
+                  <MedicalHistorySection user={user} resident={resident} onUpdate={onUpdateResident} readOnly={readOnly} />
                   <div className="border-t border-slate-200 my-6"></div>
-                  <MedicalVisitsSection user={user} resident={resident} onUpdate={onUpdateResident} />
+                  <MedicalVisitsSection user={user} resident={resident} onUpdate={onUpdateResident} readOnly={readOnly} />
                </div>
             )}
 
             {activeTab === 'medication' && (
                <div className="space-y-6">
-                  <PrescriptionList user={user} resident={resident} onUpdate={onUpdateResident} />
+                  <PrescriptionList user={user} resident={resident} onUpdate={onUpdateResident} readOnly={readOnly} />
                </div>
             )}
 
@@ -287,21 +283,21 @@ export const ResidentDetail = ({
 
             {activeTab === 'monitoring' && (
                <div className="space-y-8">
-                  <MonitoringPlansSection user={user} resident={resident} onUpdate={onUpdateResident} />
+                  <MonitoringPlansSection user={user} resident={resident} onUpdate={onUpdateResident} readOnly={readOnly} />
                   <div className="border-t border-slate-200 my-6"></div>
-                  <ResidentNutritionSection resident={resident} onEdit={onEdit} />
+                  <ResidentNutritionSection resident={resident} onEdit={onEdit} readOnly={readOnly} />
                </div>
             )}
-
-
 
             {activeTab === 'assessment' && (
                <div className="space-y-6">
                   <div className="flex justify-between items-center">
                      <h3 className="font-semibold text-slate-800">Lịch sử đánh giá</h3>
-                     <button onClick={onOpenAssessment} className="text-sm bg-teal-600 text-white px-3 py-1.5 rounded hover:bg-teal-700 flex items-center gap-2 no-print">
-                        <Plus className="w-4 h-4" /> Đánh giá mới
-                     </button>
+                     {!readOnly && (
+                        <button onClick={onOpenAssessment} className="text-sm bg-teal-600 text-white px-3 py-1.5 rounded hover:bg-teal-700 flex items-center gap-2 no-print">
+                           <Plus className="w-4 h-4" /> Đánh giá mới
+                        </button>
+                     )}
                   </div>
                   <div className="space-y-3">
                      {resident.assessments.length > 0 ? resident.assessments.map((a, i) => (
@@ -336,8 +332,6 @@ export const ResidentDetail = ({
                   />
                </div>
             )}
-
-
          </div>
       </>
    );

@@ -4,7 +4,7 @@ import { Resident, MedicalVisit, User } from '../../../types/index';
 
 import { Modal } from '@/src/components/ui';
 
-const VisitModal = ({ user, onClose, onSave }: { user: User, onClose: () => void, onSave: (v: MedicalVisit) => void }) => {
+const VisitModal = ({ user, onClose, onSave }: { user: User; onClose: () => void; onSave: (v: MedicalVisit) => void }) => {
    const [data, setData] = useState({
       complaint: '',
       diagnosis: '',
@@ -51,7 +51,19 @@ const VisitModal = ({ user, onClose, onSave }: { user: User, onClose: () => void
    );
 };
 
-export const MedicalVisitsSection = ({ user, resident, onUpdate }: { user: User, resident: Resident, onUpdate: (r: Resident) => void }) => {
+interface MedicalVisitsSectionProps {
+   user: User;
+   resident: Resident;
+   onUpdate: (r: Resident) => void;
+   readOnly?: boolean;
+}
+
+export const MedicalVisitsSection = ({
+   user,
+   resident,
+   onUpdate,
+   readOnly = false,
+}: MedicalVisitsSectionProps) => {
    const [showModal, setShowModal] = useState(false);
 
    const handleAddVisit = (v: MedicalVisit) => {
@@ -64,15 +76,17 @@ export const MedicalVisitsSection = ({ user, resident, onUpdate }: { user: User,
 
    return (
       <div>
-         {showModal && <VisitModal user={user} onClose={() => setShowModal(false)} onSave={handleAddVisit} />}
+         {showModal && !readOnly && <VisitModal user={user} onClose={() => setShowModal(false)} onSave={handleAddVisit} />}
 
          <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-slate-800 flex items-center gap-2">
                <FileText className="w-5 h-5 text-purple-600" /> Lịch sử khám bệnh
             </h3>
-            <button onClick={() => setShowModal(true)} className="text-xs bg-purple-50 text-purple-700 px-3 py-1.5 rounded-lg font-medium hover:bg-purple-100 border border-purple-200">
-               + Ghi nhận khám
-            </button>
+            {!readOnly && (
+               <button onClick={() => setShowModal(true)} className="text-xs bg-purple-50 text-purple-700 px-3 py-1.5 rounded-lg font-medium hover:bg-purple-100 border border-purple-200">
+                  + Ghi nhận khám
+               </button>
+            )}
          </div>
          <div className="space-y-3">
             {resident.medicalVisits.length > 0 ? resident.medicalVisits.map((v, i) => (

@@ -8,7 +8,17 @@ import { printDailyMedicationSheet, printPrescription } from '../utils/printTemp
 
 import { MedicineManager } from './MedicineManager';
 
-export const PrescriptionList = ({ user, resident, onUpdate }: { user: User, resident: Resident, onUpdate: (r: Resident) => void }) => {
+export const PrescriptionList = ({
+    user,
+    resident,
+    onUpdate,
+    readOnly = false,
+}: {
+    user: User;
+    resident: Resident;
+    onUpdate: (r: Resident) => void;
+    readOnly?: boolean;
+}) => {
     const [showModal, setShowModal] = useState(false);
     const [showMedicineManager, setShowMedicineManager] = useState(false);
     const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
@@ -57,7 +67,7 @@ export const PrescriptionList = ({ user, resident, onUpdate }: { user: User, res
 
     return (
         <div className="space-y-8">
-            {showModal && (
+            {showModal && !readOnly && (
                 <PrescriptionForm
                     user={user}
                     resident={resident}
@@ -66,7 +76,7 @@ export const PrescriptionList = ({ user, resident, onUpdate }: { user: User, res
                 />
             )}
 
-            {showMedicineManager && (
+            {showMedicineManager && !readOnly && (
                 <MedicineManager onClose={() => setShowMedicineManager(false)} />
             )}
 
@@ -84,19 +94,21 @@ export const PrescriptionList = ({ user, resident, onUpdate }: { user: User, res
                             <p className="text-sm text-teal-600 mt-0.5 hidden sm:block">Danh sách thuốc cần dùng hàng ngày</p>
                         </div>
                         <div className="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar">
-                            <button
+                            {!readOnly && (
+                                <button
                                 onClick={() => setShowMedicineManager(true)}
                                 className="flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-3 py-2 rounded-lg hover:bg-slate-50 shadow-sm transition-all font-medium text-sm whitespace-nowrap shrink-0"
                             >
                                 <Pill className="w-4 h-4" /> <span className="hidden sm:inline">Danh mục</span><span className="sm:hidden">DM</span>
-                            </button>
+                                </button>
+                            )}
                             <button
                                 onClick={() => printDailyMedicationSheet(resident, activeItems)}
                                 className="flex items-center gap-2 bg-white text-teal-700 border border-teal-200 px-3 py-2 rounded-lg hover:bg-teal-50 shadow-sm transition-all font-medium text-sm whitespace-nowrap shrink-0"
                             >
                                 <Printer className="w-4 h-4" /> In phiếu
                             </button>
-                            {['DOCTOR', 'ADMIN', 'SUPERVISOR'].includes(user.role) && (
+                            {!readOnly && ['DOCTOR', 'ADMIN', 'SUPERVISOR'].includes(user.role) && (
                                 <button
                                     onClick={() => setShowModal(true)}
                                     className="flex items-center gap-2 bg-teal-600 text-white px-3 py-2 rounded-lg hover:bg-teal-700 shadow-sm transition-all font-medium text-sm whitespace-nowrap shrink-0"
