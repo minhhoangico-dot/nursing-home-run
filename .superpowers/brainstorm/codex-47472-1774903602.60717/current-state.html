@@ -1,0 +1,77 @@
+<h2>Hiện trạng menu và logo</h2>
+<p class="subtitle">Mô phỏng từ code hiện tại của ứng dụng để chốt hướng sửa</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Sidebar đang hiển thị</div>
+    <div class="mockup-body" style="background:#0f172a;color:#cbd5e1;padding:0;min-height:460px;">
+      <div style="display:flex;align-items:center;gap:12px;padding:18px 18px 12px;border-bottom:1px solid rgba(148,163,184,.18);">
+        <div style="width:40px;height:40px;border-radius:10px;background:#fff;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#0f766e;font-weight:700;font-size:11px;">Logo</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#fff;">Tên đơn vị</div>
+          <div style="font-size:11px;color:#94a3b8;">Trang chủ</div>
+        </div>
+      </div>
+      <div style="padding:12px;">
+        <div style="padding:11px 14px;border-radius:10px;background:#1e293b;margin-bottom:6px;">Khách thăm</div>
+        <div style="padding:11px 14px;border-radius:10px;background:#1e293b;margin-bottom:6px;">Theo dõi ngày</div>
+        <div style="padding:11px 14px;border-radius:10px;background:#1e293b;margin-bottom:6px;">Thủ thuật</div>
+        <div style="padding:11px 14px;border-radius:10px;background:#1e293b;margin-bottom:6px;">Dinh dưỡng</div>
+        <div style="padding:11px 14px;border-radius:10px;background:#1e293b;margin-bottom:6px;">Danh sách NCT</div>
+        <div style="padding:11px 14px;border-radius:10px;background:#1e293b;margin-bottom:6px;">Sơ đồ phòng</div>
+        <div style="padding:11px 14px;border-radius:10px;background:#1e293b;margin-bottom:6px;">Bảo trì</div>
+        <div style="padding:11px 14px;border-radius:10px;background:#1e293b;margin-bottom:6px;">Sự cố &amp; An toàn</div>
+        <div style="padding:11px 14px;border-radius:10px;background:#1e293b;margin-bottom:6px;">In biểu mẫu</div>
+        <div style="padding:11px 14px;border-radius:10px;background:#1e293b;margin-bottom:6px;">Tài chính</div>
+        <div style="padding:11px 14px;border-radius:10px;background:#0f766e;color:#fff;">Cài đặt</div>
+      </div>
+      <div style="margin-top:auto;padding:14px 18px;border-top:1px solid rgba(148,163,184,.18);font-size:12px;color:#94a3b8;">Không có mục riêng cho Quản lý người dùng</div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">Bên trong trang Cài đặt</div>
+    <div class="mockup-body" style="background:#f8fafc;padding:20px;min-height:460px;">
+      <div style="font-size:24px;font-weight:800;color:#0f172a;margin-bottom:18px;">Cài đặt hệ thống</div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;">
+        <div style="background:#fff;border:1px solid #dbeafe;border-radius:16px;padding:18px;box-shadow:0 1px 2px rgba(15,23,42,.05);">
+          <div style="font-weight:700;color:#0f172a;margin-bottom:10px;">Quản lý người dùng</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.5;">Thêm, xóa, sửa tài khoản nhân viên và phân quyền truy cập.</div>
+          <div style="margin-top:16px;font-size:13px;font-weight:700;color:#0f766e;">Quản lý →</div>
+        </div>
+        <div style="background:#fff;border:1px solid #ccfbf1;border-radius:16px;padding:18px;box-shadow:0 1px 2px rgba(15,23,42,.05);">
+          <div style="font-weight:700;color:#0f172a;margin-bottom:10px;">Bảng giá dịch vụ</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.5;">Cập nhật đơn giá dịch vụ và phụ phí.</div>
+        </div>
+        <div style="background:#fff;border:1px solid #ede9fe;border-radius:16px;padding:18px;box-shadow:0 1px 2px rgba(15,23,42,.05);">
+          <div style="font-weight:700;color:#0f172a;margin-bottom:10px;">Thông tin đơn vị</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.5;">Cập nhật logo, tên đơn vị và thông tin liên hệ.</div>
+        </div>
+      </div>
+      <div style="margin-top:18px;padding:14px 16px;border-radius:14px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;font-size:13px;line-height:1.5;">
+        Kết luận hiện tại: tính năng Quản lý người dùng chưa mất khỏi code, nhưng đang bị ẩn sau mục Cài đặt.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Cần bạn chốt</div>
+  <p>Bạn muốn sửa theo hướng nào?</p>
+  <div class="options">
+    <div class="option" data-choice="a" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>Hiện lại mục riêng</h3>
+        <p>Thêm một mục menu rõ ràng cho Quản lý người dùng ở sidebar.</p>
+      </div>
+    </div>
+    <div class="option" data-choice="b" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>Giữ trong Cài đặt</h3>
+        <p>Không thêm menu mới, chỉ làm lối vào trong Cài đặt rõ và dễ thấy hơn.</p>
+      </div>
+    </div>
+  </div>
+</div>

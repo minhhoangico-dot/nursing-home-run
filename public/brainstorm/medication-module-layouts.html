@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medication Module Layouts</title>
+  <style>
+    :root {
+      --bg: #f4fbf8;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --border: #d7e3ea;
+      --border-strong: #0f766e;
+      --text: #0f172a;
+      --muted: #475569;
+      --accent: #0f766e;
+      --accent-soft: #ccfbf1;
+      --shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, #d1fae5 0%, transparent 28%),
+        radial-gradient(circle at top right, #e0f2fe 0%, transparent 28%),
+        linear-gradient(180deg, #f0fdfa 0%, #f8fafc 100%);
+    }
+
+    .page {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 24px 56px;
+    }
+
+    .hero {
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(15, 118, 110, 0.12);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: clamp(30px, 4vw, 44px);
+      line-height: 1.08;
+      margin: 16px 0 12px;
+    }
+
+    .hero p {
+      max-width: 920px;
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .info-box {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: #ecfeff;
+      border: 1px solid #bae6fd;
+      color: #155e75;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .layout-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .layout-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+
+    .layout-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      box-shadow: 0 24px 48px rgba(15, 23, 42, 0.11);
+    }
+
+    .layout-preview {
+      background:
+        linear-gradient(135deg, #effcf8 0%, #f8fafc 55%, #ecfeff 100%);
+      padding: 16px;
+      min-height: 390px;
+    }
+
+    .card-body {
+      padding: 18px 18px 20px;
+    }
+
+    .card-body h2 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+
+    .card-body p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    .recommend {
+      margin-top: 12px;
+      display: inline-block;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .bar {
+      height: 12px;
+      border-radius: 999px;
+      background: #cbd5e1;
+    }
+
+    .bar.dark {
+      background: #0f766e;
+    }
+
+    .bar.mid {
+      background: #14b8a6;
+    }
+
+    .panel {
+      background: #ffffff;
+      border: 1px solid #dbe4ea;
+      border-radius: 14px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+
+    .pillrow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .pillbox {
+      min-height: 64px;
+      border-radius: 12px;
+      border: 1px dashed #99f6e4;
+      background: #f0fdfa;
+      padding: 8px;
+    }
+
+    .line {
+      height: 8px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      margin-top: 7px;
+    }
+
+    .line.short {
+      width: 50%;
+    }
+
+    .line.mid {
+      width: 72%;
+    }
+
+    .line.long {
+      width: 100%;
+    }
+
+    .stack {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .split-2 {
+      display: grid;
+      grid-template-columns: 1.25fr 0.95fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .chip {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #ecfeff;
+      color: #0f766e;
+      font-size: 11px;
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    .meta {
+      display: grid;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .summary {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+    }
+
+    .summary-card {
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(15, 23, 42, 0.09);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .summary-card h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .summary-card p,
+    .summary-card li {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .summary-card ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    @media (max-width: 1100px) {
+      .layout-grid,
+      .summary {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        padding: 18px 14px 40px;
+      }
+
+      .hero {
+        padding: 20px;
+        border-radius: 18px;
+      }
+
+      .pillrow,
+      .split-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="eyebrow">Visual Assistant • Module Thuốc</div>
+      <h1>So sánh 3 bố cục tổng thể cho màn Thuốc của từng cụ</h1>
+      <p>
+        Đã khóa sẵn 2 nguyên tắc: bảng tổng hợp thuốc đang dùng nằm trên cùng, và bản in cho điều dưỡng chỉ hiển thị tên thuốc.
+        Phần còn lại là chọn cách tổ chức các đơn đang dùng, kê nhanh, và lịch sử để bác sĩ thao tác ít click nhất.
+      </p>
+      <div class="info-box">
+        Khuyến nghị của mình hiện tại là <strong>A</strong> nếu muốn rõ từng đơn và an toàn cho vận hành hằng ngày, hoặc <strong>B</strong> nếu bác sĩ chỉnh đơn liên tục và muốn một “workspace” thao tác nhanh.
+      </div>
+    </section>
+
+    <section class="layout-grid">
+      <article class="layout-card">
+        <div class="layout-preview">
+          <div class="bar dark" style="width: 44%;"></div>
+          <div class="panel">
+            <div class="bar mid" style="width: 38%;"></div>
+            <div class="pillrow">
+              <div class="pillbox"><div class="line short"></div><div class="line long"></div><div class="line mid"></div></div>
+              <div class="pillbox"><div class="line short"></div><div class="line mid"></div><div class="line short"></div></div>
+              <div class="pillbox"><div class="line short"></div><div class="line long"></div><div class="line short"></div></div>
+              <div class="pillbox"><div class="line short"></div><div class="line mid"></div><div class="line short"></div></div>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="panel">
+              <span class="chip">Đơn đang dùng</span><span class="chip">Sửa nhanh</span><span class="chip">In đơn</span>
+              <div class="meta"><div class="line long"></div><div class="line mid"></div><div class="line short"></div></div>
+            </div>
+            <div class="panel">
+              <span class="chip">Đơn chuyên khoa</span><span class="chip">Nhân bản</span>
+              <div class="meta"><div class="line long"></div><div class="line short"></div><div class="line mid"></div></div>
+            </div>
+            <div class="panel">
+              <span class="chip">Lịch sử</span>
+              <div class="meta"><div class="line long"></div><div class="line mid"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <h2>A. Tổng hợp trên, từng đơn là card</h2>
+          <p>Mỗi đơn là một khối rõ ràng với nút sửa, nhân bản, tạm ngưng và in. Bác sĩ nhìn rất rõ “đơn nào đang tồn tại”, còn điều dưỡng dễ hiểu bối cảnh từng đơn.</p>
+          <span class="recommend">Khuyến nghị an toàn nhất</span>
+        </div>
+      </article>
+
+      <article class="layout-card">
+        <div class="layout-preview">
+          <div class="bar dark" style="width: 44%;"></div>
+          <div class="panel">
+            <div class="bar mid" style="width: 38%;"></div>
+            <div class="pillrow">
+              <div class="pillbox"><div class="line short"></div><div class="line long"></div></div>
+              <div class="pillbox"><div class="line short"></div><div class="line mid"></div></div>
+              <div class="pillbox"><div class="line short"></div><div class="line long"></div></div>
+              <div class="pillbox"><div class="line short"></div><div class="line mid"></div></div>
+            </div>
+          </div>
+          <div class="split-2">
+            <div class="panel">
+              <span class="chip">Đơn đang dùng</span>
+              <div class="meta"><div class="line long"></div><div class="line long"></div><div class="line mid"></div><div class="line short"></div></div>
+              <div class="meta"><div class="line long"></div><div class="line mid"></div></div>
+            </div>
+            <div class="panel">
+              <span class="chip">Kê nhanh</span>
+              <div class="meta"><div class="line long"></div><div class="line long"></div><div class="line long"></div><div class="line mid"></div><div class="line short"></div></div>
+            </div>
+          </div>
+          <div class="panel">
+            <span class="chip">Lịch sử</span>
+            <div class="meta"><div class="line long"></div><div class="line mid"></div></div>
+          </div>
+        </div>
+        <div class="card-body">
+          <h2>B. Workspace bác sĩ</h2>
+          <p>Bên trái là danh sách đơn đang dùng, bên phải là khung kê nhanh luôn mở. Tốc độ chỉnh sửa rất cao, hợp tablet và khám buồng, nhưng màn hình dày thông tin hơn.</p>
+          <span class="recommend">Nhanh nhất cho bác sĩ</span>
+        </div>
+      </article>
+
+      <article class="layout-card">
+        <div class="layout-preview">
+          <div class="bar dark" style="width: 44%;"></div>
+          <div class="panel">
+            <div class="bar mid" style="width: 38%;"></div>
+            <div class="pillrow">
+              <div class="pillbox"><div class="line short"></div><div class="line long"></div></div>
+              <div class="pillbox"><div class="line short"></div><div class="line mid"></div></div>
+              <div class="pillbox"><div class="line short"></div><div class="line long"></div></div>
+              <div class="pillbox"><div class="line short"></div><div class="line mid"></div></div>
+            </div>
+          </div>
+          <div class="panel">
+            <span class="chip">Đơn đang dùng</span><span class="chip">Đơn tạm ngưng</span><span class="chip">Lịch sử</span>
+            <div class="meta"><div class="line long"></div><div class="line long"></div></div>
+          </div>
+          <div class="panel">
+            <span class="chip">Danh sách dòng thuốc</span>
+            <div class="meta"><div class="line long"></div><div class="line long"></div><div class="line long"></div><div class="line long"></div></div>
+          </div>
+          <div class="panel">
+            <span class="chip">Thanh thao tác nổi</span>
+            <div class="meta"><div class="line mid"></div></div>
+          </div>
+        </div>
+        <div class="card-body">
+          <h2>C. Tab theo trạng thái</h2>
+          <p>Thiên về bảng tác nghiệp hơn là khái niệm “mỗi đơn là một thực thể riêng”. Mạnh khi cần rà soát số lượng lớn, nhưng yếu hơn nếu bác sĩ thường làm việc theo từng đơn.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="summary">
+      <div class="summary-card">
+        <h3>Mình đang nghiêng về</h3>
+        <p><strong>A</strong> nếu ưu tiên rõ đơn nội khoa, chuyên khoa, bổ sung đang chạy song song mà vẫn không gây rối. <strong>B</strong> nếu mục tiêu số 1 là bác sĩ chỉnh đơn liên tục trong ngày trên tablet, ít đóng mở popup nhất.</p>
+      </div>
+      <div class="summary-card">
+        <h3>Chỉ cần trả lời 1 dòng</h3>
+        <ul>
+          <li><strong>Chọn A</strong> nếu muốn rõ từng đơn.</li>
+          <li><strong>Chọn B</strong> nếu muốn kê và chỉnh cực nhanh.</li>
+          <li><strong>Chọn C</strong> nếu muốn thiên về bảng tác nghiệp.</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

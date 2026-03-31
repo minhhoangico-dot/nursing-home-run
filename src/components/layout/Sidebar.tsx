@@ -1,12 +1,14 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  Activity, Users, BedDouble,
+  Users, BedDouble,
   CreditCard, Settings as SettingsIcon, LogOut,
   Printer, AlertTriangle, Utensils, UserCheck, Wrench,
   ClipboardList, Syringe, X
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
+import { useRoomConfigStore } from '../../stores/roomConfigStore';
+import { fallbackFacilityLogo, getFacilityBranding } from '../../utils/facilityBranding';
 
 interface SidebarProps {
   onClose?: () => void;
@@ -14,8 +16,10 @@ interface SidebarProps {
 
 export const Sidebar = ({ onClose }: SidebarProps) => {
   const { user, logout } = useAuthStore();
+  const { facility } = useRoomConfigStore();
 
   if (!user) return null;
+  const branding = getFacilityBranding(facility);
 
   const menuItems = [
     { id: 'visitors', label: 'Khách thăm', path: '/visitors', icon: UserCheck, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE', 'CAREGIVER'] },
@@ -54,10 +58,18 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
       {/* Header with close button for mobile */}
       <div className="p-4 lg:p-6 flex items-center justify-between text-white">
         <div className="flex items-center gap-3">
-          <div className="bg-teal-600 p-2 rounded">
-            <Activity className="w-5 h-5" />
+          <div className="h-10 w-10 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
+            <img
+              src={branding.logoSrc}
+              alt={`Logo ${branding.name}`}
+              className="h-full w-full object-contain p-1.5"
+              onError={event => fallbackFacilityLogo(event.currentTarget)}
+            />
           </div>
-          <span className="font-bold text-lg">FDC System</span>
+          <div className="min-w-0">
+            <span className="block font-bold text-sm leading-tight truncate">{branding.name}</span>
+            <span className="block text-[11px] text-slate-400">Trang chủ</span>
+          </div>
         </div>
         {/* Close button - mobile only */}
         {onClose && (

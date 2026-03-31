@@ -153,7 +153,7 @@ export const SettingsPage = () => {
                         </div>
                         <h3 className="font-bold text-slate-800">Thông tin đơn vị</h3>
                      </div>
-                     <p className="text-sm text-slate-500 mb-4">Cập nhật thông tin cơ sở, địa chỉ, mã số thuế và liên hệ.</p>
+                     <p className="text-sm text-slate-500 mb-4">Cập nhật logo, tên đơn vị, địa chỉ, mã số thuế và thông tin liên hệ.</p>
                      <div className="text-sm font-medium text-teal-600">Cập nhật &rarr;</div>
                   </div>
                </div>

@@ -28,8 +28,18 @@ export interface FacilityInfo {
     address: string;
     phone: string;
     email: string;
+    logoDataUrl: string;
     // We can probably drop structure info from "Setting" if we are doing dynamic structure.
 }
+
+export const DEFAULT_FACILITY_INFO: FacilityInfo = {
+    name: 'Viện Dưỡng Lão FDC',
+    address: '123 Đường ABC, Quận 7, TP.HCM',
+    phone: '028 1234 5678',
+    email: 'contact@fdc.vn',
+    taxCode: '0123456789',
+    logoDataUrl: ''
+};
 
 interface RoomConfigState {
     configs: BuildingConfig;
@@ -46,13 +56,7 @@ export const useRoomConfigStore = create<RoomConfigState>()(
     persist(
         (set) => ({
             configs: SPECIAL_FLOOR_CONFIG,
-            facility: {
-                name: 'Viện Dưỡng Lão FDC',
-                address: '123 Đường ABC, Quận 7, TP.HCM',
-                phone: '028 1234 5678',
-                email: 'contact@fdc.vn',
-                taxCode: '0123456789'
-            },
+            facility: DEFAULT_FACILITY_INFO,
 
             updateRoom: (building, floor, updatedRoom) => set((state) => {
                 const buildingConfig = state.configs[building] || {};
@@ -115,11 +119,19 @@ export const useRoomConfigStore = create<RoomConfigState>()(
 
             updateFacilityConfig: (info) => set({ facility: info }),
 
-            resetToDefaults: () => set({ configs: SPECIAL_FLOOR_CONFIG }),
+            resetToDefaults: () => set({ configs: SPECIAL_FLOOR_CONFIG, facility: DEFAULT_FACILITY_INFO }),
         }),
         {
             name: 'room-config-storage',
-            version: 1,
+            version: 2,
+            migrate: (persistedState: Partial<RoomConfigState> | undefined) => ({
+                ...persistedState,
+                configs: persistedState?.configs || SPECIAL_FLOOR_CONFIG,
+                facility: {
+                    ...DEFAULT_FACILITY_INFO,
+                    ...persistedState?.facility
+                }
+            }),
         }
     )
 );

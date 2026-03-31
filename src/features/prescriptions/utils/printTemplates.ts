@@ -1,5 +1,6 @@
-
 import { Prescription, PrescriptionItem, Resident } from '../../../types/index';
+import { useRoomConfigStore } from '../../../stores/roomConfigStore';
+import { getFacilityBranding } from '../../../utils/facilityBranding';
 
 const PRINT_STYLES = `
     @media print {
@@ -13,6 +14,9 @@ const PRINT_STYLES = `
         h1 { font-size: 16pt; font-weight: bold; text-align: center; margin-bottom: 5px; text-transform: uppercase; }
         h2 { font-size: 14pt; font-weight: bold; text-align: center; margin-bottom: 15px; }
         .header { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        .brand-block { display: flex; align-items: center; gap: 12px; }
+        .brand-logo { width: 64px; height: 64px; object-fit: contain; }
+        .brand-copy { display: flex; flex-direction: column; gap: 4px; }
         .logo-text { font-size: 10pt; font-weight: bold; }
         .sub-text { font-size: 9pt; }
         .info-row { display: flex; margin-bottom: 5px; font-size: 11pt; }
@@ -23,6 +27,29 @@ const PRINT_STYLES = `
         .date-line { font-style: italic; margin-bottom: 10px; }
     }
 `;
+
+const getFacilityHeaderHtml = (rightColumnHtml: string, leftFooterHtml = '') => {
+    const branding = getFacilityBranding(useRoomConfigStore.getState().facility);
+
+    return `
+        <div class="header">
+            <div class="brand-block">
+                <img class="brand-logo" src="${branding.logoSrc}" alt="Logo ${branding.name}" onerror="this.onerror=null;this.src='${getFacilityBranding().logoSrc}';" />
+                <div class="brand-copy">
+                    <div class="logo-text">${branding.name.toUpperCase()}</div>
+                    <div class="sub-text">Địa chỉ: ${branding.address}</div>
+                    <div class="sub-text">Điện thoại: ${branding.phone}</div>
+                    ${branding.email ? `<div class="sub-text">Email: ${branding.email}</div>` : ''}
+                    ${branding.taxCode ? `<div class="sub-text">MST: ${branding.taxCode}</div>` : ''}
+                    ${leftFooterHtml}
+                </div>
+            </div>
+            <div style="text-align: right;">
+                ${rightColumnHtml}
+            </div>
+        </div>
+    `;
+};
 
 export const printPrescription = (prescription: Prescription, resident: Resident) => {
     const win = window.open('', '_blank');
@@ -50,17 +77,10 @@ export const printPrescription = (prescription: Prescription, resident: Resident
             <style>${PRINT_STYLES}</style>
         </head>
         <body>
-            <div class="header">
-                <div>
-                    <div class="logo-text">VIỆN DƯỠNG LÃO FDC</div>
-                    <div class="sub-text">Địa chỉ: 123 Đường ABC, Quận XYZ, TP.HCM</div>
-                    <div class="sub-text">Điện thoại: (028) 3838 8383</div>
-                </div>
-                <div style="text-align: right;">
-                    <div class="sub-text">Mã đơn: <strong>${prescription.code}</strong></div>
-                    <div class="sub-text">Ngày: ${new Date(prescription.prescriptionDate).toLocaleDateString('vi-VN')}</div>
-                </div>
-            </div>
+            ${getFacilityHeaderHtml(`
+                <div class="sub-text">Mã đơn: <strong>${prescription.code}</strong></div>
+                <div class="sub-text">Ngày: ${new Date(prescription.prescriptionDate).toLocaleDateString('vi-VN')}</div>
+            `)}
 
             <h1>ĐƠN THUỐC</h1>
             
@@ -181,15 +201,11 @@ export const printDailyMedicationSheet = (resident: Resident, activeItems: (Pres
             <style>${PRINT_STYLES}</style>
         </head>
         <body>
-            <div class="header">
-                <div>
-                   <div class="logo-text">VIỆN DƯỠNG LÃO FDC</div>
-                   <div style="font-size: 14pt; font-weight: bold; margin-top: 10px;">PHIẾU TỔNG HỢP THUỐC ĐANG DÙNG</div>
-                </div>
-                 <div style="text-align: right;">
-                    <div class="sub-text">Ngày in: ${new Date().toLocaleDateString('vi-VN')}</div>
-                </div>
-            </div>
+            ${getFacilityHeaderHtml(`
+                <div class="sub-text">Ngày in: ${new Date().toLocaleDateString('vi-VN')}</div>
+            `, `
+                <div style="font-size: 14pt; font-weight: bold; margin-top: 6px;">PHIẾU TỔNG HỢP THUỐC ĐANG DÙNG</div>
+            `)}
 
              <div style="margin-bottom: 20px;">
                 <div class="info-row">

@@ -3,6 +3,7 @@ import { X, Printer } from 'lucide-react';
 import { Resident, ServiceUsage } from '../../../types';
 import { formatCurrency } from '../../../data/index';
 import { useRoomConfigStore } from '../../../stores/roomConfigStore';
+import { fallbackFacilityLogo, getFacilityBranding } from '../../../utils/facilityBranding';
 
 interface InvoicePreviewProps {
     resident: Resident;
@@ -14,6 +15,7 @@ interface InvoicePreviewProps {
 
 export const InvoicePreview = ({ resident, month, fixedCosts, incurredCosts, onClose }: InvoicePreviewProps) => {
     const { facility } = useRoomConfigStore();
+    const branding = getFacilityBranding(facility);
 
     const calculateTotal = () => {
         const fixedTotal = fixedCosts.reduce((sum, item) => sum + item.amount, 0);
@@ -51,12 +53,24 @@ export const InvoicePreview = ({ resident, month, fixedCosts, incurredCosts, onC
                     <div className="bg-white max-w-2xl mx-auto min-h-[800px] p-8 shadow-sm print:shadow-none print:w-full print:max-w-none">
 
                         {/* Bill Header */}
-                        <div className="mb-8 text-center pb-8 border-b border-slate-200">
-                            <h1 className="text-2xl font-bold uppercase text-slate-800 mb-2">{facility.name || 'VIỆN DƯỠNG LÃO VDL'}</h1>
-                            <div className="text-sm text-slate-500 space-y-1">
-                                <p>{facility.address}</p>
-                                <p>Hotline: {facility.phone} - Email: {facility.email}</p>
-                                {facility.taxCode && <p>MST: {facility.taxCode}</p>}
+                        <div className="mb-8 pb-8 border-b border-slate-200">
+                            <div className="flex flex-col items-center justify-center gap-4 text-center sm:flex-row sm:text-left">
+                                <div className="flex h-24 w-24 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
+                                    <img
+                                        src={branding.logoSrc}
+                                        alt={`Logo ${branding.name}`}
+                                        className="h-full w-full object-contain p-3"
+                                        onError={event => fallbackFacilityLogo(event.currentTarget)}
+                                    />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold uppercase text-slate-800 mb-2">{branding.name}</h1>
+                                    <div className="text-sm text-slate-500 space-y-1">
+                                        <p>{branding.address}</p>
+                                        <p>Hotline: {branding.phone} - Email: {branding.email}</p>
+                                        {branding.taxCode && <p>MST: {branding.taxCode}</p>}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -149,7 +163,7 @@ export const InvoicePreview = ({ resident, month, fixedCosts, incurredCosts, onC
                         </div>
 
                         <div className="text-center text-[10px] text-slate-400 print:fixed print:bottom-4 print:left-0 print:w-full">
-                            Chứng từ này chỉ có giá trị nội bộ tại {facility.name}
+                            Chứng từ này chỉ có giá trị nội bộ tại {branding.name}
                         </div>
                     </div>
                 </div>
