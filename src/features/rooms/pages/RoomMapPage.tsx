@@ -1,8 +1,21 @@
-import React, { useState, useMemo } from 'react';
-import { Bed, Stethoscope, Wrench, X, UserPlus, LogOut, CheckCircle2, AlertTriangle, ArrowRightLeft, Building } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+   Bed,
+   Stethoscope,
+   Wrench,
+   X,
+   UserPlus,
+   LogOut,
+   CheckCircle2,
+   AlertTriangle,
+   ArrowRightLeft,
+   Building,
+   Edit,
+   Plus,
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { Resident, Room, User, MaintenanceRequest } from '../../../types/index';
+import { Resident, Room, User } from '../../../types/index';
 import { BUILDING_STRUCTURE } from '../../../constants/facility';
 import { generateRooms } from '../../../data/index';
 import { TransferRoomModal } from '../components/TransferRoomModal';
@@ -12,8 +25,8 @@ import { useResidentsStore } from '../../../stores/residentsStore';
 import { useRoomsStore } from '../../../stores/roomsStore';
 import { useRoomConfigStore } from '../../../stores/roomConfigStore';
 import { RoomEditModal } from '../components/RoomEditModal';
-import { Edit, Plus } from 'lucide-react';
-
+import { ReadOnlyBanner } from '@/src/components/ui/ReadOnlyBanner';
+import { useModuleAccess } from '@/src/hooks/useModuleAccess';
 
 interface BedDetailModalProps {
    bed: any;
@@ -25,9 +38,21 @@ interface BedDetailModalProps {
    onClose: () => void;
    onAction: (action: string, bedId: string) => void;
    resident?: Resident;
+   readOnly?: boolean;
 }
 
-const BedDetailModal = ({ bed, roomNumber, roomType, floor, building, user, onClose, onAction, resident }: BedDetailModalProps) => {
+const BedDetailModal = ({
+   bed,
+   roomNumber,
+   roomType,
+   floor,
+   building,
+   user,
+   onClose,
+   onAction,
+   resident,
+   readOnly = false,
+}: BedDetailModalProps) => {
    return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 relative">
@@ -36,19 +61,25 @@ const BedDetailModal = ({ bed, roomNumber, roomType, floor, building, user, onCl
             </button>
 
             <div className="flex items-center gap-3 mb-6">
-               <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bed.status === 'Occupied' ? 'bg-teal-100 text-teal-600' :
-                  bed.status === 'Maintenance' ? 'bg-orange-100 text-orange-600' :
-                     'bg-slate-100 text-slate-500'
-                  }`}>
-                  {bed.status === 'Occupied' ? <Stethoscope className="w-6 h-6" /> :
-                     bed.status === 'Maintenance' ? <Wrench className="w-6 h-6" /> :
-                        <Bed className="w-6 h-6" />}
+               <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  bed.status === 'Occupied'
+                     ? 'bg-teal-100 text-teal-600'
+                     : bed.status === 'Maintenance'
+                        ? 'bg-orange-100 text-orange-600'
+                        : 'bg-slate-100 text-slate-500'
+               }`}>
+                  {bed.status === 'Occupied' ? (
+                     <Stethoscope className="w-6 h-6" />
+                  ) : bed.status === 'Maintenance' ? (
+                     <Wrench className="w-6 h-6" />
+                  ) : (
+                     <Bed className="w-6 h-6" />
+                  )}
                </div>
                <div>
                   <h3 className="font-bold text-lg text-slate-800">Giường {bed.id.split('-')[2]} - P.{roomNumber}</h3>
                   <p className="text-sm text-slate-500">
-                     {building} • {floor} • {bed.status === 'Occupied' ? 'Đang sử dụng' :
-                        bed.status === 'Maintenance' ? 'Đang bảo trì' : 'Giường trống'}
+                     {building} • {floor} • {bed.status === 'Occupied' ? 'Đang sử dụng' : bed.status === 'Maintenance' ? 'Đang bảo trì' : 'Giường trống'}
                   </p>
                </div>
             </div>
@@ -59,15 +90,17 @@ const BedDetailModal = ({ bed, roomNumber, roomType, floor, building, user, onCl
                   <div className="space-y-1 text-sm text-slate-600">
                      <p>Tuổi: {new Date().getFullYear() - new Date(resident.dob).getFullYear()}</p>
                      <p>Cấp độ chăm sóc: <span className="font-bold text-teal-700">{resident.careLevel}</span></p>
-                      <p>Tình trạng: {resident.currentConditionNote || 'Ổn định'}</p>
+                     <p>Tình trạng: {resident.currentConditionNote || 'Ổn định'}</p>
                   </div>
                   <div className="mt-4 flex gap-2">
                      <button onClick={() => onAction('view_resident', resident.id)} className="flex-1 bg-white border border-slate-200 text-teal-700 py-2 rounded-lg font-medium hover:bg-teal-50 flex items-center justify-center gap-2 text-sm">
                         Xem hồ sơ
                      </button>
-                     <button onClick={() => onAction('transfer', resident.id)} className="flex-1 bg-teal-600 text-white py-2 rounded-lg font-medium hover:bg-teal-700 flex items-center justify-center gap-2 text-sm shadow-sm">
-                        <ArrowRightLeft className="w-4 h-4" /> Chuyển phòng
-                     </button>
+                     {!readOnly && (
+                        <button onClick={() => onAction('transfer', resident.id)} className="flex-1 bg-teal-600 text-white py-2 rounded-lg font-medium hover:bg-teal-700 flex items-center justify-center gap-2 text-sm shadow-sm">
+                           <ArrowRightLeft className="w-4 h-4" /> Chuyển phòng
+                        </button>
+                     )}
                   </div>
                </div>
             ) : (
@@ -76,26 +109,28 @@ const BedDetailModal = ({ bed, roomNumber, roomType, floor, building, user, onCl
                </div>
             )}
 
-            <div className="grid grid-cols-1 gap-3">
-               {bed.status === 'Occupied' ? (
-                  <button onClick={() => onAction('discharge', bed.id)} className="w-full py-2 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 flex items-center justify-center gap-2">
-                     <LogOut className="w-4 h-4" /> Làm thủ tục xuất viện
-                  </button>
-               ) : bed.status === 'Maintenance' ? (
-                  <button onClick={() => onAction('end_maintenance', bed.id)} className="w-full py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 flex items-center justify-center gap-2">
-                     <CheckCircle2 className="w-4 h-4" /> Hoàn tất bảo trì
-                  </button>
-               ) : (
-                  <>
-                     <button onClick={() => onAction('assign', bed.id)} className="w-full py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 flex items-center justify-center gap-2">
-                        <UserPlus className="w-4 h-4" /> Xếp bệnh nhân mới
+            {!readOnly && (
+               <div className="grid grid-cols-1 gap-3">
+                  {bed.status === 'Occupied' ? (
+                     <button onClick={() => onAction('discharge', bed.id)} className="w-full py-2 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 flex items-center justify-center gap-2">
+                        <LogOut className="w-4 h-4" /> Làm thủ tục xuất viện
                      </button>
-                     <button onClick={() => onAction('start_maintenance', bed.id)} className="w-full py-2 bg-orange-50 text-orange-600 font-medium rounded-lg hover:bg-orange-100 flex items-center justify-center gap-2">
-                        <Wrench className="w-4 h-4" /> Báo hỏng / Bảo trì
+                  ) : bed.status === 'Maintenance' ? (
+                     <button onClick={() => onAction('end_maintenance', bed.id)} className="w-full py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 flex items-center justify-center gap-2">
+                        <CheckCircle2 className="w-4 h-4" /> Hoàn tất bảo trì
                      </button>
-                  </>
-               )}
-            </div>
+                  ) : (
+                     <>
+                        <button onClick={() => onAction('assign', bed.id)} className="w-full py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 flex items-center justify-center gap-2">
+                           <UserPlus className="w-4 h-4" /> Xếp bệnh nhân mới
+                        </button>
+                        <button onClick={() => onAction('start_maintenance', bed.id)} className="w-full py-2 bg-orange-50 text-orange-600 font-medium rounded-lg hover:bg-orange-100 flex items-center justify-center gap-2">
+                           <Wrench className="w-4 h-4" /> Báo hỏng / Bảo trì
+                        </button>
+                     </>
+                  )}
+               </div>
+            )}
          </div>
       </div>
    );
@@ -105,27 +140,34 @@ export const RoomMapPage = () => {
    const { user } = useAuthStore();
    const { residents, updateResident, selectResident } = useResidentsStore();
    const { maintenanceRequests } = useRoomsStore();
-   const { configs, updateRoom, addRoom, deleteRoom } = useRoomConfigStore(); // Store hooks
+   const { configs, updateRoom, addRoom, deleteRoom } = useRoomConfigStore();
+   const roomsAccess = useModuleAccess('rooms');
+   const isReadOnly = roomsAccess.mode === 'readOnly';
    const navigate = useNavigate();
 
    const [selectedBuilding, setSelectedBuilding] = useState('Tòa A');
    const [selectedFloor, setSelectedFloor] = useState('Tầng 2');
-   const [isEditMode, setIsEditMode] = useState(false); // Edit Mode State
-   const [editingRoom, setEditingRoom] = useState<{ roomNumber: string, bedCount: number, roomType: any } | null>(null);
-
-   const [selectedBed, setSelectedBed] = useState<{ bed: any, roomNumber: string, roomType: string, building: string, floor: string } | null>(null);
+   const [isEditMode, setIsEditMode] = useState(false);
+   const [editingRoom, setEditingRoom] = useState<{ roomNumber: string; bedCount: number; roomType: any } | null>(null);
+   const [selectedBed, setSelectedBed] = useState<{ bed: any; roomNumber: string; roomType: string; building: string; floor: string } | null>(null);
    const [transferResident, setTransferResident] = useState<Resident | null>(null);
    const [assignTarget, setAssignTarget] = useState<any | null>(null);
 
+   useEffect(() => {
+      if (isReadOnly) {
+         setIsEditMode(false);
+         setEditingRoom(null);
+         setTransferResident(null);
+         setAssignTarget(null);
+      }
+   }, [isReadOnly]);
 
-   // Live generation based on residents AND maintenance state
    const allRooms = useMemo(() => {
-      // Pass the store configs to generateRooms to override defaults
       return generateRooms(residents, maintenanceRequests, configs);
    }, [residents, maintenanceRequests, configs]);
 
-   const roomsOnFloor = useMemo(() =>
-      allRooms.filter(r => r.building === selectedBuilding && r.floor === selectedFloor),
+   const roomsOnFloor = useMemo(
+      () => allRooms.filter(r => r.building === selectedBuilding && r.floor === selectedFloor),
       [allRooms, selectedBuilding, selectedFloor]
    );
 
@@ -141,13 +183,15 @@ export const RoomMapPage = () => {
    if (!user) return null;
 
    const handleRoomClick = (room: Room) => {
-      if (isEditMode) {
-         setEditingRoom({
-            roomNumber: room.number,
-            bedCount: room.beds.length,
-            roomType: room.type
-         });
+      if (isReadOnly || !isEditMode) {
+         return;
       }
+
+      setEditingRoom({
+         roomNumber: room.number,
+         bedCount: room.beds.length,
+         roomType: room.type
+      });
    };
 
    const handleBedAction = async (action: string, bedId: string) => {
@@ -158,7 +202,15 @@ export const RoomMapPage = () => {
             selectResident(resident);
             navigate(`/residents/${resident.id}`);
          }
-      } else if (action === 'transfer') {
+         return;
+      }
+
+      if (isReadOnly) {
+         setSelectedBed(null);
+         return;
+      }
+
+      if (action === 'transfer') {
          if (resident) {
             setTransferResident(resident);
             setSelectedBed(null);
@@ -169,7 +221,9 @@ export const RoomMapPage = () => {
                await updateResident({
                   ...resident,
                   status: 'Discharged',
-                  room: 'N/A', bed: 'N/A', floor: 'N/A'
+                  room: 'N/A',
+                  bed: 'N/A',
+                  floor: 'N/A'
                });
                toast.success(`Hồ sơ của ${resident.name} đã cập nhật.`);
                setSelectedBed(null);
@@ -194,6 +248,10 @@ export const RoomMapPage = () => {
    };
 
    const handleAssign = async (residentId: string) => {
+      if (isReadOnly) {
+         return;
+      }
+
       const resident = residents.find(r => r.id === residentId);
       if (resident && assignTarget) {
          await updateResident({
@@ -210,33 +268,44 @@ export const RoomMapPage = () => {
    };
 
    const handleTransfer = async (data: any) => {
+      if (isReadOnly) {
+         return;
+      }
+
       if (transferResident) {
          await updateResident({
             ...transferResident,
             ...data
          });
          setTransferResident(null);
-         toast.success("Chuyển phòng thành công");
+         toast.success('Chuyển phòng thành công');
       }
-   }
+   };
 
    const handleSaveRoom = (data: { roomNumber: string; bedCount: number; roomType: any }) => {
-      if (editingRoom && editingRoom.roomNumber !== '') { // Existing room
+      if (isReadOnly) {
+         return;
+      }
+
+      if (editingRoom && editingRoom.roomNumber !== '') {
          if (data.roomNumber !== editingRoom.roomNumber) {
-            // Renaming: Delete old, add new
             deleteRoom(selectedBuilding, selectedFloor, editingRoom.roomNumber);
             addRoom(selectedBuilding, selectedFloor, { number: data.roomNumber, beds: data.bedCount, type: data.roomType });
          } else {
             updateRoom(selectedBuilding, selectedFloor, { number: data.roomNumber, beds: data.bedCount, type: data.roomType });
          }
          setEditingRoom(null);
-      } else { // New Room (via Add button)
+      } else {
          addRoom(selectedBuilding, selectedFloor, { number: data.roomNumber, beds: data.bedCount, type: data.roomType });
          setEditingRoom(null);
       }
    };
 
    const handleDeleteRoom = () => {
+      if (isReadOnly) {
+         return;
+      }
+
       if (editingRoom && editingRoom.roomNumber !== '') {
          deleteRoom(selectedBuilding, selectedFloor, editingRoom.roomNumber);
          setEditingRoom(null);
@@ -248,6 +317,8 @@ export const RoomMapPage = () => {
 
    return (
       <div className="space-y-6">
+         {isReadOnly && <ReadOnlyBanner message="Bạn có thể xem sơ đồ phòng nhưng không thể chỉnh sửa phòng hoặc điều phối giường." />}
+
          {selectedBed && (
             <BedDetailModal
                bed={selectedBed.bed}
@@ -259,10 +330,11 @@ export const RoomMapPage = () => {
                onClose={() => setSelectedBed(null)}
                onAction={handleBedAction}
                resident={residents.find(r => r.id === selectedBed.bed.residentId)}
+               readOnly={isReadOnly}
             />
          )}
 
-         {transferResident && (
+         {transferResident && !isReadOnly && (
             <TransferRoomModal
                resident={transferResident}
                allResidents={residents}
@@ -271,7 +343,7 @@ export const RoomMapPage = () => {
             />
          )}
 
-         {assignTarget && (
+         {assignTarget && !isReadOnly && (
             <AssignBedModal
                residents={residents}
                targetBed={assignTarget}
@@ -280,29 +352,31 @@ export const RoomMapPage = () => {
             />
          )}
 
-         {editingRoom && (
+         {editingRoom && !isReadOnly && (
             <RoomEditModal
                roomNumber={editingRoom.roomNumber}
                bedCount={editingRoom.bedCount}
                roomType={editingRoom.roomType}
                onClose={() => setEditingRoom(null)}
                onSave={handleSaveRoom}
-               onDelete={editingRoom.roomNumber !== '' ? handleDeleteRoom : undefined} // Only allow delete for existing rooms
+               onDelete={editingRoom.roomNumber !== '' ? handleDeleteRoom : undefined}
             />
          )}
 
          <div className="flex flex-col gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-            {/* Title Row */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                <div>
                   <h2 className="text-xl md:text-2xl font-bold text-slate-800">Sơ đồ phòng ở</h2>
                   <div className="flex items-center gap-2 flex-wrap">
                      <p className="text-sm text-slate-500">Quản lý trạng thái giường bệnh</p>
-                     {isAdmin && (
+                     {isAdmin && !isReadOnly && (
                         <div className="flex items-center gap-2">
                            <span className="text-sm text-slate-400 hidden sm:inline">|</span>
                            <label className="flex items-center gap-2 cursor-pointer">
-                              <div className={`w-10 h-6 rounded-full p-1 transition-colors ${isEditMode ? 'bg-indigo-600' : 'bg-slate-300'}`} onClick={() => setIsEditMode(!isEditMode)}>
+                              <div
+                                 className={`w-10 h-6 rounded-full p-1 transition-colors ${isEditMode ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                                 onClick={() => setIsEditMode(!isEditMode)}
+                              >
                                  <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${isEditMode ? 'translate-x-4' : ''}`} />
                               </div>
                               <span className={`text-sm font-medium ${isEditMode ? 'text-indigo-600' : 'text-slate-500'}`}>Chỉnh sửa</span>
@@ -321,7 +395,6 @@ export const RoomMapPage = () => {
                   </div>
                </div>
 
-               {/* Action Buttons - Supervisor only */}
                {isSupervisor && (
                   <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
                      <button
@@ -335,30 +408,32 @@ export const RoomMapPage = () => {
                )}
             </div>
 
-            {/* Building and Floor Selectors */}
             <div className="flex flex-col sm:flex-row gap-3">
-               {/* Building Selector */}
                <div className="flex bg-slate-100 rounded-lg p-1 overflow-x-auto hide-scrollbar shrink-0">
                   {BUILDING_STRUCTURE.map(b => (
                      <button
                         key={b.id}
-                        onClick={() => { setSelectedBuilding(b.id); setSelectedFloor(b.floors[0]); }}
-                        className={`px-3 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${selectedBuilding === b.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                           }`}
+                        onClick={() => {
+                           setSelectedBuilding(b.id);
+                           setSelectedFloor(b.floors[0]);
+                        }}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${
+                           selectedBuilding === b.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
                      >
                         <Building className="w-4 h-4" /> {b.name}
                      </button>
                   ))}
                </div>
 
-               {/* Floor Selector */}
                <div className="flex bg-slate-100 rounded-lg p-1 overflow-x-auto hide-scrollbar flex-1">
                   {availableFloors.map(floor => (
                      <button
                         key={floor}
                         onClick={() => setSelectedFloor(floor)}
-                        className={`px-3 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap ${selectedFloor === floor ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                           }`}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap ${
+                           selectedFloor === floor ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
                      >
                         {floor}
                      </button>
@@ -367,7 +442,6 @@ export const RoomMapPage = () => {
             </div>
          </div>
 
-         {/* Stats Cards - Horizontal scroll on mobile */}
          <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar md:grid md:grid-cols-4 md:gap-4 md:overflow-visible">
             <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-100 flex items-center justify-between min-w-[140px] shrink-0 md:min-w-0 md:shrink">
                <div><p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase">Tổng giường</p><p className="text-xl md:text-2xl font-bold text-slate-800">{stats.total}</p></div>
@@ -387,11 +461,10 @@ export const RoomMapPage = () => {
             </div>
          </div>
 
-         {/* Room Grid - 2 columns on mobile */}
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {roomsOnFloor.map(room => (
                <div key={room.id} className={`bg-white rounded-xl shadow-sm border ${isEditMode ? 'border-indigo-300 ring-2 ring-indigo-100 cursor-pointer hover:border-indigo-500' : 'border-slate-200'} overflow-hidden relative transition-all`}>
-                  {isEditMode && (
+                  {isEditMode && !isReadOnly && (
                      <div
                         className="absolute inset-0 z-10 bg-indigo-50/10 hover:bg-indigo-50/30 flex items-center justify-center group"
                         onClick={() => handleRoomClick(room)}
@@ -410,13 +483,13 @@ export const RoomMapPage = () => {
                         <div
                            key={bed.id}
                            onClick={() => !isEditMode && setSelectedBed({ bed, roomNumber: room.number, roomType: room.type, building: room.building, floor: room.floor })}
-                            className={`p-2 rounded-lg border text-center transition-all cursor-pointer relative
-                                        ${bed.status === 'Occupied'
-                                  ? 'bg-teal-50 border-teal-200 hover:bg-teal-100'
-                                  : bed.status === 'Maintenance'
-                                     ? 'bg-orange-50 border-orange-200 hover:bg-orange-100'
-                                     : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-slate-300'
-                               }`}
+                           className={`p-2 rounded-lg border text-center transition-all cursor-pointer relative ${
+                              bed.status === 'Occupied'
+                                 ? 'bg-teal-50 border-teal-200 hover:bg-teal-100'
+                                 : bed.status === 'Maintenance'
+                                    ? 'bg-orange-50 border-orange-200 hover:bg-orange-100'
+                                    : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-slate-300'
+                           }`}
                         >
                            <div className="flex justify-between items-center mb-1">
                               <span className="text-xs text-slate-400 font-medium">{bed.id.split('-')[2]}</span>
@@ -434,7 +507,8 @@ export const RoomMapPage = () => {
                      ))}
                   </div>
                </div>
-            ))}</div>
+            ))}
+         </div>
       </div>
    );
 };
