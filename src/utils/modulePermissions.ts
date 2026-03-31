@@ -130,6 +130,13 @@ const normalizeSingleRolePermissions = (permissions: RoleModulePermissions): Rol
   };
 };
 
+export interface RoleModuleAccess {
+  mode: ModuleAccessMode;
+  visible: boolean;
+  canViewFinance: boolean;
+  canEditFinance: boolean;
+}
+
 export const normalizeRoleModulePermissions = (
   permissions: RoleModulePermissionMatrix,
 ): RoleModulePermissionMatrix => {
@@ -158,4 +165,32 @@ export const getModuleAccessMode = (
   }
 
   return 'restricted';
+};
+
+export const getRoleModuleAccess = (
+  role: Role,
+  permissions: RoleModulePermissionMatrix,
+  moduleKey: ModuleKey,
+): RoleModuleAccess => {
+  if (moduleKey === 'finance') {
+    const financePermission = permissions[role].finance;
+
+    return {
+      mode: financePermission.view
+        ? (financePermission.edit ? 'full' : 'readOnly')
+        : 'restricted',
+      visible: financePermission.view,
+      canViewFinance: financePermission.view,
+      canEditFinance: financePermission.edit,
+    };
+  }
+
+  const isVisible = permissions[role][moduleKey].visible;
+
+  return {
+    mode: getModuleAccessMode(moduleKey, isVisible),
+    visible: isVisible,
+    canViewFinance: false,
+    canEditFinance: false,
+  };
 };

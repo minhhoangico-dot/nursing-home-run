@@ -1,49 +1,76 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  Users, BedDouble,
-  CreditCard, Settings as SettingsIcon, LogOut,
-  Printer, AlertTriangle, Utensils, UserCheck, Wrench,
-  ClipboardList, Syringe, X
+  AlertTriangle,
+  BedDouble,
+  ClipboardList,
+  CreditCard,
+  LogOut,
+  Printer,
+  Settings as SettingsIcon,
+  Syringe,
+  type LucideIcon,
+  UserCheck,
+  Users,
+  Utensils,
+  Wrench,
+  X,
 } from 'lucide-react';
-import { useAuthStore } from '../../stores/authStore';
+import { MODULE_REGISTRY } from '@/src/constants/moduleRegistry';
 import { useFacilityBranding } from '@/src/hooks/useFacilityBranding';
+import { useAppSettingsStore } from '@/src/stores/appSettingsStore';
+import { useAuthStore } from '@/src/stores/authStore';
+import type { ModuleKey } from '@/src/types/appSettings';
 import { fallbackFacilityLogo } from '@/src/utils/facilityBranding';
+import { getRoleModuleAccess } from '@/src/utils/modulePermissions';
 
 interface SidebarProps {
   onClose?: () => void;
 }
 
+interface MenuItem {
+  key: ModuleKey;
+  label: string;
+  icon: LucideIcon;
+}
+
+const MENU_ITEMS: MenuItem[] = [
+  { key: 'visitors', label: 'Khách thăm', icon: UserCheck },
+  { key: 'dailyMonitoring', label: 'Theo dõi ngày', icon: ClipboardList },
+  { key: 'procedures', label: 'Thủ thuật', icon: Syringe },
+  { key: 'nutrition', label: 'Dinh dưỡng', icon: Utensils },
+  { key: 'residents', label: 'Danh sách NCT', icon: Users },
+  { key: 'rooms', label: 'Sơ đồ phòng', icon: BedDouble },
+  { key: 'maintenance', label: 'Bảo trì', icon: Wrench },
+  { key: 'incidents', label: 'Sự cố & An toàn', icon: AlertTriangle },
+  { key: 'forms', label: 'In biểu mẫu', icon: Printer },
+  { key: 'finance', label: 'Tài chính', icon: CreditCard },
+  { key: 'settings', label: 'Cài đặt', icon: SettingsIcon },
+];
+
+const ROLE_LABELS: Record<string, string> = {
+  ADMIN: 'Quản trị viên',
+  DOCTOR: 'Bác sĩ',
+  SUPERVISOR: 'Trưởng tầng',
+  ACCOUNTANT: 'Kế toán',
+  NURSE: 'Điều dưỡng',
+  CAREGIVER: 'Hộ lý',
+};
+
 export const Sidebar = ({ onClose }: SidebarProps) => {
   const { user, logout } = useAuthStore();
+  const { permissions } = useAppSettingsStore();
   const branding = useFacilityBranding();
 
   if (!user) return null;
 
-  const menuItems = [
-    { id: 'visitors', label: 'Khách thăm', path: '/visitors', icon: UserCheck, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE', 'CAREGIVER'] },
-    { id: 'daily_monitoring', label: 'Theo dõi ngày', path: '/daily-monitoring', icon: ClipboardList, roles: ['ADMIN', 'SUPERVISOR', 'DOCTOR', 'NURSE'] },
-    { id: 'procedures', label: 'Thủ thuật', path: '/procedures', icon: Syringe, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE'] },
-    { id: 'nutrition', label: 'Dinh dưỡng', path: '/nutrition', icon: Utensils, roles: ['ADMIN', 'DOCTOR', 'NURSE', 'SUPERVISOR', 'CAREGIVER'] },
-    { id: 'residents', label: 'Danh sách NCT', path: '/residents', icon: Users, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'ACCOUNTANT', 'NURSE'] },
-    { id: 'rooms', label: 'Sơ đồ phòng', path: '/rooms', icon: BedDouble, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'ACCOUNTANT', 'NURSE'] },
-    { id: 'maintenance', label: 'Bảo trì', path: '/maintenance', icon: Wrench, roles: ['ADMIN', 'SUPERVISOR', 'ACCOUNTANT', 'DOCTOR'] },
-    { id: 'incidents', label: 'Sự cố & An toàn', path: '/incidents', icon: AlertTriangle, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE', 'CAREGIVER'] },
-    { id: 'forms', label: 'In biểu mẫu', path: '/forms', icon: Printer, roles: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE'] },
-    { id: 'finance', label: 'Tài chính', path: '/finance', icon: CreditCard, roles: ['ADMIN', 'ACCOUNTANT', 'DOCTOR'] },
-    { id: 'settings', label: 'Cài đặt', path: '/settings', icon: SettingsIcon, roles: ['ADMIN', 'ACCOUNTANT', 'SUPERVISOR'] },
-  ];
+  const filteredMenu = MENU_ITEMS.filter((item) => {
+    if (!MODULE_REGISTRY[item.key].nav) {
+      return false;
+    }
 
-  const filteredMenu = menuItems.filter(item => item.roles.includes(user.role));
-
-  const roleLabels: Record<string, string> = {
-    ADMIN: 'Quản trị viên',
-    DOCTOR: 'Bác sĩ',
-    SUPERVISOR: 'Trưởng tầng',
-    ACCOUNTANT: 'Kế toán',
-    NURSE: 'Điều dưỡng',
-    CAREGIVER: 'Hộ lý'
-  };
+    return getRoleModuleAccess(user.role, permissions, item.key).visible;
+  });
 
   const handleNavClick = () => {
     if (onClose) {
@@ -60,7 +87,7 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
               src={branding.logoSrc}
               alt={`Logo ${branding.name}`}
               className="h-full w-full object-contain p-1.5"
-              onError={event => fallbackFacilityLogo(event.currentTarget)}
+              onError={(event) => fallbackFacilityLogo(event.currentTarget)}
             />
           </div>
           <div className="min-w-0">
@@ -80,15 +107,18 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
       </div>
 
       <nav className="flex-1 px-3 lg:px-4 py-4 space-y-1 overflow-y-auto">
-        {filteredMenu.map(item => (
+        {filteredMenu.map((item) => (
           <NavLink
-            key={item.id}
-            to={item.path}
+            key={item.key}
+            to={MODULE_REGISTRY[item.key].path}
             onClick={handleNavClick}
-            className={({ isActive }) => `w-full flex items-center gap-3 px-4 py-3.5 lg:py-3 rounded-lg transition-colors ${isActive
-              ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/20'
-              : 'hover:bg-slate-800 hover:text-white'
-              }`}
+            className={({ isActive }) =>
+              `w-full flex items-center gap-3 px-4 py-3.5 lg:py-3 rounded-lg transition-colors ${
+                isActive
+                  ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/20'
+                  : 'hover:bg-slate-800 hover:text-white'
+              }`
+            }
           >
             <item.icon className="w-5 h-5" />
             <span className="font-medium">{item.label}</span>
@@ -103,10 +133,13 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
           </div>
           <div className="flex-1 overflow-hidden">
             <p className="text-sm font-medium text-white truncate">{user.name}</p>
-            <p className="text-xs text-slate-500 truncate">{roleLabels[user.role] || user.role}</p>
+            <p className="text-xs text-slate-500 truncate">{ROLE_LABELS[user.role] || user.role}</p>
           </div>
         </div>
-        <button onClick={logout} className="w-full flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-white p-2 hover:bg-slate-800 rounded">
+        <button
+          onClick={logout}
+          className="w-full flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-white p-2 hover:bg-slate-800 rounded"
+        >
           <LogOut className="w-4 h-4" /> Đăng xuất
         </button>
       </div>
