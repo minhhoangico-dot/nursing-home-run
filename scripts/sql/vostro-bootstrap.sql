@@ -222,6 +222,21 @@ CREATE TABLE IF NOT EXISTS public.blood_sugar_records (
     UNIQUE (resident_id, record_date)
 );
 
+CREATE TABLE IF NOT EXISTS public.app_settings (
+    key TEXT PRIMARY KEY,
+    value JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public Access App Settings" ON public.app_settings;
+CREATE POLICY "Public Access App Settings"
+ON public.app_settings
+FOR ALL
+USING (TRUE)
+WITH CHECK (TRUE);
+
 CREATE TABLE IF NOT EXISTS public.shift_handovers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     shift_date DATE NOT NULL,

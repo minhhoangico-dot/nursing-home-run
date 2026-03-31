@@ -5,6 +5,7 @@ import { useFinanceStore } from '../stores/financeStore';
 import { useIncidentsStore } from '../stores/incidentsStore';
 import { useAuthStore } from '../stores/authStore';
 import { useVisitorsStore } from '../stores/visitorsStore';
+import { useAppSettingsStore } from '../stores/appSettingsStore';
 
 
 export const useInitialData = () => {
@@ -17,11 +18,20 @@ export const useInitialData = () => {
     const { fetchIncidents } = useIncidentsStore();
     const { fetchUsers, user } = useAuthStore();
     const { fetchVisitors } = useVisitorsStore();
+    const fetchSettings = useAppSettingsStore(state => state.fetchSettings);
 
     useEffect(() => {
         const initData = async () => {
             try {
-                await fetchUsers(); // Always fetch users for login
+                await Promise.allSettled([
+                    fetchSettings(),
+                    fetchUsers(), // Always fetch users for login
+                ]);
+
+                const { lastLoadError } = useAppSettingsStore.getState();
+                if (lastLoadError) {
+                    console.warn('App settings unavailable, continuing with defaults', lastLoadError);
+                }
 
                 if (user) {
                     await Promise.all([
