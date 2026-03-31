@@ -1,14 +1,17 @@
 import React from 'react';
 import { Resident } from '@/src/types/resident';
 import { WeightRecord } from '@/src/types';
+import { useFacilityBranding } from '@/src/hooks/useFacilityBranding';
+import { fallbackFacilityLogo } from '@/src/utils/facilityBranding';
 
 interface PrintWeightFormProps {
-    month: string; // YYYY-MM
+    month: string;
     residents: Resident[];
     records: WeightRecord[];
 }
 
 export const PrintWeightForm = ({ month, residents, records }: PrintWeightFormProps) => {
+    const branding = useFacilityBranding();
     const [yearStr, monthStr] = month.split('-');
 
     const getBMI = (weight: number, height: number) => {
@@ -23,10 +26,28 @@ export const PrintWeightForm = ({ month, residents, records }: PrintWeightFormPr
 
     return (
         <div className="p-8 bg-white text-black print:block hidden font-serif">
-            <div className="text-center mb-6">
-                <h1 className="text-2xl font-bold uppercase">Bảng Theo Dõi Cân Nặng</h1>
-                <p className="mt-1">Tháng {monthStr} Năm {yearStr}</p>
-                <p className="text-sm italic mt-1">Tầng: 3</p>
+            <div className="mb-6 flex items-start justify-between gap-6 border-b border-black pb-4">
+                <div className="flex items-center gap-4">
+                    <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-slate-300 bg-white">
+                        <img
+                            src={branding.logoSrc}
+                            alt={`Logo ${branding.name}`}
+                            className="h-full w-full object-contain p-3"
+                            onError={event => fallbackFacilityLogo(event.currentTarget)}
+                        />
+                    </div>
+                    <div>
+                        <div className="text-lg font-bold uppercase">{branding.name}</div>
+                        <p>{branding.address}</p>
+                        <p>{[branding.phone, branding.email].filter(Boolean).join(' • ')}</p>
+                        {branding.taxCode && <p>MST: {branding.taxCode}</p>}
+                    </div>
+                </div>
+                <div className="text-right">
+                    <h1 className="text-2xl font-bold uppercase">Bảng Theo Dõi Cân Nặng</h1>
+                    <p className="mt-1">Tháng {monthStr} Năm {yearStr}</p>
+                    <p className="text-sm italic mt-1">Tầng: 3</p>
+                </div>
             </div>
 
             <table className="w-full border-collapse border border-black text-sm">

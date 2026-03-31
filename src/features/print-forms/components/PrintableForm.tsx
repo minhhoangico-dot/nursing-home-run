@@ -1,19 +1,20 @@
 import React from 'react';
 import { Printer } from 'lucide-react';
 import { User, Resident } from '../../../types/index';
+import { useFacilityBranding } from '@/src/hooks/useFacilityBranding';
+import { fallbackFacilityLogo } from '@/src/utils/facilityBranding';
 
 export const PrintableForm = ({ user, residents, type, formId, config, onClose }: { user: User, residents: Resident[], type: string, formId?: string, config?: any, onClose: () => void }) => {
-   // Use config or defaults
    const building = config?.building || 'Tòa A';
    const floor = config?.floor || 'Tầng 1';
    const dateStr = config?.date ? new Date(config.date).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN');
    const shift = config?.shift || 'Sáng';
+   const branding = useFacilityBranding();
 
    const filteredResidents = residents.filter(r => r.floor === floor && r.building === building);
-   // This component simulates the print view
+
    return (
       <div className="fixed inset-0 bg-white z-[9999] overflow-auto">
-         {/* Print Controls - Hidden when printing */}
          <div className="fixed top-0 left-0 right-0 bg-slate-800 text-white p-4 flex justify-between items-center print:hidden shadow-lg">
             <h2 className="font-bold text-lg">Xem trước bản in: {type}</h2>
             <div className="flex gap-4">
@@ -24,14 +25,25 @@ export const PrintableForm = ({ user, residents, type, formId, config, onClose }
             </div>
          </div>
 
-         {/* Actual A4 Page Content */}
          <div className="mt-20 print:mt-0 max-w-[210mm] mx-auto bg-white p-[10mm] min-h-[297mm] shadow-2xl print:shadow-none print:w-full">
-            {/* FDC Letterhead */}
-            <div className="flex justify-between items-start border-b-2 border-slate-800 pb-4 mb-8">
-               <div>
-                  <h1 className="text-2xl font-bold uppercase text-teal-800">Viện Dưỡng Lão FDC</h1>
-                  <p className="text-sm text-slate-600">Địa chỉ: 123 Đường ABC, Quận 7, TP.HCM</p>
-                  <p className="text-sm text-slate-600">Hotline: 028 1234 5678</p>
+            <div className="flex justify-between items-start border-b-2 border-slate-800 pb-4 mb-8 gap-6">
+               <div className="flex items-center gap-4">
+                  <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                     <img
+                        src={branding.logoSrc}
+                        alt={`Logo ${branding.name}`}
+                        className="h-full w-full object-contain p-3"
+                        onError={event => fallbackFacilityLogo(event.currentTarget)}
+                     />
+                  </div>
+                  <div>
+                     <h1 className="text-2xl font-bold uppercase text-teal-800">{branding.name}</h1>
+                     <p className="text-sm text-slate-600">{branding.address}</p>
+                     <p className="text-sm text-slate-600">
+                        {[branding.phone, branding.email].filter(Boolean).join(' • ')}
+                     </p>
+                     {branding.taxCode && <p className="text-sm text-slate-600">MST: {branding.taxCode}</p>}
+                  </div>
                </div>
                <div className="text-right">
                   <h2 className="text-xl font-bold uppercase mt-2">{type}</h2>
@@ -40,7 +52,6 @@ export const PrintableForm = ({ user, residents, type, formId, config, onClose }
                </div>
             </div>
 
-            {/* Form Content Switch */}
             {type === 'PHIẾU THEO DÕI SINH HIỆU' && (
                <div>
                   <div className="flex justify-between mb-4 font-bold">
@@ -270,7 +281,6 @@ export const PrintableForm = ({ user, residents, type, formId, config, onClose }
                </div>
             )}
 
-            {/* Footer Signature (Default for lists) */}
             {type !== 'PHIẾU GHI NHẬN SỰ CỐ' && (
                <div className="mt-16 flex justify-between text-center">
                   <div className="w-1/3">

@@ -1,5 +1,6 @@
-
 import { Prescription, PrescriptionItem, Resident } from '../../../types/index';
+import { useAppSettingsStore } from '@/src/stores/appSettingsStore';
+import { getFacilityBranding } from '@/src/utils/facilityBranding';
 
 const PRINT_STYLES = `
     @media print {
@@ -12,7 +13,9 @@ const PRINT_STYLES = `
         th { background-color: #f0f0f0; font-weight: bold; }
         h1 { font-size: 16pt; font-weight: bold; text-align: center; margin-bottom: 5px; text-transform: uppercase; }
         h2 { font-size: 14pt; font-weight: bold; text-align: center; margin-bottom: 15px; }
-        .header { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        .brand-block { display: flex; align-items: center; gap: 12px; }
+        .brand-logo { width: 72px; height: 72px; object-fit: contain; border: 1px solid #ccc; border-radius: 10px; padding: 8px; box-sizing: border-box; }
         .logo-text { font-size: 10pt; font-weight: bold; }
         .sub-text { font-size: 9pt; }
         .info-row { display: flex; margin-bottom: 5px; font-size: 11pt; }
@@ -23,6 +26,43 @@ const PRINT_STYLES = `
         .date-line { font-style: italic; margin-bottom: 10px; }
     }
 `;
+
+const escapeHtml = (value: string) =>
+    value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+const getPrintBranding = () => getFacilityBranding(useAppSettingsStore.getState().facility);
+
+const renderFacilityHeader = (rightContent: string) => {
+    const branding = getPrintBranding();
+    const contactLine = [branding.phone, branding.email].filter(Boolean).join(' - ');
+
+    return `
+        <div class="header">
+            <div class="brand-block">
+                <img
+                    class="brand-logo"
+                    src="${escapeHtml(branding.logoSrc)}"
+                    alt="${escapeHtml(`Logo ${branding.name}`)}"
+                    onerror="this.onerror=null;this.src='/logo.png';"
+                />
+                <div>
+                    <div class="logo-text">${escapeHtml(branding.name.toUpperCase())}</div>
+                    <div class="sub-text">${escapeHtml(branding.address)}</div>
+                    ${contactLine ? `<div class="sub-text">${escapeHtml(contactLine)}</div>` : ''}
+                    ${branding.taxCode ? `<div class="sub-text">MST: ${escapeHtml(branding.taxCode)}</div>` : ''}
+                </div>
+            </div>
+            <div style="text-align: right;">
+                ${rightContent}
+            </div>
+        </div>
+    `;
+};
 
 export const printPrescription = (prescription: Prescription, resident: Resident) => {
     const win = window.open('', '_blank');
@@ -50,17 +90,10 @@ export const printPrescription = (prescription: Prescription, resident: Resident
             <style>${PRINT_STYLES}</style>
         </head>
         <body>
-            <div class="header">
-                <div>
-                    <div class="logo-text">VIỆN DƯỠNG LÃO FDC</div>
-                    <div class="sub-text">Địa chỉ: 123 Đường ABC, Quận XYZ, TP.HCM</div>
-                    <div class="sub-text">Điện thoại: (028) 3838 8383</div>
-                </div>
-                <div style="text-align: right;">
-                    <div class="sub-text">Mã đơn: <strong>${prescription.code}</strong></div>
-                    <div class="sub-text">Ngày: ${new Date(prescription.prescriptionDate).toLocaleDateString('vi-VN')}</div>
-                </div>
-            </div>
+            ${renderFacilityHeader(`
+                <div class="sub-text">Mã đơn: <strong>${prescription.code}</strong></div>
+                <div class="sub-text">Ngày: ${new Date(prescription.prescriptionDate).toLocaleDateString('vi-VN')}</div>
+            `)}
 
             <h1>ĐƠN THUỐC</h1>
             
@@ -129,14 +162,7 @@ export const printDailyMedicationSheet = (resident: Resident, activeItems: (Pres
     const win = window.open('', '_blank');
     if (!win) return;
 
-    // Group items by Time of Day: Sang, Trua, Chieu, Toi
     const times = ['Sáng', 'Trưa', 'Chiều', 'Tối'];
-
-    // Create a row for each medicine, but visual groupings by time is requested by user? 
-    // "Medication table grouped by time of day (SÁNG, TRƯA, TỐI) with columns for Medication, Dosage, Notes, and a checkbox"
-    // Actually, usually a daily sheet has one row per medicine and columns for times. 
-    // But the user request specifically said: "Medication table grouped by time of day... with columns for Medication..."
-    // This implies distinct sections: SÁNG -> list of meds. TRƯA -> list of meds.
 
     const renderTimeSection = (time: string, items: typeof activeItems) => {
         const timeItems = items.filter(i => i.timesOfDay?.includes(time));
@@ -181,15 +207,10 @@ export const printDailyMedicationSheet = (resident: Resident, activeItems: (Pres
             <style>${PRINT_STYLES}</style>
         </head>
         <body>
-            <div class="header">
-                <div>
-                   <div class="logo-text">VIỆN DƯỠNG LÃO FDC</div>
-                   <div style="font-size: 14pt; font-weight: bold; margin-top: 10px;">PHIẾU TỔNG HỢP THUỐC ĐANG DÙNG</div>
-                </div>
-                 <div style="text-align: right;">
-                    <div class="sub-text">Ngày in: ${new Date().toLocaleDateString('vi-VN')}</div>
-                </div>
-            </div>
+            ${renderFacilityHeader(`
+                <div style="font-size: 14pt; font-weight: bold; margin-top: 10px;">PHIẾU TỔNG HỢP THUỐC ĐANG DÙNG</div>
+                <div class="sub-text">Ngày in: ${new Date().toLocaleDateString('vi-VN')}</div>
+            `)}
 
              <div style="margin-bottom: 20px;">
                 <div class="info-row">

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Input, Button, Card } from '../../../components/ui';
 import { useAuthStore } from '../../../stores/authStore';
+import { useFacilityBranding } from '@/src/hooks/useFacilityBranding';
+import { fallbackFacilityLogo } from '@/src/utils/facilityBranding';
 
 export const LoginPage = () => {
   const { login, users } = useAuthStore();
+  const branding = useFacilityBranding();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +30,6 @@ export const LoginPage = () => {
       login(user);
       toast.success(`Xin chào, ${user.name}`);
 
-      // Redirect based on role
       if (user.role === 'ADMIN' || user.role === 'SUPERVISOR') {
         navigate('/rooms');
       } else {
@@ -43,13 +44,18 @@ export const LoginPage = () => {
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-8">
-        <div className="flex justify-center mb-6">
-          <div className="bg-teal-600 p-3 rounded-full">
-            <Activity className="text-white w-8 h-8" />
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="h-20 w-20 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+            <img
+              src={branding.logoSrc}
+              alt={`Logo ${branding.name}`}
+              className="h-full w-full object-contain p-3"
+              onError={event => fallbackFacilityLogo(event.currentTarget)}
+            />
           </div>
+          <h1 className="mt-4 text-2xl font-bold text-slate-800">{branding.name}</h1>
+          <p className="text-center text-slate-500">Hệ thống quản lý chăm sóc toàn diện</p>
         </div>
-        <h1 className="text-2xl font-bold text-center text-slate-800 mb-2">Viện Dưỡng Lão FDC</h1>
-        <p className="text-center text-slate-500 mb-8">Hệ thống quản lý chăm sóc toàn diện</p>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <Input
