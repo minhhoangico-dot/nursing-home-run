@@ -311,6 +311,10 @@ CREATE TABLE IF NOT EXISTS public.medicines (
     unit TEXT,
     default_dosage TEXT,
     price NUMERIC DEFAULT 0,
+    strength TEXT,
+    route TEXT,
+    therapeutic_group TEXT,
+    source TEXT DEFAULT 'MANUAL',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -327,6 +331,7 @@ CREATE TABLE IF NOT EXISTS public.prescriptions (
     end_date DATE,
     status TEXT DEFAULT 'Active',
     notes TEXT,
+    duplicated_from_prescription_id UUID REFERENCES public.prescriptions(id),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -341,7 +346,28 @@ CREATE TABLE IF NOT EXISTS public.prescription_items (
     times_of_day JSONB DEFAULT '[]'::jsonb,
     quantity INTEGER,
     instructions TEXT,
+    start_date DATE,
+    end_date DATE,
+    continuous BOOLEAN NOT NULL DEFAULT FALSE,
+    quantity_supplied NUMERIC NOT NULL DEFAULT 0,
+    administrations_per_day INTEGER NOT NULL DEFAULT 1,
+    morning BOOLEAN NOT NULL DEFAULT FALSE,
+    noon BOOLEAN NOT NULL DEFAULT FALSE,
+    afternoon BOOLEAN NOT NULL DEFAULT FALSE,
+    evening BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.prescription_snapshots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    prescription_id UUID NOT NULL REFERENCES public.prescriptions(id) ON DELETE CASCADE,
+    version INTEGER NOT NULL,
+    snapshot_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    actor TEXT,
+    change_reason TEXT,
+    header_payload JSONB NOT NULL,
+    items_payload JSONB NOT NULL,
+    UNIQUE (prescription_id, version)
 );
 
 CREATE TABLE IF NOT EXISTS public.room_prices (

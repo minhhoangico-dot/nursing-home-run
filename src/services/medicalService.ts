@@ -1,5 +1,11 @@
 import { supabase } from '../lib/supabase';
-import { Incident, StaffSchedule, HandoverReport, VisitorLog, MaintenanceRequest, ActivityEvent, MedicationLog, User } from '../types';
+import { Incident, StaffSchedule, HandoverReport, VisitorLog, MaintenanceRequest, ActivityEvent, MedicationLog, User, Role, RolePermission, RolePermissionMap, MANAGED_MODULE_KEYS } from '../types';
+import { Medicine, Prescription, PrescriptionItem } from '../types/medical';
+import {
+    mapPrescriptionFromDb,
+    mapPrescriptionItemToDb,
+    mapPrescriptionToDb,
+} from '../features/prescriptions/utils/prescriptionMappers';
 
 const mapIncidentToDb = (i: Incident) => ({
     id: i.id,
@@ -136,6 +142,64 @@ const mapUserToDb = (u: User) => ({
     floor: u.floor,
     avatar: u.avatar
 });
+
+const mapMedicineFromDb = (row: any): Medicine => ({
+    id: row.id,
+    name: row.name,
+    activeIngredient: row.active_ingredient,
+    unit: row.unit,
+    defaultDosage: row.default_dosage,
+    price: row.price ? Number(row.price) : undefined,
+    strength: row.strength ?? undefined,
+    route: row.route ?? undefined,
+    therapeuticGroup: row.therapeutic_group ?? undefined,
+    source: row.source ?? undefined,
+});
+
+const mapMedicineToDb = (medicine: Partial<Medicine>) => ({
+    name: medicine.name,
+    active_ingredient: medicine.activeIngredient,
+    unit: medicine.unit,
+    default_dosage: medicine.defaultDosage,
+    price: medicine.price,
+    strength: medicine.strength,
+    route: medicine.route,
+    therapeutic_group: medicine.therapeuticGroup,
+    source: medicine.source,
+});
+
+const createEmptyRolePermissions = (): RolePermission =>
+    MANAGED_MODULE_KEYS.reduce((permissions, moduleKey) => {
+        permissions[moduleKey] = false;
+        return permissions;
+    }, {} as RolePermission);
+
+const createEmptyRolePermissionMap = (): RolePermissionMap => ({
+    ADMIN: createEmptyRolePermissions(),
+    DOCTOR: createEmptyRolePermissions(),
+    SUPERVISOR: createEmptyRolePermissions(),
+    ACCOUNTANT: createEmptyRolePermissions(),
+    NURSE: createEmptyRolePermissions(),
+    CAREGIVER: createEmptyRolePermissions(),
+});
+
+const mapRolePermissionsFromDb = (rows: any[]): RolePermissionMap => {
+    const permissions = createEmptyRolePermissionMap();
+
+    rows.forEach((row) => {
+        const role = row.role as Role;
+        const moduleKey = row.module_key as typeof MANAGED_MODULE_KEYS[number];
+
+        if (!(role in permissions) || !MANAGED_MODULE_KEYS.includes(moduleKey)) {
+            return;
+        }
+
+        permissions[role][moduleKey] = Boolean(row.is_enabled);
+    });
+
+    permissions.ADMIN.settings = true;
+    return permissions;
+};
 
 export const medicalService = {
     incidents: {
@@ -330,6 +394,87 @@ export const medicalService = {
         }
     },
 
+    medicines: {
+        getAll: async () => {
+            const { data, error } = await supabase.from('medicines').select('*').order('name');
+            if (error) throw error;
+            return (data || []).map(mapMedicineFromDb);
+        },
+        insert: async (medicine: Partial<Medicine>) => {
+            const { data, error } = await supabase.from('medicines').insert(mapMedicineToDb(medicine)).select().single();
+            if (error) throw error;
+            return mapMedicineFromDb(data);
+        },
+        update: async (id: string, medicine: Partial<Medicine>) => {
+            const { data, error } = await supabase
+                .from('medicines')
+                .update(mapMedicineToDb(medicine))
+                .eq('id', id)
+                .select()
+                .single();
+            if (error) throw error;
+            return mapMedicineFromDb(data);
+        },
+        remove: async (id: string) => {
+            const { error } = await supabase.from('medicines').delete().eq('id', id);
+            if (error) throw error;
+        }
+    },
+
+    prescriptions: {
+        getAll: async (residentId?: string) => {
+            let query = supabase
+                .from('prescriptions')
+                .select(`
+                    *,
+                    items:prescription_items(*)
+                `)
+                .order('prescription_date', { ascending: false });
+
+            if (residentId) {
+                query = query.eq('resident_id', residentId);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+            return (data || []).map(mapPrescriptionFromDb);
+        },
+        insert: async (prescription: Omit<Prescription, 'id'>, items: Omit<PrescriptionItem, 'id' | 'prescriptionId'>[]) => {
+            const { data: inserted, error: prescriptionError } = await supabase
+                .from('prescriptions')
+                .insert(mapPrescriptionToDb(prescription))
+                .select()
+                .single();
+            if (prescriptionError) throw prescriptionError;
+
+            if (items.length > 0) {
+                const { error: itemError } = await supabase
+                    .from('prescription_items')
+                    .insert(items.map((item) => mapPrescriptionItemToDb(item, inserted.id)));
+                if (itemError) throw itemError;
+            }
+
+            return inserted.id as string;
+        },
+        update: async (id: string, prescription: Omit<Prescription, 'id'>, items: Omit<PrescriptionItem, 'id' | 'prescriptionId'>[]) => {
+            const { error: prescriptionError } = await supabase
+                .from('prescriptions')
+                .update(mapPrescriptionToDb(prescription))
+                .eq('id', id);
+            if (prescriptionError) throw prescriptionError;
+
+            const { error: deleteError } = await supabase.from('prescription_items').delete().eq('prescription_id', id);
+            if (deleteError) throw deleteError;
+
+            if (items.length > 0) {
+                const { error: itemError } = await supabase
+                    .from('prescription_items')
+                    .insert(items.map((item) => mapPrescriptionItemToDb(item, id)));
+                if (itemError) throw itemError;
+            }
+        }
+    },
+
     nutrition: {
         getOrders: async (date: string) => {
             const { data, error } = await supabase.from('meal_orders').select('*').eq('date', date);
@@ -368,6 +513,29 @@ export const medicalService = {
             if (!list.length) return;
             const { error } = await supabase.from('users').upsert(list.map(mapUserToDb));
             if (error) throw error;
+        }
+    },
+
+    permissions: {
+        getRolePermissions: async () => {
+            const { data, error } = await supabase.from('role_permissions').select('*').order('role', { ascending: true });
+            if (error) throw error;
+            return mapRolePermissionsFromDb(data || []);
+        },
+        replaceRolePermissions: async (role: Role, permissions: RolePermission) => {
+            const records = MANAGED_MODULE_KEYS.map((moduleKey) => ({
+                role,
+                module_key: moduleKey,
+                is_enabled: role === 'ADMIN' && moduleKey === 'settings' ? true : permissions[moduleKey]
+            }));
+
+            const { error } = await supabase.from('role_permissions').upsert(records);
+            if (error) throw error;
+
+            const { data: refreshedData, error: refreshedError } = await supabase.from('role_permissions').select('*').order('role', { ascending: true });
+            if (refreshedError) throw refreshedError;
+
+            return mapRolePermissionsFromDb(refreshedData || []);
         }
     }
 };
