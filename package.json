@@ -7,7 +7,6 @@
     "dev": "vite",
     "build": "vite build",
     "test": "vitest run",
-    "test:medication": "vitest run src/features/prescriptions",
     "preview": "vite preview",
     "bootstrap:vostro": "node scripts/bootstrap-vostro-supabase.mjs",
     "deploy:worker": "npm run build && npx wrangler deploy"

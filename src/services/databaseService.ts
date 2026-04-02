@@ -15,7 +15,5 @@ export const db = {
   visitors: medicalService.visitors,
   maintenance: medicalService.maintenance,
   medication: medicalService.medication,
-  medicines: medicalService.medicines,
-  prescriptions: medicalService.prescriptions,
   nutrition: medicalService.nutrition
 };

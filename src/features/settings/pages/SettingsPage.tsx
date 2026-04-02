@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { Users, CreditCard, ArrowLeft, Plus, Edit2, Trash2, Building } from 'lucide-react';
+import { Users, CreditCard, ArrowLeft, Plus, Edit2, Trash2, Building, ShieldCheck } from 'lucide-react';
 import { User, ServicePrice } from '../../../types/index';
 import { AddUserModal } from '../components/AddUserModal';
 import { ServiceCatalog } from '../../finance/components/ServiceCatalog';
 import { FacilityConfig } from '../components/FacilityConfig';
+import { RolePermissionsPanel } from '../components/RolePermissionsPanel';
 import { useToast } from '../../../app/providers';
 import { db } from '../../../services/databaseService';
 import { useAuthStore } from '../../../stores/authStore';
 import { useFinanceStore } from '../../../stores/financeStore';
 
 export const SettingsPage = () => {
-   const [view, setView] = useState<'menu' | 'users' | 'facility' | 'prices'>('menu');
+   const [view, setView] = useState<'menu' | 'users' | 'roles' | 'facility' | 'prices'>('menu');
    const [showAddUserModal, setShowAddUserModal] = useState(false);
    const { addToast } = useToast();
 
@@ -123,7 +124,7 @@ export const SettingsPage = () => {
          {view === 'menu' ? (
             <>
                <h2 className="text-2xl font-bold text-slate-800">Cài đặt hệ thống</h2>
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:border-teal-200 transition-colors cursor-pointer" onClick={() => setView('users')}>
                      <div className="flex items-center gap-3 mb-4">
                         <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
@@ -133,6 +134,17 @@ export const SettingsPage = () => {
                      </div>
                      <p className="text-sm text-slate-500 mb-4">Thêm, xóa, sửa tài khoản nhân viên và phân quyền truy cập.</p>
                      <div className="text-sm font-medium text-teal-600">Quản lý &rarr;</div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:border-teal-200 transition-colors cursor-pointer" onClick={() => setView('roles')}>
+                     <div className="flex items-center gap-3 mb-4">
+                        <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600">
+                           <ShieldCheck className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-bold text-slate-800">Vai trò & phân quyền</h3>
+                     </div>
+                     <p className="text-sm text-slate-500 mb-4">Điều chỉnh quyền truy cập module cho từng vai trò trong hệ thống.</p>
+                     <div className="text-sm font-medium text-teal-600">Thiết lập &rarr;</div>
                   </div>
 
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:border-teal-200 transition-colors cursor-pointer" onClick={() => setView('prices')}>
@@ -172,6 +184,7 @@ export const SettingsPage = () => {
                      onDelete={deleteServicePrice}
                   />
                )}
+               {view === 'roles' && <RolePermissionsPanel />}
                {view === 'facility' && <FacilityConfig />}
             </>
          )}

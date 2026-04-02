@@ -5,26 +5,18 @@ export interface Assessment {
   assessor: string;
 }
 
-export type PrescriptionStatus = 'Active' | 'Completed' | 'Cancelled' | 'Paused';
+export type PrescriptionStatus = 'Active' | 'Paused' | 'Completed' | 'Cancelled';
 
 export interface Medicine {
   id: string;
   name: string;
   activeIngredient?: string;
   unit: string;
-  defaultDosage?: string;
-  price?: number;
   strength?: string;
   route?: string;
   therapeuticGroup?: string;
-  source?: 'MANUAL' | 'IMPORT';
-}
-
-export interface PrescriptionItemSchedule {
-  morning: boolean;
-  noon: boolean;
-  afternoon: boolean;
-  evening: boolean;
+  defaultDosage?: string;
+  price?: number;
 }
 
 export interface PrescriptionItem {
@@ -32,64 +24,31 @@ export interface PrescriptionItem {
   prescriptionId: string;
   medicineId?: string;
   medicineName: string;
-  dosage: string;
-  frequency: string;
-  timesOfDay: string[];
+  dosage: string; // e.g., "1 viên"
+  frequency: string; // e.g., "2 lần/ngày"
+  timesOfDay: string[]; // e.g., ["Sáng", "Chiều"]
   quantity?: number;
-  instructions?: string;
+  instructions?: string; // e.g., "Uống sau ăn"
   startDate?: string;
   endDate?: string;
   continuous?: boolean;
-  quantitySupplied?: number;
-  administrationsPerDay?: number;
-  schedule?: PrescriptionItemSchedule;
 }
 
 export interface Prescription {
   id: string;
-  code: string;
+  code: string; // DT-20231226-001
   residentId: string;
-  residentName?: string;
-  doctorId: string;
-  doctorName?: string;
+  residentName?: string; // Computed/Joined
+  doctorId: string; // User ID
+  doctorName?: string; // Cache
   diagnosis: string;
   prescriptionDate: string;
   startDate: string;
   endDate?: string;
   status: PrescriptionStatus;
   notes?: string;
+  duplicatedFromId?: string;
   items: PrescriptionItem[];
-  duplicatedFromPrescriptionId?: string;
-}
-
-export interface PrescriptionSnapshot {
-  id: string;
-  prescriptionId: string;
-  version: number;
-  snapshotAt: string;
-  actor?: string;
-  changeReason?: string;
-  headerPayload: Record<string, unknown>;
-  itemsPayload: Array<Record<string, unknown>>;
-}
-
-export interface MedicationLineStatus {
-  active: boolean;
-  nearEnd: boolean;
-  exhausted: boolean;
-  remainingDays: number | null;
-  estimatedExhaustionDate: string | null;
-}
-
-export interface ActiveMedicationRow {
-  prescriptionId: string;
-  sourcePrescriptionCode: string;
-  medicineName: string;
-  dosage: string;
-  instructions?: string;
-  timeOfDay: 'morning' | 'noon' | 'afternoon' | 'evening';
-  startDate?: string;
-  status: MedicationLineStatus;
 }
 
 export interface MedicationLog {
@@ -98,8 +57,8 @@ export interface MedicationLog {
   prescriptionId: string;
   medicationName: string;
   dose: string;
-  time: string;
-  date: string;
+  time: string; // 'Morning', 'Noon', 'Afternoon', 'Night'
+  date: string; // YYYY-MM-DD
   status: 'Given' | 'Refused' | 'Pending';
   performer: string;
   note?: string;

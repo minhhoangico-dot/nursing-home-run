@@ -88,7 +88,7 @@ const PRINT_STYLES = `
     }
     .barcode-svg {
         width: 100%;
-        height: 16mm;
+        height: auto;
         display: block;
     }
     .barcode-text {
@@ -279,20 +279,49 @@ const formatQuantity = (item: PrescriptionItem) => {
 
 const buildBarcodeSvg = (prescriptionCode: string) => {
     const normalizedCode = prescriptionCode || '0000000000000';
-    const rects = Array.from(normalizedCode)
-        .flatMap((char, index) => {
-            const seed = char.charCodeAt(0) + index * 19;
-            return [
-                { x: index * 5.3 + 1.8, width: seed % 2 === 0 ? 1.2 : 0.8, height: seed % 3 === 0 ? 42 : 37 },
-                { x: index * 5.3 + 3.7, width: seed % 5 === 0 ? 1.6 : 1.0, height: seed % 7 === 0 ? 33 : 42 },
-            ];
-        })
-        .map(({ x, width, height }) => `<rect x="${x}" y="${46 - height}" width="${width}" height="${height}" fill="#111111" />`)
+
+    // Build a dense sequence of bars from each character: 5 bars per char
+    // Width alternates narrow(1)/wide(2.5) based on bit pattern of char code
+    // All bars same height → uniform, clean look
+    const BAR_H = 40;
+    const GAP = 1;
+    const NARROW = 1.2;
+    const WIDE = 2.8;
+    const TOP_Y = 2;
+
+    const bars: { x: number; w: number }[] = [];
+    let curX = 2;
+
+    // Leading guard
+    bars.push({ x: curX, w: NARROW }); curX += NARROW + GAP;
+    bars.push({ x: curX, w: NARROW }); curX += NARROW + GAP;
+    bars.push({ x: curX, w: WIDE });   curX += WIDE + GAP;
+
+    for (let ci = 0; ci < normalizedCode.length; ci++) {
+        const c = normalizedCode.charCodeAt(ci);
+        // 4 bars per character derived from 4 bits
+        for (let b = 3; b >= 0; b--) {
+            const w = (c >> b) & 1 ? WIDE : NARROW;
+            bars.push({ x: curX, w });
+            curX += w + GAP;
+        }
+        // inter-character gap (white space — just advance)
+        curX += GAP;
+    }
+
+    // Trailing guard
+    bars.push({ x: curX, w: WIDE });   curX += WIDE + GAP;
+    bars.push({ x: curX, w: NARROW }); curX += NARROW + GAP;
+    bars.push({ x: curX, w: NARROW });
+
+    const totalW = Math.ceil(curX + NARROW + 2);
+    const rects = bars
+        .map(({ x, w }) => `<rect x="${x.toFixed(1)}" y="${TOP_Y}" width="${w.toFixed(1)}" height="${BAR_H}" fill="#111" />`)
         .join('');
 
     return `
-        <svg class="barcode-svg" viewBox="0 0 78 46" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mã vạch đơn thuốc ${escapeHtml(normalizedCode)}">
-            <rect x="0" y="0" width="78" height="46" fill="#ffffff" />
+        <svg class="barcode-svg" viewBox="0 0 ${totalW} ${BAR_H + TOP_Y + 2}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mã vạch đơn thuốc ${escapeHtml(normalizedCode)}">
+            <rect x="0" y="0" width="${totalW}" height="${BAR_H + TOP_Y + 2}" fill="#fff" />
             ${rects}
         </svg>
     `;
@@ -335,8 +364,28 @@ const buildFooterHtml = (prescriptionDate?: string) => `
 `;
 
 const buildMedicineInstruction = (item: PrescriptionItem) => {
-    const parts = [item.dosage, item.frequency, item.instructions].filter(Boolean);
-    return parts.length > 0 ? `${parts.join(', ')}.` : '';
+    const parts: string[] = [];
+
+    // "1 viên mỗi lần, 2 lần/ngày"
+    if (item.dosage && item.frequency) {
+        parts.push(`${item.dosage} mỗi lần, ${item.frequency}`);
+    } else if (item.dosage) {
+        parts.push(item.dosage);
+    } else if (item.frequency) {
+        parts.push(item.frequency);
+    }
+
+    // Thời điểm uống nếu có
+    if (item.timesOfDay?.length) {
+        parts.push(`Uống: ${item.timesOfDay.join(', ')}`);
+    }
+
+    // Hướng dẫn đặc biệt (trước ăn / sau ăn...)
+    if (item.instructions) {
+        parts.push(item.instructions);
+    }
+
+    return parts.length > 0 ? parts.join('. ') + '.' : '';
 };
 
 const buildAddress = (resident: Resident) => {
@@ -465,6 +514,20 @@ export const printPrescription = (prescription: Prescription, resident: Resident
     setTimeout(() => win.print(), 500);
 };
 
+const computeRemainingDaysForPrint = (item: PrescriptionItem): string => {
+    if (item.continuous) return '∞';
+    const endDate = item.endDate;
+    if (!endDate) return '';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
+    const days = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (days <= 0) return '⚠ ĐÃ HẾT';
+    if (days <= 2) return `⚠ Còn ${days} ngày`;
+    return `Còn ${days} ngày`;
+};
+
 export const printDailyMedicationSheet = (
     resident: Resident,
     activeItems: (PrescriptionItem & { prescriptionCode: string; startDate: string })[]
@@ -478,15 +541,21 @@ export const printDailyMedicationSheet = (
         const timeItems = items.filter(i => i.timesOfDay?.includes(time));
         if (timeItems.length === 0) return '';
 
-        const rows = timeItems.map((item, idx) => `
+        const rows = timeItems.map((item, idx) => {
+            const remaining = computeRemainingDaysForPrint(item);
+            const isWarning = remaining.includes('⚠');
+            return `
             <tr>
-                <td style="text-align: center;">${idx + 1}</td>
-                <td><strong>${item.medicineName}</strong></td>
-                <td>${item.dosage}</td>
-                <td>${item.instructions || ''}</td>
-                <td style="text-align: center; width: 50px;">◻</td>
+                <td style="text-align: center; border: 1px solid #ccc; padding: 5px;">${idx + 1}</td>
+                <td style="border: 1px solid #ccc; padding: 5px;"><strong>${item.medicineName}</strong></td>
+                <td style="border: 1px solid #ccc; padding: 5px;">${item.dosage}</td>
+                <td style="border: 1px solid #ccc; padding: 5px; font-size: 9pt;">${item.instructions || ''}</td>
+                <td style="border: 1px solid #ccc; padding: 5px; font-size: 8pt; color: #666;">${item.prescriptionCode}</td>
+                <td style="border: 1px solid #ccc; padding: 5px; text-align: center; font-size: 8pt; ${isWarning ? 'color: red; font-weight: bold;' : ''}">${remaining}</td>
+                <td style="text-align: center; width: 50px; border: 1px solid #ccc; padding: 5px;">◻</td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
 
         return `
             <div style="margin-top: 20px;">
@@ -494,11 +563,13 @@ export const printDailyMedicationSheet = (
                 <table style="width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 10px;">
                     <thead>
                         <tr>
-                            <th style="width: 40px; text-align: center; border: 1px solid #ccc; padding: 6px;">STT</th>
-                            <th style="border: 1px solid #ccc; padding: 6px; text-align: left;">Tên thuốc</th>
-                            <th style="border: 1px solid #ccc; padding: 6px; text-align: left;">Liều lượng</th>
-                            <th style="border: 1px solid #ccc; padding: 6px; text-align: left;">Lưu ý</th>
-                            <th style="border: 1px solid #ccc; padding: 6px; text-align: center;">Đã uống</th>
+                            <th style="width: 35px; text-align: center; border: 1px solid #ccc; padding: 5px; font-size: 9pt;">STT</th>
+                            <th style="border: 1px solid #ccc; padding: 5px; text-align: left; font-size: 9pt;">Tên thuốc</th>
+                            <th style="border: 1px solid #ccc; padding: 5px; text-align: left; font-size: 9pt;">Liều lượng</th>
+                            <th style="border: 1px solid #ccc; padding: 5px; text-align: left; font-size: 9pt;">Lưu ý</th>
+                            <th style="border: 1px solid #ccc; padding: 5px; text-align: left; font-size: 9pt;">Từ đơn</th>
+                            <th style="border: 1px solid #ccc; padding: 5px; text-align: center; font-size: 9pt;">Còn lại</th>
+                            <th style="border: 1px solid #ccc; padding: 5px; text-align: center; font-size: 9pt; width: 50px;">Đã uống</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>

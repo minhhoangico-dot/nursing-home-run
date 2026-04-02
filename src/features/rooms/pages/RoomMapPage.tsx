@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Bed, Stethoscope, Wrench, X, UserPlus, LogOut, CheckCircle2, AlertTriangle, ArrowRightLeft, Building } from 'lucide-react';
+import { Bed, Stethoscope, Wrench, X, UserPlus, CheckCircle2, AlertTriangle, ArrowRightLeft, Building } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { Resident, Room, User, MaintenanceRequest } from '../../../types/index';
@@ -77,15 +77,11 @@ const BedDetailModal = ({ bed, roomNumber, roomType, floor, building, user, onCl
             )}
 
             <div className="grid grid-cols-1 gap-3">
-               {bed.status === 'Occupied' ? (
-                  <button onClick={() => onAction('discharge', bed.id)} className="w-full py-2 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 flex items-center justify-center gap-2">
-                     <LogOut className="w-4 h-4" /> Làm thủ tục xuất viện
-                  </button>
-               ) : bed.status === 'Maintenance' ? (
+               {bed.status === 'Maintenance' ? (
                   <button onClick={() => onAction('end_maintenance', bed.id)} className="w-full py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 flex items-center justify-center gap-2">
                      <CheckCircle2 className="w-4 h-4" /> Hoàn tất bảo trì
                   </button>
-               ) : (
+               ) : bed.status === 'Available' ? (
                   <>
                      <button onClick={() => onAction('assign', bed.id)} className="w-full py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 flex items-center justify-center gap-2">
                         <UserPlus className="w-4 h-4" /> Xếp bệnh nhân mới
@@ -94,7 +90,7 @@ const BedDetailModal = ({ bed, roomNumber, roomType, floor, building, user, onCl
                         <Wrench className="w-4 h-4" /> Báo hỏng / Bảo trì
                      </button>
                   </>
-               )}
+               ) : null}
             </div>
          </div>
       </div>
