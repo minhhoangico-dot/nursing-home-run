@@ -333,7 +333,9 @@ CREATE TABLE IF NOT EXISTS public.daily_monitoring (
 
 CREATE TABLE IF NOT EXISTS public.medicines (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code TEXT,
     name TEXT NOT NULL,
+    trade_name TEXT,
     active_ingredient TEXT,
     unit TEXT,
     strength TEXT,
@@ -341,6 +343,8 @@ CREATE TABLE IF NOT EXISTS public.medicines (
     therapeutic_group TEXT,
     default_dosage TEXT,
     price NUMERIC DEFAULT 0,
+    source TEXT NOT NULL DEFAULT 'MANUAL' CHECK (source IN ('HIS_IMPORT', 'MANUAL')),
+    his_service_id BIGINT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -512,6 +516,48 @@ CREATE INDEX IF NOT EXISTS idx_procedure_resident_date ON public.procedure_recor
 CREATE INDEX IF NOT EXISTS idx_weight_resident_month ON public.weight_records (resident_id, record_month DESC);
 CREATE INDEX IF NOT EXISTS idx_daily_monitoring_resident_date ON public.daily_monitoring (resident_id, record_date DESC);
 CREATE INDEX IF NOT EXISTS idx_service_usage_resident_date ON public.service_usage (resident_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_medicines_code ON public.medicines (code);
+CREATE INDEX IF NOT EXISTS idx_medicines_source ON public.medicines (source);
+
+CREATE OR REPLACE FUNCTION public.sync_medicines_derived_fields()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    canonical_name TEXT;
+BEGIN
+    canonical_name := NULLIF(
+        TRIM(
+            CASE
+                WHEN NULLIF(BTRIM(NEW.active_ingredient), '') IS NOT NULL AND NULLIF(BTRIM(NEW.trade_name), '') IS NOT NULL
+                    THEN BTRIM(NEW.active_ingredient) || ' (' || BTRIM(NEW.trade_name) || ')'
+                WHEN NULLIF(BTRIM(NEW.active_ingredient), '') IS NOT NULL
+                    THEN BTRIM(NEW.active_ingredient)
+                WHEN NULLIF(BTRIM(NEW.trade_name), '') IS NOT NULL
+                    THEN BTRIM(NEW.trade_name)
+                ELSE ''
+            END
+        ),
+        ''
+    );
+
+    IF canonical_name IS NOT NULL THEN
+        NEW.name = canonical_name;
+    ELSIF NULLIF(BTRIM(NEW.name), '') IS NOT NULL THEN
+        NEW.name = BTRIM(NEW.name);
+    END IF;
+
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS sync_medicines_derived_fields ON public.medicines;
+
+CREATE TRIGGER sync_medicines_derived_fields
+BEFORE INSERT OR UPDATE ON public.medicines
+FOR EACH ROW
+EXECUTE FUNCTION public.sync_medicines_derived_fields();
 
 INSERT INTO public.room_prices (room_type, room_type_vi, price_monthly, description) VALUES
     ('1-bed', 'Phòng 1 người', 15000000, 'Phòng riêng một giường'),

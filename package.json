@@ -9,7 +9,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "bootstrap:vostro": "node scripts/bootstrap-vostro-supabase.mjs",
+    "medicines:import:dry-run": "node scripts/import-his-medicines.mjs --dry-run",
+    "medicines:import": "node scripts/import-his-medicines.mjs --apply",
     "deploy:worker": "npm run build && npx wrangler deploy"
   },
   "dependencies": {
@@ -22,6 +26,7 @@
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^6.30.2",
     "recharts": "^3.6.0",
+    "pg": "^8.16.3",
     "zod": "^4.2.1",
     "zustand": "^5.0.9"
   },
@@ -32,6 +37,7 @@
     "@types/date-fns": "^2.5.3",
     "@types/node": "^22.14.0",
     "@types/react-router-dom": "^5.3.3",
+    "@types/testing-library__jest-dom": "^5.14.9",
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.17",
     "jsdom": "^29.0.1",

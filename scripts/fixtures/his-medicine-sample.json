@@ -1,0 +1,66 @@
+[
+  {
+    "serviceid": 11253,
+    "servicecode": "BSGD00012",
+    "servicename": "Aerius 0.5mg/ml",
+    "listmedicinehoatchat": "Desloratadine",
+    "serviceunit": "lo",
+    "dm_medicine_duongdung": "Uong"
+  },
+  {
+    "serviceid": 11254,
+    "servicecode": "BSGD00012",
+    "servicename": "Aerius 0.5mg/ml",
+    "listmedicinehoatchat": "Desloratadine",
+    "serviceunit": "lo",
+    "dm_medicine_duongdung": "Uong"
+  },
+  {
+    "serviceid": 30001,
+    "servicecode": "BSGD00077",
+    "servicename": "Alpha Tabs",
+    "listmedicinehoatchat": "Alpha",
+    "serviceunit": "vien",
+    "dm_medicine_duongdung": "Uong"
+  },
+  {
+    "serviceid": 30002,
+    "servicecode": "BSGD00077",
+    "servicename": "Beta Tabs",
+    "listmedicinehoatchat": "Beta",
+    "serviceunit": "vien",
+    "dm_medicine_duongdung": "Uong"
+  },
+  {
+    "serviceid": 40001,
+    "servicecode": "BSGD00088",
+    "servicename": "Route Optional",
+    "listmedicinehoatchat": "Gamma",
+    "serviceunit": "goi",
+    "dm_medicine_duongdung": "."
+  },
+  {
+    "serviceid": 50001,
+    "servicecode": "",
+    "servicename": "Missing Code",
+    "listmedicinehoatchat": "Ignore",
+    "serviceunit": "vien",
+    "dm_medicine_duongdung": "Uong"
+  },
+  {
+    "serviceid": 50002,
+    "servicecode": "BSGD00999",
+    "servicename": "Missing Active",
+    "listmedicinehoatchat": ".",
+    "serviceunit": "vien",
+    "dm_medicine_duongdung": "Uong"
+  },
+  {
+    "serviceid": 50003,
+    "servicecode": "BSGD00998",
+    "servicename": "",
+    "listmedicinehoatchat": "Missing Trade",
+    "serviceunit": "vien",
+    "dm_medicine_duongdung": "Uong"
+  }
+]
