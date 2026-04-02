@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Printer, ChefHat, AlertCircle, Search, Soup, Coffee, FileText } from 'lucide-react';
+import { ModuleReadOnlyBanner } from '../../../components/ui/ModuleReadOnlyBanner';
+import { useModuleReadOnly } from '../../../routes/ModuleAccessContext';
 import { useAuthStore } from '../../../stores/authStore';
 import { useResidentsStore } from '../../../stores/residentsStore';
 
@@ -17,6 +19,7 @@ const DIET_CONFIG: Record<DietType, { label: string; color: string; icon: any; o
 export const NutritionPage = () => {
    const { user } = useAuthStore();
    const { residents } = useResidentsStore();
+   const readOnly = useModuleReadOnly();
    const [searchTerm, setSearchTerm] = useState('');
    const printRef = useRef<HTMLDivElement>(null);
 
@@ -52,6 +55,8 @@ export const NutritionPage = () => {
 
    return (
       <div className="space-y-6 h-full flex flex-col">
+         {readOnly && <ModuleReadOnlyBanner />}
+
          {/* Header - Hidden on Print */}
          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
             <div>

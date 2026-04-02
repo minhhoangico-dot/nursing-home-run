@@ -64,7 +64,7 @@ const SummaryCard = ({
    </div>
 );
 
-const VitalInputModal = ({ user, residentId, onClose, onSave }: { user: User, residentId: string, onClose: () => void, onSave: () => void }) => {
+const VitalInputModal = ({ user, residentId, onClose, onSave, readOnly = false }: { user: User, residentId: string, onClose: () => void, onSave: () => void, readOnly?: boolean }) => {
    const { updateRecord } = useMonitoringStore();
    const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -79,6 +79,8 @@ const VitalInputModal = ({ user, residentId, onClose, onSave }: { user: User, re
    const [bowel, setBowel] = useState('');
 
    const handleSave = async () => {
+      if (readOnly) return;
+
       setIsSubmitting(true);
       const today = new Date();
       const year = today.getFullYear();
@@ -180,7 +182,7 @@ const VitalInputModal = ({ user, residentId, onClose, onSave }: { user: User, re
    );
 };
 
-export const VitalSignsSection = ({ user, resident }: { user: User, resident: Resident }) => {
+export const VitalSignsSection = ({ user, resident, readOnly = false }: { user: User, resident: Resident, readOnly?: boolean }) => {
    const [showInputModal, setShowInputModal] = useState(false);
    const [selectedMetric, setSelectedMetric] = useState<'bp' | 'pulse' | 'sp02' | 'temp' | 'blood_sugar' | 'bowel' | null>(null);
 
@@ -209,7 +211,7 @@ export const VitalSignsSection = ({ user, resident }: { user: User, resident: Re
 
    return (
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-         {showInputModal && <VitalInputModal user={user} residentId={resident.id} onClose={() => setShowInputModal(false)} onSave={loadHistory} />}
+         {showInputModal && !readOnly && <VitalInputModal user={user} residentId={resident.id} onClose={() => setShowInputModal(false)} onSave={loadHistory} readOnly={readOnly} />}
 
          {/* Note: Ensure MetricDetailModal supports the new types 'blood_sugar' and 'bowel' or fallback gracefully */}
          {selectedMetric && (
@@ -232,9 +234,11 @@ export const VitalSignsSection = ({ user, resident }: { user: User, resident: Re
                </p>
             </div>
 
-            <button onClick={() => setShowInputModal(true)} className="bg-teal-50 text-teal-700 px-4 py-2 rounded-lg hover:bg-teal-100 flex items-center gap-2 font-medium transition-colors border border-teal-100">
+             {!readOnly && (
+             <button onClick={() => setShowInputModal(true)} className="bg-teal-50 text-teal-700 px-4 py-2 rounded-lg hover:bg-teal-100 flex items-center gap-2 font-medium transition-colors border border-teal-100">
                <Plus className="w-4 h-4" /> Cập nhật
-            </button>
+             </button>
+             )}
          </div>
 
          <div className="p-6 bg-slate-50/50">

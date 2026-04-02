@@ -1,24 +1,29 @@
 import React, { useState } from 'react';
-import { User, Calendar, AlertCircle } from 'lucide-react';
+import { AlertCircle, Calendar, User } from 'lucide-react';
 import { Resident } from '../../../types/index';
-import { Modal, Button } from '../../../components/ui/index';
+import { Button, Modal } from '../../../components/ui/index';
 
 interface AssignBedModalProps {
    residents: Resident[];
    targetBed: { id: string, roomNumber: string, bedLabel: string, building: string, floor: string, type: string };
+   readOnly?: boolean;
    onClose: () => void;
    onAssign: (residentId: string) => void;
 }
 
-export const AssignBedModal = ({ residents, targetBed, onClose, onAssign }: AssignBedModalProps) => {
+export const AssignBedModal = ({ residents, targetBed, readOnly = false, onClose, onAssign }: AssignBedModalProps) => {
    const [selectedId, setSelectedId] = useState<string>('');
 
-   // Filter residents who are active but don't have a room assigned
-   const waitingResidents = residents.filter(r => 
+   const waitingResidents = residents.filter(r =>
       r.status === 'Active' && (r.room === 'Chưa xếp' || !r.room || r.room === 'N/A')
    );
 
    const handleSubmit = () => {
+      if (readOnly) {
+         onClose();
+         return;
+      }
+
       if (selectedId) {
          onAssign(selectedId);
       }
@@ -41,18 +46,22 @@ export const AssignBedModal = ({ residents, targetBed, onClose, onAssign }: Assi
 
             <div>
                <label className="block text-sm font-medium text-slate-700 mb-3">Chọn NCT chờ xếp phòng ({waitingResidents.length})</label>
-               
+
                {waitingResidents.length > 0 ? (
                   <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                      {waitingResidents.map(r => (
-                        <div 
+                        <div
                            key={r.id}
-                           onClick={() => setSelectedId(r.id)}
-                           className={`p-3 rounded-lg border cursor-pointer flex items-center justify-between transition-all ${
-                              selectedId === r.id 
-                              ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' 
-                              : 'bg-white border-slate-200 hover:border-blue-300'
-                           }`}
+                           aria-disabled={readOnly}
+                           onClick={() => {
+                              if (readOnly) return;
+                              setSelectedId(r.id);
+                           }}
+                           className={`p-3 rounded-lg border flex items-center justify-between transition-all ${
+                              selectedId === r.id
+                                 ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500'
+                                 : 'bg-white border-slate-200 hover:border-blue-300'
+                           } ${readOnly ? 'opacity-60 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
                         >
                            <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
@@ -84,9 +93,11 @@ export const AssignBedModal = ({ residents, targetBed, onClose, onAssign }: Assi
 
             <div className="flex justify-end pt-4 gap-2 border-t border-slate-100">
                <Button variant="secondary" onClick={onClose}>Hủy bỏ</Button>
-               <Button onClick={handleSubmit} disabled={!selectedId}>
-                  Xác nhận xếp phòng
-               </Button>
+               {!readOnly && (
+                  <Button onClick={handleSubmit} disabled={!selectedId}>
+                     Xác nhận xếp phòng
+                  </Button>
+               )}
             </div>
          </div>
       </Modal>

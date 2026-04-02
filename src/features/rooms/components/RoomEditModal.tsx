@@ -1,6 +1,6 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { X, Save, Trash2 } from 'lucide-react';
+import { Save, Trash2, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Room } from '@/src/types/room';
 
@@ -8,12 +8,13 @@ interface RoomEditModalProps {
     roomNumber: string;
     bedCount: number;
     roomType: Room['type'];
+    readOnly?: boolean;
     onClose: () => void;
     onSave: (data: { roomNumber: string; bedCount: number; roomType: Room['type'] }) => void;
     onDelete?: () => void;
 }
 
-export const RoomEditModal = ({ roomNumber, bedCount, roomType, onClose, onSave, onDelete }: RoomEditModalProps) => {
+export const RoomEditModal = ({ roomNumber, bedCount, roomType, readOnly = false, onClose, onSave, onDelete }: RoomEditModalProps) => {
     const { register, handleSubmit, formState: { errors } } = useForm({
         defaultValues: {
             roomNumber,
@@ -23,9 +24,26 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, onClose, onSave,
     });
 
     const onSubmit = (data: any) => {
+        if (readOnly) {
+            onClose();
+            return;
+        }
+
         onSave(data);
         onClose();
         toast.success(`Đã cập nhật phòng ${data.roomNumber}`);
+    };
+
+    const handleDelete = () => {
+        if (readOnly) {
+            onClose();
+            return;
+        }
+
+        if (confirm('Bạn có chắc muốn xóa phòng này không?')) {
+            onDelete?.();
+            onClose();
+        }
     };
 
     return (
@@ -43,7 +61,10 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, onClose, onSave,
                         <label className="block text-sm font-medium text-slate-700 mb-1">Số phòng</label>
                         <input
                             {...register('roomNumber', { required: 'Vui lòng nhập số phòng' })}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            disabled={readOnly}
+                            className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                                readOnly ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''
+                            }`}
                             placeholder="VD: 101, 201A..."
                         />
                         {errors.roomNumber && <span className="text-red-500 text-xs">{errors.roomNumber.message as string}</span>}
@@ -54,7 +75,10 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, onClose, onSave,
                         <input
                             type="number"
                             {...register('bedCount', { required: true, min: 1, max: 10 })}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            disabled={readOnly}
+                            className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                                readOnly ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''
+                            }`}
                         />
                     </div>
 
@@ -62,7 +86,10 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, onClose, onSave,
                         <label className="block text-sm font-medium text-slate-700 mb-1">Loại phòng</label>
                         <select
                             {...register('roomType')}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            disabled={readOnly}
+                            className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                                readOnly ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''
+                            }`}
                         >
                             <option value="1 Giường">1 Giường</option>
                             <option value="2 Giường">2 Giường</option>
@@ -76,26 +103,23 @@ export const RoomEditModal = ({ roomNumber, bedCount, roomType, onClose, onSave,
                     </div>
 
                     <div className="flex gap-3 pt-4">
-                        {onDelete && (
+                        {onDelete && !readOnly && (
                             <button
                                 type="button"
-                                onClick={() => {
-                                    if (confirm('Bạn có chắc muốn xóa phòng này không?')) {
-                                        onDelete();
-                                        onClose();
-                                    }
-                                }}
+                                onClick={handleDelete}
                                 className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 font-medium flex items-center gap-2"
                             >
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         )}
-                        <button
-                            type="submit"
-                            className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center justify-center gap-2"
-                        >
-                            <Save className="w-4 h-4" /> Lưu thay đổi
-                        </button>
+                        {!readOnly && (
+                            <button
+                                type="submit"
+                                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center justify-center gap-2"
+                            >
+                                <Save className="w-4 h-4" /> Lưu thay đổi
+                            </button>
+                        )}
                     </div>
                 </form>
             </div>

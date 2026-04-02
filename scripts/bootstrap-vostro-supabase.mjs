@@ -31,13 +31,48 @@ const admin = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 const users = [
-  { id: 'user-admin', name: 'Hệ Thống FDC', username: 'admin', password: 'admin123', role: 'ADMIN' },
-  { id: 'user-hbminh', name: 'H.B Minh', username: 'hbminh', password: 'password123', role: 'ADMIN' },
-  { id: 'user-doctor', name: 'Lê Minh Khánh', username: 'doctor', password: 'password', role: 'DOCTOR' },
-  { id: 'user-supervisor', name: 'Nguyễn Thị Lan', username: 'supervisor', password: 'password', role: 'SUPERVISOR', floor: 'Tầng 3' },
-  { id: 'user-accountant', name: 'Phan Thanh Tùng', username: 'accountant', password: 'password', role: 'ACCOUNTANT' },
-  { id: 'user-nurse', name: 'Trần Văn Hùng', username: 'nurse', password: 'password', role: 'NURSE', floor: 'Tầng 3' },
+  { id: 'user-admin', name: 'Hệ Thống FDC', username: 'admin', password: 'admin123', role: 'ADMIN', is_active: true },
+  { id: 'user-hbminh', name: 'H.B Minh', username: 'hbminh', password: 'password123', role: 'ADMIN', is_active: true },
+  { id: 'user-doctor', name: 'Lê Minh Khánh', username: 'doctor', password: 'password', role: 'DOCTOR', is_active: true },
+  { id: 'user-supervisor', name: 'Nguyễn Thị Lan', username: 'supervisor', password: 'password', role: 'SUPERVISOR', floor: 'Tầng 3', is_active: true },
+  { id: 'user-accountant', name: 'Phan Thanh Tùng', username: 'accountant', password: 'password', role: 'ACCOUNTANT', is_active: true },
+  { id: 'user-nurse', name: 'Trần Văn Hùng', username: 'nurse', password: 'password', role: 'NURSE', floor: 'Tầng 3', is_active: true },
 ];
+
+const seedUserIdsByUsername = new Map(users.map((user) => [user.username, user.id]));
+
+const roles = ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'ACCOUNTANT', 'NURSE', 'CAREGIVER'];
+
+const approvedRolePermissions = {
+  residents: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'ACCOUNTANT', 'NURSE'],
+  rooms: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'ACCOUNTANT', 'NURSE'],
+  nutrition: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE', 'CAREGIVER'],
+  visitors: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE', 'CAREGIVER'],
+  daily_monitoring: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE'],
+  procedures: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE'],
+  weight_tracking: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE'],
+  incidents: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE', 'CAREGIVER'],
+  maintenance: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'ACCOUNTANT'],
+  forms: ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'NURSE'],
+  finance: ['ADMIN', 'ACCOUNTANT'],
+  settings: ['ADMIN'],
+};
+
+const approvedPermissionSet = new Set(
+  Object.entries(approvedRolePermissions).flatMap(([module_key, allowedRoles]) =>
+    allowedRoles.map((role) => `${role}:${module_key}`),
+  ),
+);
+
+const managedModules = Object.keys(approvedRolePermissions);
+
+const rolePermissions = managedModules.flatMap((module_key) =>
+  roles.map((role) => ({
+    role,
+    module_key,
+    is_enabled: approvedPermissionSet.has(`${role}:${module_key}`),
+  })),
+);
 
 const residents = [
   {
@@ -240,6 +275,53 @@ const shiftHandoverNotes = [
   },
 ];
 
+function resolveUserIdAliases(resolvedUsers) {
+  const aliases = new Map();
+
+  for (const user of resolvedUsers) {
+    const seedId = seedUserIdsByUsername.get(user.username);
+    if (seedId) {
+      aliases.set(seedId, user.id);
+    }
+    aliases.set(user.username, user.id);
+  }
+
+  return aliases;
+}
+
+function remapCreatedBy(rows, aliases) {
+  return rows.map((row) => {
+    if (!row.created_by) {
+      return row;
+    }
+
+    const resolvedId = aliases.get(row.created_by);
+    if (!resolvedId || resolvedId === row.created_by) {
+      return row;
+    }
+
+    return { ...row, created_by: resolvedId };
+  });
+}
+
+function buildApprovedRolePermissionPairsSql() {
+  return rolePermissions.map(({ role, module_key }) => `('${role}', '${module_key}')`).join(',\n    ');
+}
+
+function buildPruneRolePermissionsSql() {
+  return `WITH approved(role, module_key) AS (
+    VALUES
+    ${buildApprovedRolePermissionPairsSql()}
+)
+DELETE FROM public.role_permissions rp
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM approved
+    WHERE approved.role = rp.role
+      AND approved.module_key = rp.module_key
+);`;
+}
+
 async function runSql(label, query) {
   const response = await fetch(sqlEndpoint, {
     method: 'POST',
@@ -288,16 +370,39 @@ async function main() {
 
   await runSql('bootstrap schema', bootstrapSql);
   await runSql('reload PostgREST schema cache', "NOTIFY pgrst, 'reload schema';");
-  await waitForRestTable('users');
+  await Promise.all([waitForRestTable('users'), waitForRestTable('role_permissions')]);
 
-  await upsert('users', users, { onConflict: 'id' });
+  const { data: existingUsers, error: existingUsersError } = await admin
+    .from('users')
+    .select('id, username')
+    .in('username', users.map((user) => user.username));
+
+  if (existingUsersError) {
+    throw existingUsersError;
+  }
+
+  const resolvedUsersByUsername = new Map(
+    users.map((user) => [
+      user.username,
+      existingUsers?.find((row) => row.username === user.username)?.id ?? user.id,
+    ]),
+  );
+  const resolvedUsers = users.map((user) => ({
+    ...user,
+    id: resolvedUsersByUsername.get(user.username),
+  }));
+  const userIdAliases = resolveUserIdAliases(resolvedUsers);
+
+  await upsert('users', resolvedUsers, { onConflict: 'id' });
+  await upsert('role_permissions', rolePermissions, { onConflict: 'role,module_key' });
   await upsert('residents', residents, { onConflict: 'id' });
   await upsert('blood_sugar_records', bloodSugarRecords, { onConflict: 'resident_id,record_date' });
   await upsert('weight_records', weightRecords, { onConflict: 'resident_id,record_month' });
-  await upsert('daily_monitoring', dailyMonitoring, { onConflict: 'resident_id,record_date' });
-  await upsert('procedure_records', procedureRecords, { onConflict: 'resident_id,record_date' });
-  await upsert('shift_handovers', shiftHandovers, { onConflict: 'id' });
+  await upsert('daily_monitoring', remapCreatedBy(dailyMonitoring, userIdAliases), { onConflict: 'resident_id,record_date' });
+  await upsert('procedure_records', remapCreatedBy(procedureRecords, userIdAliases), { onConflict: 'resident_id,record_date' });
+  await upsert('shift_handovers', remapCreatedBy(shiftHandovers, userIdAliases), { onConflict: 'id' });
   await upsert('shift_handover_notes', shiftHandoverNotes, { onConflict: 'id' });
+  await runSql('prune role_permissions', buildPruneRolePermissionsSql());
 
   console.log('Vostro Supabase bootstrap complete.');
 }

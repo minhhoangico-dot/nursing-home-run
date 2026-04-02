@@ -4,8 +4,8 @@ import { useRoomsStore } from '../stores/roomsStore';
 import { useFinanceStore } from '../stores/financeStore';
 import { useIncidentsStore } from '../stores/incidentsStore';
 import { useAuthStore } from '../stores/authStore';
+import { usePermissionStore } from '../stores/permissionStore';
 import { useVisitorsStore } from '../stores/visitorsStore';
-
 
 export const useInitialData = () => {
     const [isLoading, setIsLoading] = useState(true);
@@ -16,37 +16,52 @@ export const useInitialData = () => {
     const { fetchFinanceData } = useFinanceStore();
     const { fetchIncidents } = useIncidentsStore();
     const { fetchUsers, user } = useAuthStore();
+    const { fetchPermissions } = usePermissionStore();
     const { fetchVisitors } = useVisitorsStore();
+    const userId = user?.id;
 
     useEffect(() => {
         const initData = async () => {
-            try {
-                await fetchUsers(); // Always fetch users for login
+            setIsLoading(true);
+            setError(null);
 
-                if (user) {
-                    await Promise.all([
-                        fetchResidents(),
-                        fetchMaintenanceRequests(),
-                        fetchFinanceData(),
-                        fetchIncidents(),
-                        fetchVisitors(),
-                    ]);
+            try {
+                await fetchUsers();
+
+                const authenticatedUser = useAuthStore.getState().user;
+
+                if (!authenticatedUser) {
+                    return;
                 }
+
+                await fetchPermissions();
+
+                await Promise.all([
+                    fetchResidents(),
+                    fetchMaintenanceRequests(),
+                    fetchFinanceData(),
+                    fetchIncidents(),
+                    fetchVisitors(),
+                ]);
             } catch (err) {
-                console.error("Error fetching initial data:", err);
+                console.error('Error fetching initial data:', err);
                 setError(err instanceof Error ? err : new Error('Unknown error'));
             } finally {
                 setIsLoading(false);
             }
         };
 
-        if (user !== undefined) {
-            // Only run if user state is resolved? 
-            // Zustand persist hydration? 
-            // For now assuming user is available or null from start.
-            initData();
-        }
-    }, [user]);
+        void initData();
+    }, [
+        fetchFinanceData,
+        fetchIncidents,
+        fetchMaintenanceRequests,
+        fetchPermissions,
+        fetchResidents,
+        fetchUsers,
+        fetchVisitors,
+        userId,
+    ]);
 
     return { isLoading, error };
 };

@@ -9,9 +9,10 @@ interface EditResidentModalProps {
   onClose: () => void;
   onSave: (data: Partial<Resident>) => void;
   existingCodes?: string[];
+  readOnly?: boolean;
 }
 
-export const EditResidentModal = ({ resident, onClose, onSave, existingCodes = [] }: EditResidentModalProps) => {
+export const EditResidentModal = ({ resident, onClose, onSave, existingCodes = [], readOnly = false }: EditResidentModalProps) => {
   const [formData, setFormData] = useState<Partial<Resident>>({
     name: resident.name,
     dob: resident.dob,
@@ -34,15 +35,24 @@ export const EditResidentModal = ({ resident, onClose, onSave, existingCodes = [
   };
 
   const handleGenerateCode = () => {
+    if (readOnly) return;
+
     const code = generateClinicCode(formData, existingCodes);
     handleChange('clinicCode', code);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (readOnly) {
+      onClose();
+      return;
+    }
+
     onSave(formData);
     onClose();
   };
+
+  if (readOnly) return null;
 
   return (
     <Modal title="Chỉnh sửa thông tin NCT" onClose={onClose}>

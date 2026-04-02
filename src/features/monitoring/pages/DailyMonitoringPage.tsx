@@ -3,6 +3,8 @@ import { useAuthStore } from '@/src/stores/authStore';
 import { useResidentsStore } from '@/src/stores/residentsStore';
 import { useMonitoringStore } from '@/src/stores/monitoringStore';
 import { useBloodSugarStore } from '@/src/stores/bloodSugarStore';
+import { ModuleReadOnlyBanner } from '@/src/components/ui/ModuleReadOnlyBanner';
+import { useModuleReadOnly } from '@/src/routes/ModuleAccessContext';
 import { MonitoringGrid } from '../components/MonitoringGrid';
 import { MobileMonitoringView } from '../components/MobileMonitoringView';
 import { ChevronLeft, ChevronRight, Calendar, Table2, LayoutList } from 'lucide-react';
@@ -24,6 +26,7 @@ export const DailyMonitoringPage = () => {
     const { residents, fetchResidents } = useResidentsStore();
     const { records: dailyRecords, isLoading: isMonitoringLoading, fetchDailyRecords: fetchRecords, currentMonth, setCurrentMonth } = useMonitoringStore();
     const { records: bsRecords, isLoading: isBSLoading, fetchAllRecords: fetchBSRecords } = useBloodSugarStore();
+    const readOnly = useModuleReadOnly();
     const [selectedDay, setSelectedDay] = useState(new Date().getDate());
 
     useEffect(() => {
@@ -55,6 +58,7 @@ export const DailyMonitoringPage = () => {
 
     return (
         <div className="space-y-4 md:space-y-6 h-full flex flex-col">
+            {readOnly && <ModuleReadOnlyBanner />}
             {/* Header - responsive */}
             <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center bg-white p-3 md:p-4 rounded-lg shadow-sm border border-slate-200">
                 <h2 className="text-lg md:text-2xl font-bold text-slate-800">Sổ Theo Dõi Chỉ Số Ngày</h2>
@@ -116,6 +120,7 @@ export const DailyMonitoringPage = () => {
                         dailyRecords={dailyRecords}
                         bsRecords={bsRecords}
                         isLoading={isMonitoringLoading || isBSLoading}
+                        readOnly={readOnly}
                     />
                 </div>
 
@@ -128,6 +133,7 @@ export const DailyMonitoringPage = () => {
                         dailyRecords={dailyRecords}
                         bsRecords={bsRecords}
                         isLoading={isMonitoringLoading || isBSLoading}
+                        readOnly={readOnly}
                     />
                 </div>
             </div>

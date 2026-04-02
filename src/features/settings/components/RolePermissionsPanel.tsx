@@ -1,35 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { AlertCircle, RotateCcw, Save, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AlertCircle, RotateCcw, Save } from 'lucide-react';
 import { useToast } from '../../../app/providers';
 import { Button } from '../../../components/ui';
 import { usePermissionStore } from '../../../stores/permissionStore';
 import type { ManagedModuleKey, Role, RolePermission, RolePermissionMap } from '../../../types';
-
-const ROLE_ORDER: Role[] = ['ADMIN', 'DOCTOR', 'SUPERVISOR', 'ACCOUNTANT', 'NURSE', 'CAREGIVER'];
-
-const ROLE_LABELS: Record<Role, string> = {
-  ADMIN: 'Quản trị viên',
-  DOCTOR: 'Bác sĩ',
-  SUPERVISOR: 'Trưởng tầng',
-  ACCOUNTANT: 'Kế toán',
-  NURSE: 'Điều dưỡng',
-  CAREGIVER: 'Hộ lý',
-};
-
-const MODULE_DEFINITIONS: { key: ManagedModuleKey; label: string; path: string; sidebarVisible?: boolean }[] = [
-  { key: 'residents', label: 'Danh sách NCT', path: '/residents', sidebarVisible: true },
-  { key: 'rooms', label: 'Sơ đồ phòng', path: '/rooms', sidebarVisible: true },
-  { key: 'nutrition', label: 'Dinh dưỡng', path: '/nutrition', sidebarVisible: true },
-  { key: 'visitors', label: 'Khách thăm', path: '/visitors', sidebarVisible: true },
-  { key: 'daily_monitoring', label: 'Theo dõi ngày', path: '/daily-monitoring', sidebarVisible: true },
-  { key: 'procedures', label: 'Thủ thuật', path: '/procedures', sidebarVisible: true },
-  { key: 'weight_tracking', label: 'Theo dõi cân nặng', path: '/weight-tracking' },
-  { key: 'incidents', label: 'Sự cố & An toàn', path: '/incidents', sidebarVisible: true },
-  { key: 'maintenance', label: 'Bảo trì', path: '/maintenance', sidebarVisible: true },
-  { key: 'forms', label: 'In biểu mẫu', path: '/forms', sidebarVisible: true },
-  { key: 'finance', label: 'Tài chính', path: '/finance', sidebarVisible: true },
-  { key: 'settings', label: 'Cài đặt', path: '/settings', sidebarVisible: true },
-];
+import {
+  MANAGED_SETTINGS_MODULES,
+  ROLE_LABELS,
+  ROLE_ORDER,
+} from '../lib/userManagement';
 
 const clonePermissionMap = (permissions: RolePermissionMap): RolePermissionMap =>
   ROLE_ORDER.reduce((nextPermissions, role) => {
@@ -42,22 +21,39 @@ const toErrorMessage = (error: unknown): string =>
 
 export const RolePermissionsPanel = () => {
   const { addToast } = useToast();
-  const { permissions, isLoading, error, fetchPermissions, replaceRolePermissions } = usePermissionStore();
-  const [draftPermissions, setDraftPermissions] = useState<RolePermissionMap | null>(null);
+  const {
+    permissions,
+    isLoading,
+    error,
+    fetchPermissions,
+    replaceRolePermissions,
+  } = usePermissionStore();
+
+  const [draftPermissions, setDraftPermissions] = useState<RolePermissionMap | null>(
+    permissions ? clonePermissionMap(permissions) : null
+  );
   const [dirtyRoles, setDirtyRoles] = useState<Role[]>([]);
   const [savingRole, setSavingRole] = useState<Role | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (permissions && !draftPermissions) {
+      setDraftPermissions(clonePermissionMap(permissions));
+      setLoadError(null);
+    }
+  }, [draftPermissions, permissions]);
 
   useEffect(() => {
     if (!permissions && !draftPermissions && !isLoading) {
-      fetchPermissions().catch(() => undefined);
+      fetchPermissions().catch((fetchError) => {
+        setLoadError(toErrorMessage(fetchError));
+      });
     }
   }, [draftPermissions, fetchPermissions, isLoading, permissions]);
 
-  useEffect(() => {
-    if (permissions) {
-      setDraftPermissions((current) => current ?? clonePermissionMap(permissions));
-    }
-  }, [permissions]);
+  const activeLoadError = loadError ?? (!draftPermissions ? error : null);
+
+  const roleDirtyLookup = useMemo(() => new Set(dirtyRoles), [dirtyRoles]);
 
   const updateRoleDraft = (role: Role, nextRolePermissions: RolePermission) => {
     setDraftPermissions((current) => {
@@ -109,7 +105,23 @@ export const RolePermissionsPanel = () => {
 
     try {
       const refreshedPermissions = await replaceRolePermissions(role, draftPermissions[role]);
-      setDraftPermissions(clonePermissionMap(refreshedPermissions));
+
+      setDraftPermissions((current) => {
+        if (!current) {
+          return clonePermissionMap(refreshedPermissions);
+        }
+
+        const nextDraft = clonePermissionMap(current);
+
+        ROLE_ORDER.forEach((candidateRole) => {
+          if (candidateRole === role || !roleDirtyLookup.has(candidateRole)) {
+            nextDraft[candidateRole] = { ...refreshedPermissions[candidateRole] };
+          }
+        });
+
+        return nextDraft;
+      });
+
       setDirtyRoles((current) => current.filter((value) => value !== role));
       addToast('success', 'Thành công', `Đã lưu phân quyền cho vai trò ${ROLE_LABELS[role]}.`);
     } catch (saveError) {
@@ -117,6 +129,13 @@ export const RolePermissionsPanel = () => {
     } finally {
       setSavingRole(null);
     }
+  };
+
+  const handleRetry = () => {
+    setLoadError(null);
+    fetchPermissions().catch((fetchError) => {
+      setLoadError(toErrorMessage(fetchError));
+    });
   };
 
   if (!draftPermissions) {
@@ -128,11 +147,13 @@ export const RolePermissionsPanel = () => {
             <div>
               <h3 className="text-lg font-bold text-slate-800">Phân quyền theo vai trò</h3>
               <p className="text-sm text-slate-500">
-                {isLoading ? 'Đang tải dữ liệu phân quyền...' : error || 'Không thể tải dữ liệu phân quyền.'}
+                {isLoading && !activeLoadError
+                  ? 'Đang tải dữ liệu phân quyền...'
+                  : activeLoadError || 'Không thể tải dữ liệu phân quyền.'}
               </p>
             </div>
             {!isLoading && (
-              <Button type="button" variant="secondary" onClick={() => fetchPermissions().catch(() => undefined)}>
+              <Button type="button" variant="secondary" onClick={handleRetry}>
                 Tải lại
               </Button>
             )}
@@ -147,9 +168,16 @@ export const RolePermissionsPanel = () => {
       <div>
         <h3 className="text-lg font-bold text-slate-800">Phân quyền theo vai trò</h3>
         <p className="text-sm text-slate-500">
-          Bật hoặc tắt quyền truy cập module cho từng vai trò. Thay đổi chỉ áp dụng sau khi lưu theo từng vai trò.
+          Bật hoặc tắt quyền truy cập module cho từng vai trò. Thay đổi chỉ áp dụng sau khi lưu
+          theo từng vai trò.
         </p>
       </div>
+
+      {activeLoadError && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          {activeLoadError}
+        </div>
+      )}
 
       {ROLE_ORDER.map((role) => {
         const rolePermissions = draftPermissions[role];
@@ -159,21 +187,16 @@ export const RolePermissionsPanel = () => {
         return (
           <section key={role} className="rounded-xl border border-slate-100 bg-white shadow-sm">
             <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600">
-                  <ShieldCheck className="h-5 w-5" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-base font-semibold text-slate-800">{ROLE_LABELS[role]}</h4>
+                  {isDirty && (
+                    <span className="inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">
+                      Chưa lưu
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-base font-semibold text-slate-800">{ROLE_LABELS[role]}</h4>
-                    {isDirty && (
-                      <span className="inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">
-                        Chưa lưu
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-slate-500">Áp dụng cho toàn bộ người dùng thuộc vai trò này.</p>
-                </div>
+                <p className="text-sm text-slate-500">Áp dụng cho toàn bộ người dùng thuộc vai trò này.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -199,23 +222,27 @@ export const RolePermissionsPanel = () => {
             </div>
 
             <div className="divide-y divide-slate-100">
-              {MODULE_DEFINITIONS.map((module) => {
+              {MANAGED_SETTINGS_MODULES.map((module) => {
                 const isLocked = role === 'ADMIN' && module.key === 'settings';
 
                 return (
                   <label
                     key={`${role}-${module.key}`}
-                    className={`flex cursor-pointer items-center justify-between gap-4 px-6 py-4 ${isLocked ? 'bg-slate-50' : 'hover:bg-slate-50'}`}
+                    className={`flex cursor-pointer items-center justify-between gap-4 px-6 py-4 ${
+                      isLocked ? 'bg-slate-50' : 'hover:bg-slate-50'
+                    }`}
                   >
                     <div>
                       <p className="font-medium text-slate-800">{module.label}</p>
                       <p className="text-sm text-slate-500">
                         {module.path}
-                        {!module.sidebarVisible ? ' · Không hiện trên menu' : ''}
+                        {!module.sidebarVisible ? ' · Khong hien tren menu' : ''}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      {isLocked && <span className="text-xs font-medium text-slate-500">Luôn bật</span>}
+                      {isLocked && (
+                        <span className="text-xs font-medium text-slate-500">Luon bat</span>
+                      )}
                       <input
                         type="checkbox"
                         className="h-5 w-5 rounded border-slate-300 text-teal-600 focus:ring-teal-500"

@@ -4,12 +4,12 @@ import { Resident, User } from '../../../types/index';
 import { MedicalInfoModal } from './MedicalInfoModal';
 import { DiseaseProgressTimeline } from './DiseaseProgressTimeline';
 
-export const MedicalHistorySection = ({ user, resident, onUpdate }: { user: User, resident: Resident, onUpdate: (r: Resident) => void }) => {
+export const MedicalHistorySection = ({ user, resident, onUpdate, readOnly = false }: { user: User, resident: Resident, onUpdate: (r: Resident) => void, readOnly?: boolean }) => {
   const [showModal, setShowModal] = useState(false);
 
   return (
     <div className="space-y-6">
-      {showModal && (
+      {showModal && !readOnly && (
         <MedicalInfoModal
           user={user}
           resident={resident}
@@ -24,12 +24,14 @@ export const MedicalHistorySection = ({ user, resident, onUpdate }: { user: User
           <h3 className="font-bold text-blue-900 flex items-center gap-2">
             <Activity className="w-5 h-5" /> Tình trạng hiện tại
           </h3>
+          {!readOnly && (
           <button 
             onClick={() => setShowModal(true)}
             className="text-xs bg-white text-blue-700 px-3 py-1.5 rounded border border-blue-200 hover:bg-blue-50 font-medium"
           >
             Cập nhật thông tin
           </button>
+          )}
         </div>
         <p className="text-sm text-blue-800 whitespace-pre-wrap">{resident.currentConditionNote || 'Chưa có ghi chú tình trạng.'}</p>
         {(resident.lastMedicalUpdate || resident.lastUpdatedBy) && (

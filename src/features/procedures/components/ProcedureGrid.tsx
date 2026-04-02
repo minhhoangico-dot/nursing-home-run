@@ -9,11 +9,12 @@ interface ProcedureGridProps {
     records: ProcedureRecord[];
     selectedType: string | null;
     isLoading: boolean;
+    readOnly?: boolean;
     onToggle: (residentId: string, date: string, checked: boolean, count: number) => void;
     onDetailedClick?: (residentId: string, date: string, record: ProcedureRecord | undefined) => void;
 }
 
-export const ProcedureGrid = ({ month, year, residents, records, selectedType, isLoading, onToggle, onDetailedClick, mode = 'add' }: ProcedureGridProps & { mode?: 'add' | 'subtract' }) => {
+export const ProcedureGrid = ({ month, year, residents, records, selectedType, isLoading, readOnly = false, onToggle, onDetailedClick, mode = 'add' }: ProcedureGridProps & { mode?: 'add' | 'subtract' }) => {
     const daysInMonth = new Date(year, month, 0).getDate();
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
@@ -30,7 +31,7 @@ export const ProcedureGrid = ({ month, year, residents, records, selectedType, i
     };
 
     const handleCellClick = (residentId: string, day: number, current: { checked: boolean, count: number }) => {
-        if (!selectedType || isLoading) return;
+        if (readOnly || isLoading || !selectedType) return;
         const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
         if (selectedType === 'ivDrip' && onDetailedClick) {
@@ -93,7 +94,8 @@ export const ProcedureGrid = ({ month, year, residents, records, selectedType, i
                                         <td
                                             key={d}
                                             onClick={() => handleCellClick(r.id, d, { checked, count })}
-                                            className={`border border-slate-200 text-center cursor-pointer select-none transition-colors
+                                            className={`border border-slate-200 text-center select-none transition-colors
+                                                ${readOnly ? 'cursor-default' : 'cursor-pointer'}
                                                 ${checked ? 'bg-blue-100 text-blue-600 font-bold' : 'hover:bg-gray-50'}
                                                 ${isToday ? 'bg-yellow-50' : ''}
                                             `}

@@ -12,6 +12,7 @@ interface MonitoringGridProps {
     dailyRecords: DailyMonitoringRecord[];
     bsRecords: BloodSugarRecord[];
     isLoading: boolean;
+    readOnly?: boolean;
 }
 
 const formatDate = (d: Date) => {
@@ -21,7 +22,7 @@ const formatDate = (d: Date) => {
     return `${year}-${month}-${day}`;
 };
 
-export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLoading }: MonitoringGridProps) => {
+export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLoading, readOnly = false }: MonitoringGridProps) => {
     const { updateRecord } = useMonitoringStore();
     const { addRecord, updateRecord: updateBSRecord } = useBloodSugarStore();
     const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
@@ -40,6 +41,7 @@ export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLo
     };
 
     const handleUpdate = async (residentId: string, day: number, field: keyof DailyMonitoringUpdate, value: any) => {
+        if (readOnly) return;
         const date = new Date(month.getFullYear(), month.getMonth(), day);
         const dateStr = formatDate(date);
         const update: DailyMonitoringUpdate = {
@@ -51,6 +53,7 @@ export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLo
     };
 
     const handleBSSave = async (residentId: string, day: number, data: Partial<BloodSugarRecord>) => {
+        if (readOnly) return;
         const date = new Date(month.getFullYear(), month.getMonth(), day);
         const dateStr = formatDate(date);
         const existing = bsRecords.find(r => r.residentId === residentId && r.recordDate === dateStr);
@@ -99,6 +102,7 @@ export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLo
                                             <input
                                                 className="w-full h-full p-1 text-center bg-transparent focus:bg-teal-50 outline-none"
                                                 defaultValue={record?.pulse || ''}
+                                                disabled={readOnly}
                                                 onBlur={(e) => handleUpdate(resident.id, day, 'pulse', e.target.value ? parseInt(e.target.value) : null)}
                                             />
                                         </td>
@@ -116,6 +120,7 @@ export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLo
                                                 className="w-full h-full p-1 text-[10px] text-center bg-transparent focus:bg-teal-50 outline-none overflow-hidden"
                                                 defaultValue={[record?.bp_morning, record?.bp_afternoon].filter(Boolean).join(' ') || ''}
                                                 title={`S: ${record?.bp_morning || '-'} | C: ${record?.bp_afternoon || '-'} | T: ${record?.bp_evening || '-'}`}
+                                                disabled={readOnly}
                                                 onBlur={(e) => handleUpdate(resident.id, day, 'bp_morning', e.target.value)}
                                             />
                                         </td>
@@ -132,6 +137,7 @@ export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLo
                                             <select
                                                 className="w-full h-full p-1 text-center bg-transparent focus:bg-teal-50 outline-none appearance-none"
                                                 value={record?.bowel_movements || ''}
+                                                disabled={readOnly}
                                                 onChange={(e) => handleUpdate(resident.id, day, 'bowel_movements', e.target.value)}
                                                 style={{ textAlignLast: 'center' }}
                                             >
@@ -154,6 +160,7 @@ export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLo
                                             <BloodSugarInput
                                                 initialData={bs}
                                                 onSave={(data) => handleBSSave(resident.id, day, data)}
+                                                readOnly={readOnly}
                                             />
                                         </td>
                                     );
@@ -170,6 +177,7 @@ export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLo
                                                 className="w-full h-full p-1 text-center bg-transparent focus:bg-teal-50 outline-none"
                                                 defaultValue={record?.sp02 || ''}
                                                 placeholder="%"
+                                                disabled={readOnly}
                                                 onBlur={(e) => handleUpdate(resident.id, day, 'sp02', e.target.value ? parseInt(e.target.value) : null)}
                                             />
                                         </td>
@@ -187,6 +195,7 @@ export const MonitoringGrid = ({ month, residents, dailyRecords, bsRecords, isLo
                                                 className="w-full h-full p-1 text-center bg-transparent focus:bg-teal-50 outline-none"
                                                 defaultValue={record?.temperature || ''}
                                                 step="0.1"
+                                                disabled={readOnly}
                                                 onBlur={(e) => handleUpdate(resident.id, day, 'temperature', e.target.value ? parseFloat(e.target.value) : null)}
                                             />
                                         </td>

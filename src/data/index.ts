@@ -1,4 +1,3 @@
-export * from './mockUsers';
 export * from './mockResidents';
 export * from './mockInventory';
 export * from './mockRooms';

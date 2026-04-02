@@ -1,48 +1,46 @@
-import React, { useState, useMemo } from 'react';
-import { X, ArrowRight, CheckCircle2, BedDouble, Building } from 'lucide-react';
-import { Resident, Room } from '../../../types/index';
+import React, { useMemo, useState } from 'react';
+import { ArrowRight, BedDouble, Building, CheckCircle2 } from 'lucide-react';
+import { Resident } from '../../../types/index';
 import { generateRooms } from '../../../data/index';
-import { Modal, Button, Select } from '../../../components/ui/index';
+import { Button, Modal } from '../../../components/ui/index';
 import { useToast } from '../../../app/providers';
 
 interface TransferRoomModalProps {
    resident: Resident;
    allResidents: Resident[];
+   readOnly?: boolean;
    onClose: () => void;
    onSave: (data: { room: string; bed: string; floor: string; building: string; roomType: any }) => void;
 }
 
-export const TransferRoomModal = ({ resident, allResidents, onClose, onSave }: TransferRoomModalProps) => {
+export const TransferRoomModal = ({ resident, allResidents, readOnly = false, onClose, onSave }: TransferRoomModalProps) => {
    const [selectedBuilding, setSelectedBuilding] = useState(resident.building || 'Tòa A');
    const [selectedFloor, setSelectedFloor] = useState(resident.floor);
    const [selectedRoomId, setSelectedRoomId] = useState('');
    const [selectedBedId, setSelectedBedId] = useState('');
    const { addToast } = useToast();
 
-   // Generate current room state based on all residents
    const rooms = useMemo(() => generateRooms(allResidents), [allResidents]);
-
-   // Filter rooms by selected building AND floor
    const availableRooms = rooms.filter(r => r.building === selectedBuilding && r.floor === selectedFloor);
-
-   // Get beds for selected room
    const selectedRoom = availableRooms.find(r => r.id === selectedRoomId);
-   
-   // Filter available beds (Status is 'Available')
-   const availableBeds = selectedRoom 
-      ? selectedRoom.beds.filter(b => b.status === 'Available') 
+   const availableBeds = selectedRoom
+      ? selectedRoom.beds.filter(b => b.status === 'Available')
       : [];
 
-   // Determine floors based on building
-   const floors = selectedBuilding === 'Tòa A' 
+   const floors = selectedBuilding === 'Tòa A'
       ? ['Tầng 1', 'Tầng 2', 'Tầng 3', 'Tầng 4']
       : ['Tầng 1', 'Tầng 2', 'Tầng 3', 'Tầng 4', 'Tầng 5'];
 
    const handleTransfer = () => {
+      if (readOnly) {
+         onClose();
+         return;
+      }
+
       if (!selectedRoom || !selectedBedId) return;
-      
-      const bedLabel = selectedBedId.split('-')[2]; // e.g. "Tòa A-101-A" -> "A"
-      
+
+      const bedLabel = selectedBedId.split('-')[2];
+
       onSave({
          room: selectedRoom.number,
          bed: bedLabel,
@@ -83,18 +81,19 @@ export const TransferRoomModal = ({ resident, allResidents, onClose, onSave }: T
                      {['Tòa A', 'Tòa B'].map(b => (
                         <button
                            key={b}
-                           onClick={() => { 
-                              setSelectedBuilding(b); 
-                              // Reset floor if switching to a building with fewer floors (though currently B has more)
-                              // Reset room and bed
-                              setSelectedRoomId(''); 
-                              setSelectedBedId(''); 
+                           type="button"
+                           disabled={readOnly}
+                           onClick={() => {
+                              if (readOnly) return;
+                              setSelectedBuilding(b);
+                              setSelectedRoomId('');
+                              setSelectedBedId('');
                            }}
                            className={`flex-1 py-2 text-sm rounded-lg border flex items-center justify-center gap-2 transition-colors ${
-                              selectedBuilding === b 
-                              ? 'bg-slate-800 text-white border-slate-800' 
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
-                           }`}
+                              selectedBuilding === b
+                                 ? 'bg-slate-800 text-white border-slate-800'
+                                 : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                           } ${readOnly ? 'opacity-60 cursor-not-allowed pointer-events-none' : ''}`}
                         >
                            <Building className="w-4 h-4" /> {b}
                         </button>
@@ -108,12 +107,19 @@ export const TransferRoomModal = ({ resident, allResidents, onClose, onSave }: T
                      {floors.map(f => (
                         <button
                            key={f}
-                           onClick={() => { setSelectedFloor(f); setSelectedRoomId(''); setSelectedBedId(''); }}
+                           type="button"
+                           disabled={readOnly}
+                           onClick={() => {
+                              if (readOnly) return;
+                              setSelectedFloor(f);
+                              setSelectedRoomId('');
+                              setSelectedBedId('');
+                           }}
                            className={`py-2 text-sm rounded-lg border transition-colors ${
-                              selectedFloor === f 
-                              ? 'bg-teal-600 text-white border-teal-600' 
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-teal-400'
-                           }`}
+                              selectedFloor === f
+                                 ? 'bg-teal-600 text-white border-teal-600'
+                                 : 'bg-white text-slate-600 border-slate-200 hover:border-teal-400'
+                           } ${readOnly ? 'opacity-60 cursor-not-allowed pointer-events-none' : ''}`}
                         >
                            {f.replace('Tầng ', 'T')}
                         </button>
@@ -123,10 +129,15 @@ export const TransferRoomModal = ({ resident, allResidents, onClose, onSave }: T
 
                <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Chọn Phòng</label>
-                  <select 
+                  <select
+                     disabled={readOnly}
                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                      value={selectedRoomId}
-                     onChange={e => { setSelectedRoomId(e.target.value); setSelectedBedId(''); }}
+                     onChange={e => {
+                        if (readOnly) return;
+                        setSelectedRoomId(e.target.value);
+                        setSelectedBedId('');
+                     }}
                   >
                      <option value="">-- Chọn phòng --</option>
                      {availableRooms.map(r => {
@@ -144,14 +155,18 @@ export const TransferRoomModal = ({ resident, allResidents, onClose, onSave }: T
                   <label className="block text-sm font-medium text-slate-700 mb-1">Chọn Giường</label>
                   <div className="grid grid-cols-2 gap-3">
                      {availableBeds.length > 0 ? availableBeds.map(bed => (
-                        <div 
+                        <div
                            key={bed.id}
-                           onClick={() => setSelectedBedId(bed.id)}
-                           className={`p-3 rounded-lg border cursor-pointer flex items-center justify-between ${
-                              selectedBedId === bed.id 
-                              ? 'bg-teal-50 border-teal-500 text-teal-700' 
-                              : 'bg-white border-slate-200 hover:border-teal-300'
-                           }`}
+                           aria-disabled={readOnly}
+                           onClick={() => {
+                              if (readOnly) return;
+                              setSelectedBedId(bed.id);
+                           }}
+                           className={`p-3 rounded-lg border flex items-center justify-between ${
+                              selectedBedId === bed.id
+                                 ? 'bg-teal-50 border-teal-500 text-teal-700'
+                                 : 'bg-white border-slate-200 hover:border-teal-300'
+                           } ${readOnly ? 'opacity-60 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
                         >
                            <span className="font-bold">Giường {bed.id.split('-')[2]}</span>
                            {selectedBedId === bed.id && <CheckCircle2 className="w-4 h-4 text-teal-600" />}
@@ -167,9 +182,11 @@ export const TransferRoomModal = ({ resident, allResidents, onClose, onSave }: T
 
             <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
                <Button variant="secondary" onClick={onClose}>Hủy bỏ</Button>
-               <Button onClick={handleTransfer} disabled={!selectedRoomId || !selectedBedId}>
-                  Xác nhận chuyển
-               </Button>
+               {!readOnly && (
+                  <Button onClick={handleTransfer} disabled={!selectedRoomId || !selectedBedId}>
+                     Xác nhận chuyển
+                  </Button>
+               )}
             </div>
          </div>
       </Modal>

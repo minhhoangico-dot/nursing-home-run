@@ -3,13 +3,16 @@ import { UserPlus, Search, LogOut, Clock, History, Package } from 'lucide-react'
 import { VisitorLog } from '../../../types/index';
 import { CheckInModal } from '../components/CheckInModal';
 import { Button } from '../../../components/ui/index';
+import { ModuleReadOnlyBanner } from '../../../components/ui/ModuleReadOnlyBanner';
 import { useToast } from '../../../app/providers';
+import { useModuleReadOnly } from '../../../routes/ModuleAccessContext';
 import { useResidentsStore } from '../../../stores/residentsStore';
 import { useVisitorsStore } from '../../../stores/visitorsStore';
 
 export const VisitorsPage = () => {
    const { visitors, addVisitor, checkOutVisitor } = useVisitorsStore();
    const { residents } = useResidentsStore();
+   const readOnly = useModuleReadOnly();
    const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
    const [showModal, setShowModal] = useState(false);
    const [search, setSearch] = useState('');
@@ -23,6 +26,11 @@ export const VisitorsPage = () => {
    });
 
    const handleCheckOut = async (id: string) => {
+      if (readOnly) {
+         addToast('error', 'Read-only mode', 'This module does not allow check-out.');
+         return;
+      }
+
       if (window.confirm('Xác nhận khách đã rời khỏi viện?')) {
          try {
             await checkOutVisitor(id, new Date().toISOString());
@@ -34,6 +42,12 @@ export const VisitorsPage = () => {
    };
 
    const handleSave = async (log: VisitorLog) => {
+      if (readOnly) {
+         setShowModal(false);
+         addToast('error', 'Read-only mode', 'This module does not allow check-in.');
+         return;
+      }
+
       try {
          await addVisitor(log);
          setShowModal(false);
@@ -49,10 +63,13 @@ export const VisitorsPage = () => {
       const timeB = activeTab === 'current' ? b.checkInTime : (b.checkOutTime || b.checkInTime);
       return new Date(timeB).getTime() - new Date(timeA).getTime();
    });
+   const currentColumnCount = readOnly ? 4 : 5;
 
    return (
       <div className="space-y-6">
-         {showModal && (
+         {readOnly && <ModuleReadOnlyBanner />}
+
+         {showModal && !readOnly && (
             <CheckInModal
                residents={residents}
                onClose={() => setShowModal(false)}
@@ -75,10 +92,16 @@ export const VisitorsPage = () => {
                      onChange={e => setSearch(e.target.value)}
                   />
                </div>
-               <Button onClick={() => setShowModal(true)} icon={<UserPlus className="w-4 h-4" />} className="shrink-0">
-                  <span className="hidden sm:inline">Đăng ký vào</span>
-                  <span className="sm:hidden">Check-in</span>
-               </Button>
+               {!readOnly && (
+                  <Button
+                     onClick={() => setShowModal(true)}
+                     icon={<UserPlus className="w-4 h-4" />}
+                     className="shrink-0"
+                  >
+                     <span className="hidden sm:inline">Đăng ký vào</span>
+                     <span className="sm:hidden">Check-in</span>
+                  </Button>
+               )}
             </div>
          </div>
 
@@ -119,7 +142,7 @@ export const VisitorsPage = () => {
                      <th className="px-6 py-3">Giờ vào</th>
                      {activeTab === 'history' && <th className="px-6 py-3">Giờ ra</th>}
                      <th className="px-6 py-3">Ghi chú / Đồ mang theo</th>
-                     {activeTab === 'current' && <th className="px-6 py-3 text-right">Thao tác</th>}
+                     {activeTab === 'current' && !readOnly && <th className="px-6 py-3 text-right">Thao tác</th>}
                   </tr>
                </thead>
                <tbody className="divide-y divide-slate-100">
@@ -148,7 +171,7 @@ export const VisitorsPage = () => {
                            )}
                            <span className="text-slate-500 text-xs italic">{v.note || 'Không có ghi chú'}</span>
                         </td>
-                        {activeTab === 'current' && (
+                        {activeTab === 'current' && !readOnly && (
                            <td className="px-6 py-4 text-right">
                               <button
                                  onClick={() => handleCheckOut(v.id)}
@@ -161,7 +184,7 @@ export const VisitorsPage = () => {
                      </tr>
                   )) : (
                      <tr>
-                        <td colSpan={activeTab === 'current' ? 5 : 5} className="px-6 py-12 text-center text-slate-400 italic">
+                        <td colSpan={activeTab === 'current' ? currentColumnCount : 5} className="px-6 py-12 text-center text-slate-400 italic">
                            {activeTab === 'current' ? 'Hiện không có khách nào trong viện' : 'Chưa có lịch sử thăm'}
                         </td>
                      </tr>
@@ -178,7 +201,7 @@ export const VisitorsPage = () => {
                            <p className="font-bold text-slate-800">{v.visitorName}</p>
                            <p className="text-xs text-slate-500">{v.phone} • {v.relationship}</p>
                         </div>
-                        {activeTab === 'current' && (
+                        {activeTab === 'current' && !readOnly && (
                            <button
                               onClick={() => handleCheckOut(v.id)}
                               className="text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1 rounded text-xs font-bold border border-red-200 flex items-center gap-1"
