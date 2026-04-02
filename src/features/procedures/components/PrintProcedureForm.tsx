@@ -1,37 +1,38 @@
 import React from 'react';
 import { ProcedureRecord } from '@/src/types';
 import { Resident } from '@/src/types/resident';
-import { useRoomConfigStore } from '@/src/stores/roomConfigStore';
-import { fallbackFacilityLogo, getFacilityBranding } from '@/src/utils/facilityBranding';
+import { useFacilityBranding } from '@/src/hooks/useFacilityBranding';
+import { fallbackFacilityLogo } from '@/src/utils/facilityBranding';
 
 interface PrintProcedureFormProps {
-  month: number;
-  year: number;
-  residents: Resident[];
-  data: ProcedureRecord[];
-  procedureType?: string;
+    month: number;
+    year: number;
+    residents: Resident[];
+    data: ProcedureRecord[];
+    procedureType?: string;
 }
 
 export const PrintProcedureForm = ({ month, year, residents, data, procedureType }: PrintProcedureFormProps) => {
-  const { facility } = useRoomConfigStore();
-  const branding = getFacilityBranding(facility);
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    const branding = useFacilityBranding();
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  const getRecord = (residentId: string, day: number) => {
-    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return data.find(r => r.residentId === residentId && r.recordDate === dateStr);
-  };
+    const getRecord = (residentId: string, day: number) => {
+        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        return data.find(r => r.residentId === residentId && r.recordDate === dateStr);
+    };
 
-  const hasProcedure = (record: ProcedureRecord | undefined) => {
-    if (!record) return false;
-    if (procedureType) {
-      return (record as any)[procedureType];
-    }
-    return record.injection || record.ivDrip || record.gastricTube || record.urinaryCatheter ||
-      record.bladderWash || record.bloodSugarTest || record.bloodPressure ||
-      record.oxygenTherapy || record.woundDressing;
-  };
+    const hasProcedure = (record: ProcedureRecord | undefined) => {
+        if (!record) return false;
+
+        if (procedureType) {
+            return (record as any)[procedureType];
+        }
+
+        return record.injection || record.ivDrip || record.gastricTube || record.urinaryCatheter ||
+            record.bladderWash || record.bloodSugarTest || record.bloodPressure ||
+            record.oxygenTherapy || record.woundDressing;
+    };
 
   const getCount = (residentId: string) => {
     let count = 0;
@@ -43,76 +44,76 @@ export const PrintProcedureForm = ({ month, year, residents, data, procedureType
     return count;
   };
 
-  return (
-    <div className="p-4 bg-white text-black print:block hidden font-serif text-sm">
-      <div className="flex items-start justify-between gap-4 mb-4 border-b border-black pb-4">
-        <div className="flex items-start gap-3">
-          <div className="h-14 w-14 overflow-hidden border border-black/10 bg-white">
-            <img
-              src={branding.logoSrc}
-              alt={`Logo ${branding.name}`}
-              className="h-full w-full object-contain p-1.5"
-              onError={event => fallbackFacilityLogo(event.currentTarget)}
-            />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold uppercase">{branding.name}</h1>
-            <p className="text-xs">Địa chỉ: {branding.address}</p>
-            <p className="text-xs">Hotline: {branding.phone}</p>
-          </div>
-        </div>
-        <div className="text-center">
-          <h2 className="text-xl font-bold uppercase">Phiếu Theo Dõi Thủ Thuật - Tháng {month}/{year}</h2>
-          <p className="italic">Loại thủ thuật: {procedureType ? (procedureType === 'all' ? 'Tất cả' : procedureType) : 'Tất cả'}</p>
-        </div>
-        <div className="w-14" />
-      </div>
+    return (
+        <div className="p-4 bg-white text-black print:block hidden font-serif text-sm">
+            <div className="mb-6 flex items-start justify-between gap-6 border-b border-black pb-4">
+                <div className="flex items-center gap-4">
+                    <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-slate-300 bg-white">
+                        <img
+                            src={branding.logoSrc}
+                            alt={`Logo ${branding.name}`}
+                            className="h-full w-full object-contain p-3"
+                            onError={event => fallbackFacilityLogo(event.currentTarget)}
+                        />
+                    </div>
+                    <div>
+                        <div className="text-lg font-bold uppercase">{branding.name}</div>
+                        <p>{branding.address}</p>
+                        <p>{[branding.phone, branding.email].filter(Boolean).join(' • ')}</p>
+                        {branding.taxCode && <p>MST: {branding.taxCode}</p>}
+                    </div>
+                </div>
+                <div className="text-right">
+                    <h1 className="text-xl font-bold uppercase">Phiếu Theo Dõi Thủ Thuật - Tháng {month}/{year}</h1>
+                    <p className="italic">Loại thủ thuật: {procedureType ? (procedureType === 'all' ? 'Tất cả' : procedureType) : 'Tất cả'}</p>
+                </div>
+            </div>
 
-      <div className="mb-2">
-        <p><strong>Tầng:</strong> 3</p>
-      </div>
+            <div className="mb-2">
+                <p><strong>Tầng:</strong> 3</p>
+            </div>
 
-      <table className="w-full border-collapse border border-black text-xs">
-        <thead>
-          <tr>
-            <th className="border border-black p-1 w-8">STT</th>
-            <th className="border border-black p-1 text-left min-w-[150px]">Họ tên NCT</th>
-            {days.map(d => (
-              <th key={d} className="border border-black p-0.5 w-6 text-center">{d}</th>
-            ))}
-            <th className="border border-black p-1 w-10">Tổng</th>
-          </tr>
-        </thead>
-        <tbody>
-          {residents.map((r, idx) => (
-            <tr key={r.id}>
-              <td className="border border-black p-1 text-center">{idx + 1}</td>
-              <td className="border border-black p-1 font-medium">{r.name}</td>
-              {days.map(d => {
-                const record = getRecord(r.id, d);
-                const checked = hasProcedure(record);
-                return (
-                  <td key={d} className="border border-black p-0.5 text-center">
-                    {checked ? '✓' : ''}
-                  </td>
-                );
-              })}
-              <td className="border border-black p-1 text-center font-bold">{getCount(r.id)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            <table className="w-full border-collapse border border-black text-xs">
+                <thead>
+                    <tr>
+                        <th className="border border-black p-1 w-8">STT</th>
+                        <th className="border border-black p-1 text-left min-w-[150px]">Họ tên NCT</th>
+                        {days.map(d => (
+                            <th key={d} className="border border-black p-0.5 w-6 text-center">{d}</th>
+                        ))}
+                        <th className="border border-black p-1 w-10">Tổng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {residents.map((r, idx) => (
+                        <tr key={r.id}>
+                            <td className="border border-black p-1 text-center">{idx + 1}</td>
+                            <td className="border border-black p-1 font-medium">{r.name}</td>
+                            {days.map(d => {
+                                const record = getRecord(r.id, d);
+                                const checked = hasProcedure(record);
+                                return (
+                                    <td key={d} className="border border-black p-0.5 text-center">
+                                        {checked ? '✓' : ''}
+                                    </td>
+                                );
+                            })}
+                            <td className="border border-black p-1 text-center font-bold">{getCount(r.id)}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
 
-      <div className="flex justify-between mt-8 px-8">
-        <div className="text-center">
-          <p className="font-bold">Người lập biểu</p>
-          <p className="italic text-xs mt-8">(Ký, họ tên)</p>
+            <div className="flex justify-between mt-8 px-8">
+                <div className="text-center">
+                    <p className="font-bold">Người lập biểu</p>
+                    <p className="italic text-xs mt-8">(Ký, họ tên)</p>
+                </div>
+                <div className="text-center">
+                    <p className="font-bold">Xác nhận của y tá trưởng</p>
+                    <p className="italic text-xs mt-8">(Ký, họ tên)</p>
+                </div>
+            </div>
         </div>
-        <div className="text-center">
-          <p className="font-bold">Xác nhận của y tá trưởng</p>
-          <p className="italic text-xs mt-8">(Ký, họ tên)</p>
-        </div>
-      </div>
-    </div>
-  );
+    );
 };

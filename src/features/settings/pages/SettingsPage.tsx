@@ -1,6 +1,12 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Building, CreditCard, ShieldCheck, Users } from 'lucide-react';
-import type { User } from '../../../types';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Users,
+  CreditCard,
+  ArrowLeft,
+  Building,
+  ShieldCheck,
+} from 'lucide-react';
+import { User } from '../../../types/index';
 import { useToast } from '../../../app/providers';
 import { useAuthStore } from '../../../stores/authStore';
 import { useFinanceStore } from '../../../stores/financeStore';
@@ -8,15 +14,49 @@ import { ServiceCatalog } from '../../finance/components/ServiceCatalog';
 import { AddUserModal } from '../components/AddUserModal';
 import { FacilityConfig } from '../components/FacilityConfig';
 import { ResetPasswordModal } from '../components/ResetPasswordModal';
-import { RolePermissionsPanel } from '../components/RolePermissionsPanel';
 import { UserFormModal, type UserFormValues } from '../components/UserFormModal';
 import { UserManagementPanel } from '../components/UserManagementPanel';
+import { ModulePermissionsConfig } from '../components/ModulePermissionsConfig';
 import { requiresFloor, translateUserMutationError } from '../lib/userManagement';
+import { useAppSettingsStore } from '@/src/stores/appSettingsStore';
+import { ReadOnlyBanner } from '@/src/components/ui/ReadOnlyBanner';
+import { RestrictedAccessPanel } from '@/src/components/ui/RestrictedAccessPanel';
+import { useModuleAccess } from '@/src/hooks/useModuleAccess';
+import type { RoleModulePermissionMatrix } from '@/src/types/appSettings';
 
-type SettingsView = 'menu' | 'users' | 'roles' | 'facility' | 'prices';
+type SettingsView = 'menu' | 'users' | 'facility' | 'prices' | 'permissions';
 
 const normalizeFloor = (role: User['role'], floor?: string): string | undefined =>
   requiresFloor(role) ? floor?.trim() || undefined : undefined;
+
+interface SettingsTileProps {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  accentClass: string;
+  onClick: () => void;
+}
+
+const SettingsTile = ({
+  title,
+  description,
+  icon,
+  accentClass,
+  onClick,
+}: SettingsTileProps) => (
+  <button
+    type="button"
+    className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:border-teal-200 transition-colors text-left"
+    onClick={onClick}
+  >
+    <div className="flex items-center gap-3 mb-4">
+      <div className={`p-2 rounded-lg ${accentClass}`}>{icon}</div>
+      <h3 className="font-bold text-slate-800">{title}</h3>
+    </div>
+    <p className="text-sm text-slate-500 mb-4">{description}</p>
+    <div className="text-sm font-medium text-teal-600">Mở &rarr;</div>
+  </button>
+);
 
 export const SettingsPage = () => {
   const [view, setView] = useState<SettingsView>('menu');
@@ -29,6 +69,7 @@ export const SettingsPage = () => {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
   const { addToast } = useToast();
+  const hasShownFallbackWarning = useRef(false);
 
   const {
     user: currentUser,
@@ -41,6 +82,29 @@ export const SettingsPage = () => {
   } = useAuthStore();
 
   const { servicePrices, updateServicePrice, deleteServicePrice } = useFinanceStore();
+  const financeAccess = useModuleAccess('finance');
+  const {
+    permissions,
+    savePermissions,
+    isSaving,
+    usedFallbackDefaults,
+    lastLoadError,
+  } = useAppSettingsStore();
+
+  useEffect(() => {
+    if (currentUser?.role !== 'ADMIN' || !usedFallbackDefaults || hasShownFallbackWarning.current) {
+      return;
+    }
+
+    hasShownFallbackWarning.current = true;
+    addToast(
+      'warning',
+      'Đang dùng cấu hình mặc định',
+      lastLoadError
+        ? `Không tải được app settings từ máy chủ: ${lastLoadError}`
+        : 'App settings chưa có trên máy chủ, hệ thống đang chạy bằng cấu hình mặc định.',
+    );
+  }, [addToast, lastLoadError, usedFallbackDefaults, currentUser?.role]);
 
   const closeCreateModal = () => {
     setShowAddUserModal(false);
@@ -150,6 +214,23 @@ export const SettingsPage = () => {
     }
   };
 
+  const handleSavePermissions = async (nextValue: RoleModulePermissionMatrix) => {
+    try {
+      await savePermissions(nextValue);
+      addToast('success', 'Đã lưu phân quyền', 'Ma trận module theo role đã được cập nhật.');
+    } catch {
+      addToast('error', 'Không lưu được', 'Không thể cập nhật phân quyền module.');
+    }
+  };
+
+  const handleResetPermissions = () => {
+    addToast(
+      'info',
+      'Đã khôi phục mặc định',
+      'Nhấn "Lưu thay đổi" để áp dụng lại ma trận phân quyền mặc định.',
+    );
+  };
+
   return (
     <div className="space-y-6">
       {showAddUserModal && (
@@ -188,73 +269,39 @@ export const SettingsPage = () => {
         <>
           <h2 className="text-2xl font-bold text-slate-800">Cài đặt hệ thống</h2>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-            <button
-              type="button"
-              className="rounded-xl border border-slate-100 bg-white p-6 text-left shadow-sm transition-colors hover:border-teal-200"
+            <SettingsTile
+              title="Quản lý người dùng"
+              description="Thêm, cập nhật, khóa tài khoản và đặt lại mật khẩu cho nhân viên."
+              icon={<Users className="h-5 w-5" />}
+              accentClass="bg-blue-100 text-blue-600"
               onClick={() => setView('users')}
-            >
-              <div className="mb-4 flex items-center gap-3">
-                <div className="rounded-lg bg-blue-100 p-2 text-blue-600">
-                  <Users className="h-5 w-5" />
-                </div>
-                <h3 className="font-bold text-slate-800">Quản lý người dùng</h3>
-              </div>
-              <p className="mb-4 text-sm text-slate-500">
-                Thêm, cập nhật, khóa tài khoản và đặt lại mật khẩu cho nhân viên.
-              </p>
-              <div className="text-sm font-medium text-teal-600">Quản lý &rarr;</div>
-            </button>
+            />
 
-            <button
-              type="button"
-              className="rounded-xl border border-slate-100 bg-white p-6 text-left shadow-sm transition-colors hover:border-teal-200"
-              onClick={() => setView('roles')}
-            >
-              <div className="mb-4 flex items-center gap-3">
-                <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600">
-                  <ShieldCheck className="h-5 w-5" />
-                </div>
-                <h3 className="font-bold text-slate-800">Vai trò & phân quyền</h3>
-              </div>
-              <p className="mb-4 text-sm text-slate-500">
-                Điều chỉnh quyền truy cập module cho từng vai trò hiện có trong hệ thống.
-              </p>
-              <div className="text-sm font-medium text-teal-600">Thiết lập &rarr;</div>
-            </button>
-
-            <button
-              type="button"
-              className="rounded-xl border border-slate-100 bg-white p-6 text-left shadow-sm transition-colors hover:border-teal-200"
+            <SettingsTile
+              title="Bảng giá dịch vụ"
+              description="Cập nhật đơn giá dịch vụ chăm sóc, ăn uống và phụ phí."
+              icon={<CreditCard className="h-5 w-5" />}
+              accentClass="bg-teal-100 text-teal-600"
               onClick={() => setView('prices')}
-            >
-              <div className="mb-4 flex items-center gap-3">
-                <div className="rounded-lg bg-teal-100 p-2 text-teal-600">
-                  <CreditCard className="h-5 w-5" />
-                </div>
-                <h3 className="font-bold text-slate-800">Bảng giá dịch vụ</h3>
-              </div>
-              <p className="mb-4 text-sm text-slate-500">
-                Cập nhật đơn giá dịch vụ chăm sóc, ăn uống và phụ phí.
-              </p>
-              <div className="text-sm font-medium text-teal-600">Cập nhật &rarr;</div>
-            </button>
+            />
 
-            <button
-              type="button"
-              className="rounded-xl border border-slate-100 bg-white p-6 text-left shadow-sm transition-colors hover:border-teal-200"
+            <SettingsTile
+              title="Thông tin đơn vị"
+              description="Cập nhật thông tin cơ sở, địa chỉ, mã số thuế và liên hệ."
+              icon={<Building className="h-5 w-5" />}
+              accentClass="bg-purple-100 text-purple-600"
               onClick={() => setView('facility')}
-            >
-              <div className="mb-4 flex items-center gap-3">
-                <div className="rounded-lg bg-purple-100 p-2 text-purple-600">
-                  <Building className="h-5 w-5" />
-                </div>
-                <h3 className="font-bold text-slate-800">Thông tin đơn vị</h3>
-              </div>
-              <p className="mb-4 text-sm text-slate-500">
-                Cập nhật thông tin cơ sở, địa chỉ, mã số thuế và liên hệ.
-              </p>
-              <div className="text-sm font-medium text-teal-600">Cập nhật &rarr;</div>
-            </button>
+            />
+
+            {currentUser?.role === 'ADMIN' && (
+              <SettingsTile
+                title="Phân quyền module"
+                description="Ẩn hiện từng module theo role và cấu hình riêng quyền xem hoặc sửa tài chính."
+                icon={<ShieldCheck className="h-5 w-5" />}
+                accentClass="bg-amber-100 text-amber-600"
+                onClick={() => setView('permissions')}
+              />
+            )}
           </div>
         </>
       ) : (
@@ -288,18 +335,35 @@ export const SettingsPage = () => {
             />
           )}
 
-          {view === 'roles' && <RolePermissionsPanel />}
-
           {view === 'prices' && (
-            <ServiceCatalog
-              services={servicePrices}
-              onAdd={updateServicePrice}
-              onUpdate={updateServicePrice}
-              onDelete={deleteServicePrice}
-            />
+            !financeAccess.canViewFinance ? (
+              <RestrictedAccessPanel moduleKey="finance" />
+            ) : (
+              <div className="space-y-4">
+                {financeAccess.mode === 'readOnly' && (
+                  <ReadOnlyBanner message="Bạn có thể xem bảng giá dịch vụ nhưng không thể chỉnh sửa." />
+                )}
+                <ServiceCatalog
+                  services={servicePrices}
+                  onAdd={updateServicePrice}
+                  onUpdate={updateServicePrice}
+                  onDelete={deleteServicePrice}
+                  readOnly={!financeAccess.canEditFinance}
+                />
+              </div>
+            )
           )}
 
           {view === 'facility' && <FacilityConfig />}
+
+          {view === 'permissions' && (
+            <ModulePermissionsConfig
+              value={permissions}
+              isSaving={isSaving}
+              onSave={handleSavePermissions}
+              onReset={handleResetPermissions}
+            />
+          )}
         </>
       )}
     </div>

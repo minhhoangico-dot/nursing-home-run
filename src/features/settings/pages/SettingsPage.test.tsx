@@ -1,22 +1,25 @@
-// @vitest-environment jsdom
-import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom/vitest';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { DEFAULT_ROLE_MODULE_PERMISSIONS } from '@/src/utils/modulePermissions';
 
-vi.mock('../../../app/providers', () => ({
-  useToast: () => ({
-    addToast: vi.fn(),
-  }),
-}));
+vi.mock('../../../app/providers', () => {
+  const addToast = vi.fn();
+  (globalThis as Record<string, unknown>).__settingsPageAddToastMock = addToast;
 
-vi.mock('../../../stores/authStore', () => ({
+  return {
+    useToast: () => ({ addToast }),
+  };
+});
+
+vi.mock('@/src/stores/authStore', () => ({
   useAuthStore: () => ({
+    user: { role: 'ADMIN', name: 'Admin', username: 'admin' },
     users: [],
   }),
 }));
 
-vi.mock('../../../stores/financeStore', () => ({
+vi.mock('@/src/stores/financeStore', () => ({
   useFinanceStore: () => ({
     servicePrices: [],
     updateServicePrice: vi.fn(),
@@ -24,7 +27,7 @@ vi.mock('../../../stores/financeStore', () => ({
   }),
 }));
 
-vi.mock('../../../services/databaseService', () => ({
+vi.mock('@/src/services/databaseService', () => ({
   db: {
     users: {
       upsert: vi.fn(),
@@ -32,31 +35,76 @@ vi.mock('../../../services/databaseService', () => ({
   },
 }));
 
-vi.mock('../components/AddUserModal', () => ({
-  AddUserModal: () => <div>AddUserModal</div>,
-}));
+vi.mock('@/src/stores/appSettingsStore', () => {
+  const savePermissions = vi.fn().mockResolvedValue(undefined);
+  (globalThis as Record<string, unknown>).__settingsPageSavePermissionsMock = savePermissions;
 
-vi.mock('../../finance/components/ServiceCatalog', () => ({
-  ServiceCatalog: () => <div>ServiceCatalog</div>,
-}));
+  return {
+    useAppSettingsStore: () => ({
+      permissions: DEFAULT_ROLE_MODULE_PERMISSIONS,
+      savePermissions,
+      isSaving: false,
+      usedFallbackDefaults: true,
+      lastLoadError: 'offline',
+    }),
+  };
+});
 
-vi.mock('../components/FacilityConfig', () => ({
-  FacilityConfig: () => <div>FacilityConfig</div>,
-}));
-
-vi.mock('../components/RolePermissionsPanel', () => ({
-  RolePermissionsPanel: () => <div>RolePermissionsPanel</div>,
+vi.mock('../components/ModulePermissionsConfig', () => ({
+  ModulePermissionsConfig: ({
+    onSave,
+  }: {
+    onSave: (nextValue: typeof DEFAULT_ROLE_MODULE_PERMISSIONS) => Promise<void>;
+  }) => (
+    <button onClick={() => void onSave(DEFAULT_ROLE_MODULE_PERMISSIONS)}>
+      Save permissions
+    </button>
+  ),
 }));
 
 import { SettingsPage } from './SettingsPage';
 
+const getAddToastMock = () =>
+  (globalThis as Record<string, any>).__settingsPageAddToastMock as ReturnType<typeof vi.fn>;
+
+const getSavePermissionsMock = () =>
+  (globalThis as Record<string, any>).__settingsPageSavePermissionsMock as ReturnType<typeof vi.fn>;
+
 describe('SettingsPage', () => {
-  it('exposes role management from the settings menu', () => {
+  beforeEach(() => {
+    getAddToastMock().mockClear();
+    getSavePermissionsMock().mockClear();
+  });
+
+  it('shows a warning toast to ADMIN when shared settings are running on defaults', async () => {
     render(<SettingsPage />);
 
-    const roleTile = screen.getByText('Vai trò & phân quyền');
-    fireEvent.click(roleTile);
+    await waitFor(() =>
+      expect(getAddToastMock()).toHaveBeenCalledWith(
+        'warning',
+        expect.any(String),
+        expect.stringContaining('offline'),
+      ),
+    );
+  });
 
-    expect(screen.getByText('RolePermissionsPanel')).toBeInTheDocument();
+  it('shows a success toast after saving module permissions', async () => {
+    const user = userEvent.setup();
+
+    render(<SettingsPage />);
+
+    await user.click(screen.getByRole('button', { name: /Phân quyền module/i }));
+    await user.click(screen.getByRole('button', { name: /Save permissions/i }));
+
+    await waitFor(() => {
+      expect(getSavePermissionsMock()).toHaveBeenCalledWith(
+        DEFAULT_ROLE_MODULE_PERMISSIONS,
+      );
+      expect(getAddToastMock()).toHaveBeenCalledWith(
+        'success',
+        expect.any(String),
+        expect.any(String),
+      );
+    });
   });
 });

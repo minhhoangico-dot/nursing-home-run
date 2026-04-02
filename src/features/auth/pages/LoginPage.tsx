@@ -2,20 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Button, Card, Input } from '../../../components/ui';
-import { getDefaultModulePathForRole } from '../../../constants/modules';
 import { useAuthStore } from '../../../stores/authStore';
-import { useRoomConfigStore } from '../../../stores/roomConfigStore';
-import { fallbackFacilityLogo, getFacilityBranding } from '../../../utils/facilityBranding';
-import { usePermissionStore } from '../../../stores/permissionStore';
+import { useFacilityBranding } from '@/src/hooks/useFacilityBranding';
+import { fallbackFacilityLogo } from '@/src/utils/facilityBranding';
 
 export const LoginPage = () => {
   const { login, users } = useAuthStore();
-  const { facility } = useRoomConfigStore();
-  const { fetchPermissions } = usePermissionStore();
+  const branding = useFacilityBranding();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const branding = getFacilityBranding(facility);
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -38,16 +34,9 @@ export const LoginPage = () => {
       return;
     }
 
-    try {
-      const permissions = await fetchPermissions();
-      const nextPath = getDefaultModulePathForRole(permissions, user.role);
-
-      login(user);
-      toast.success(`Xin chào, ${user.name}`);
-      navigate(nextPath, { replace: true });
-    } catch {
-      toast.error('Không thể tải quyền truy cập. Vui lòng thử lại.');
-    }
+    login(user);
+    toast.success(`Xin chào, ${user.name}`);
+    navigate('/residents', { replace: true });
   };
 
   return (

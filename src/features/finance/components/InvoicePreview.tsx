@@ -2,8 +2,8 @@ import React from 'react';
 import { X, Printer } from 'lucide-react';
 import { Resident, ServiceUsage } from '../../../types';
 import { formatCurrency } from '../../../data/index';
-import { useRoomConfigStore } from '../../../stores/roomConfigStore';
-import { fallbackFacilityLogo, getFacilityBranding } from '../../../utils/facilityBranding';
+import { useFacilityBranding } from '@/src/hooks/useFacilityBranding';
+import { fallbackFacilityLogo } from '@/src/utils/facilityBranding';
 
 interface InvoicePreviewProps {
     resident: Resident;
@@ -14,8 +14,7 @@ interface InvoicePreviewProps {
 }
 
 export const InvoicePreview = ({ resident, month, fixedCosts, incurredCosts, onClose }: InvoicePreviewProps) => {
-    const { facility } = useRoomConfigStore();
-    const branding = getFacilityBranding(facility);
+    const branding = useFacilityBranding();
 
     const calculateTotal = () => {
         const fixedTotal = fixedCosts.reduce((sum, item) => sum + item.amount, 0);
@@ -30,7 +29,6 @@ export const InvoicePreview = ({ resident, month, fixedCosts, incurredCosts, onC
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl h-[90vh] flex flex-col animate-in fade-in zoom-in duration-200">
-                {/* Modal Header - Not Printed */}
                 <div className="flex justify-between items-center p-4 border-b border-slate-100 print:hidden">
                     <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
                         Xem trước Hóa đơn
@@ -48,11 +46,8 @@ export const InvoicePreview = ({ resident, month, fixedCosts, incurredCosts, onC
                     </div>
                 </div>
 
-                {/* Printable Content */}
                 <div className="flex-1 overflow-auto p-8 bg-slate-50 print:bg-white print:p-0 print:overflow-visible">
                     <div className="bg-white max-w-2xl mx-auto min-h-[800px] p-8 shadow-sm print:shadow-none print:w-full print:max-w-none">
-
-                        {/* Bill Header */}
                         <div className="mb-8 pb-8 border-b border-slate-200">
                             <div className="flex flex-col items-center justify-center gap-4 text-center sm:flex-row sm:text-left">
                                 <div className="flex h-24 w-24 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -79,7 +74,6 @@ export const InvoicePreview = ({ resident, month, fixedCosts, incurredCosts, onC
                             <p className="text-slate-500 italic">Tháng {month.split('-')[1]} năm {month.split('-')[0]}</p>
                         </div>
 
-                        {/* Customer Info */}
                         <div className="grid grid-cols-2 gap-4 mb-8 text-sm">
                             <div>
                                 <span className="text-slate-500 block mb-1">Khách hàng / Người cao tuổi:</span>
@@ -93,7 +87,6 @@ export const InvoicePreview = ({ resident, month, fixedCosts, incurredCosts, onC
                             </div>
                         </div>
 
-                        {/* Bill Table */}
                         <table className="w-full text-sm mb-8">
                             <thead>
                                 <tr className="border-b-2 border-slate-800">
@@ -104,7 +97,6 @@ export const InvoicePreview = ({ resident, month, fixedCosts, incurredCosts, onC
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {/* Fixed Costs */}
                                 <tr className="bg-slate-50/50">
                                     <td colSpan={4} className="py-2 font-bold text-slate-500 italic pt-4">I. Phí Cố định</td>
                                 </tr>
@@ -117,7 +109,6 @@ export const InvoicePreview = ({ resident, month, fixedCosts, incurredCosts, onC
                                     </tr>
                                 ))}
 
-                                {/* Incurred Costs */}
                                 <tr className="bg-slate-50/50">
                                     <td colSpan={4} className="py-2 font-bold text-slate-500 italic pt-4">II. Dịch vụ phát sinh</td>
                                 </tr>
@@ -149,7 +140,6 @@ export const InvoicePreview = ({ resident, month, fixedCosts, incurredCosts, onC
                             </tfoot>
                         </table>
 
-                        {/* Signatures */}
                         <div className="grid grid-cols-2 gap-8 mt-12 mb-12 page-break-inside-avoid">
                             <div className="text-center">
                                 <p className="font-bold text-slate-700 mb-16">Người lập phiếu</p>
@@ -169,7 +159,6 @@ export const InvoicePreview = ({ resident, month, fixedCosts, incurredCosts, onC
                 </div>
             </div>
 
-            {/* Print Styles */}
             <style>{`
                 @media print {
                     body * {
@@ -199,7 +188,6 @@ export const InvoicePreview = ({ resident, month, fixedCosts, incurredCosts, onC
                     .bg-white.max-w-2xl * {
                         visibility: visible;
                     }
-                    /* Hide scrollbars and headers */
                     .print\\:hidden {
                         display: none !important;
                     }

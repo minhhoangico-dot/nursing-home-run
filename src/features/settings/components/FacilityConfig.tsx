@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Building, Save, MapPin, Phone, Mail, Hash, Upload, Trash2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Building, Hash, Mail, MapPin, Phone, Save, Trash2, Upload } from 'lucide-react';
+import { useToast } from '../../../app/providers';
+import { Button } from '../../../components/ui';
 import { Card } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
-import { Button } from '../../../components/ui';
-import { useToast } from '../../../app/providers';
-import { useRoomConfigStore, FacilityInfo } from '../../../stores/roomConfigStore';
-import { fallbackFacilityLogo, getFacilityBranding } from '../../../utils/facilityBranding';
+import { useAppSettingsStore } from '@/src/stores/appSettingsStore';
+import type { FacilityInfo } from '@/src/types/appSettings';
+import { fallbackFacilityLogo, getFacilityBranding } from '@/src/utils/facilityBranding';
 
 const LOGO_FILE_SIZE_LIMIT = 2 * 1024 * 1024;
 
 export const FacilityConfig = () => {
-  const { facility, updateFacilityConfig } = useRoomConfigStore();
+  const { facility, saveFacility, isSaving } = useAppSettingsStore();
   const [config, setConfig] = useState<FacilityInfo>(facility);
   const { addToast } = useToast();
 
@@ -18,9 +19,13 @@ export const FacilityConfig = () => {
     setConfig(facility);
   }, [facility]);
 
-  const handleSave = () => {
-    updateFacilityConfig(config);
-    addToast('success', 'Đã lưu cấu hình', 'Thông tin cơ sở đã được cập nhật thành công.');
+  const handleSave = async () => {
+    try {
+      await saveFacility(config);
+      addToast('success', 'Đã lưu cấu hình', 'Thông tin cơ sở đã được cập nhật thành công.');
+    } catch {
+      addToast('error', 'Không lưu được', 'Không thể cập nhật thông tin đơn vị.');
+    }
   };
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,7 +51,7 @@ export const FacilityConfig = () => {
         return;
       }
 
-      setConfig((current) => ({ ...current, logoDataUrl: reader.result as string }));
+      setConfig((current) => ({ ...current, logoDataUrl: reader.result }));
     };
     reader.readAsDataURL(file);
   };
@@ -69,13 +74,13 @@ export const FacilityConfig = () => {
                     src={branding.logoSrc}
                     alt={`Logo ${branding.name}`}
                     className="h-full w-full object-contain p-3"
-                    onError={event => fallbackFacilityLogo(event.currentTarget)}
+                    onError={(event) => fallbackFacilityLogo(event.currentTarget)}
                   />
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm font-semibold text-slate-800">Logo đơn vị</div>
                   <div className="text-sm text-slate-500">
-                    Dùng cho phần thông tin đơn vị, đơn thuốc, biểu mẫu in và trang chủ.
+                    Dùng cho phần thông tin đơn vị, đơn thuốc, biểu mẫu in và trang đăng nhập.
                   </div>
                   <div className="text-xs text-slate-400">
                     Hỗ trợ ảnh PNG, JPG, WEBP, SVG. Tối đa 2MB.
@@ -101,35 +106,35 @@ export const FacilityConfig = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Input
               label="Tên đơn vị"
               value={config.name}
-              onChange={e => setConfig({ ...config, name: e.target.value })}
+              onChange={(event) => setConfig({ ...config, name: event.target.value })}
               icon={<Building className="w-4 h-4" />}
             />
             <Input
               label="Mã số thuế"
               value={config.taxCode}
-              onChange={e => setConfig({ ...config, taxCode: e.target.value })}
+              onChange={(event) => setConfig({ ...config, taxCode: event.target.value })}
               icon={<Hash className="w-4 h-4" />}
             />
             <Input
               label="Địa chỉ"
               value={config.address}
-              onChange={e => setConfig({ ...config, address: e.target.value })}
+              onChange={(event) => setConfig({ ...config, address: event.target.value })}
               icon={<MapPin className="w-4 h-4" />}
             />
             <Input
               label="Số điện thoại"
               value={config.phone}
-              onChange={e => setConfig({ ...config, phone: e.target.value })}
+              onChange={(event) => setConfig({ ...config, phone: event.target.value })}
               icon={<Phone className="w-4 h-4" />}
             />
             <Input
               label="Email liên hệ"
               value={config.email}
-              onChange={e => setConfig({ ...config, email: e.target.value })}
+              onChange={(event) => setConfig({ ...config, email: event.target.value })}
               icon={<Mail className="w-4 h-4" />}
             />
           </div>
@@ -137,7 +142,9 @@ export const FacilityConfig = () => {
       </Card>
 
       <div className="flex justify-end">
-        <Button icon={<Save className="w-4 h-4" />} onClick={handleSave}>Lưu thay đổi</Button>
+        <Button icon={<Save className="w-4 h-4" />} onClick={() => void handleSave()} disabled={isSaving}>
+          {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
+        </Button>
       </div>
     </div>
   );

@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import {
-  Activity,
   AlertTriangle,
   BedDouble,
   ClipboardList,
@@ -17,29 +16,37 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
-import { getSidebarModulesForRole, type ModuleKey } from '../../constants/modules';
-import { useAuthStore } from '../../stores/authStore';
-import { useRoomConfigStore } from '../../stores/roomConfigStore';
-import { fallbackFacilityLogo, getFacilityBranding } from '../../utils/facilityBranding';
-import { usePermissionStore } from '../../stores/permissionStore';
+import { MODULE_REGISTRY } from '@/src/constants/moduleRegistry';
+import { useFacilityBranding } from '@/src/hooks/useFacilityBranding';
+import { useAppSettingsStore } from '@/src/stores/appSettingsStore';
+import { useAuthStore } from '@/src/stores/authStore';
+import type { ModuleKey } from '@/src/types/appSettings';
+import { fallbackFacilityLogo } from '@/src/utils/facilityBranding';
+import { getRoleModuleAccess } from '@/src/utils/modulePermissions';
 
 interface SidebarProps {
   onClose?: () => void;
 }
 
-const MODULE_ICONS: Partial<Record<ModuleKey, LucideIcon>> = {
-  residents: Users,
-  rooms: BedDouble,
-  nutrition: Utensils,
-  visitors: UserCheck,
-  daily_monitoring: ClipboardList,
-  procedures: Syringe,
-  incidents: AlertTriangle,
-  maintenance: Wrench,
-  forms: Printer,
-  finance: CreditCard,
-  settings: SettingsIcon,
-};
+interface MenuItem {
+  key: ModuleKey;
+  label: string;
+  icon: LucideIcon;
+}
+
+const MENU_ITEMS: MenuItem[] = [
+  { key: 'visitors', label: 'Khách thăm', icon: UserCheck },
+  { key: 'dailyMonitoring', label: 'Theo dõi ngày', icon: ClipboardList },
+  { key: 'procedures', label: 'Thủ thuật', icon: Syringe },
+  { key: 'nutrition', label: 'Dinh dưỡng', icon: Utensils },
+  { key: 'residents', label: 'Danh sách NCT', icon: Users },
+  { key: 'rooms', label: 'Sơ đồ phòng', icon: BedDouble },
+  { key: 'maintenance', label: 'Bảo trì', icon: Wrench },
+  { key: 'incidents', label: 'Sự cố & An toàn', icon: AlertTriangle },
+  { key: 'forms', label: 'In biểu mẫu', icon: Printer },
+  { key: 'finance', label: 'Tài chính', icon: CreditCard },
+  { key: 'settings', label: 'Cài đặt', icon: SettingsIcon },
+];
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Quản trị viên',
@@ -52,17 +59,18 @@ const ROLE_LABELS: Record<string, string> = {
 
 export const Sidebar = ({ onClose }: SidebarProps) => {
   const { user, logout } = useAuthStore();
-  const { facility } = useRoomConfigStore();
-  const { permissions, isLoading, error, fetchPermissions } = usePermissionStore();
-
-  useEffect(() => {
-    if (user && !permissions && !isLoading && !error) {
-      fetchPermissions().catch(() => undefined);
-    }
-  }, [error, fetchPermissions, isLoading, permissions, user]);
+  const { permissions } = useAppSettingsStore();
+  const branding = useFacilityBranding();
 
   if (!user) return null;
-  const branding = getFacilityBranding(facility);
+
+  const filteredMenu = MENU_ITEMS.filter((item) => {
+    if (!MODULE_REGISTRY[item.key].nav) {
+      return false;
+    }
+
+    return getRoleModuleAccess(user.role, permissions, item.key).visible;
+  });
 
   const handleNavClick = () => {
     if (onClose) {
@@ -70,18 +78,16 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
     }
   };
 
-  const visibleModules = permissions ? getSidebarModulesForRole(permissions, user.role) : [];
-
   return (
-    <div className="flex h-full w-64 flex-col bg-slate-900 text-slate-300">
-      <div className="flex items-center justify-between p-4 text-white lg:p-6">
+    <div className="w-64 bg-slate-900 text-slate-300 flex flex-col h-full">
+      <div className="p-4 lg:p-6 flex items-center justify-between text-white">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
             <img
               src={branding.logoSrc}
               alt={`Logo ${branding.name}`}
               className="h-full w-full object-contain p-1.5"
-              onError={event => fallbackFacilityLogo(event.currentTarget)}
+              onError={(event) => fallbackFacilityLogo(event.currentTarget)}
             />
           </div>
           <div className="min-w-0">
@@ -100,38 +106,24 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
         )}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4 lg:px-4">
-        {visibleModules.map((module) => {
-          const Icon = MODULE_ICONS[module.key] ?? Activity;
-
-          return (
-            <NavLink
-              key={module.key}
-              to={module.path}
-              onClick={handleNavClick}
-              className={({ isActive }) =>
-                `flex w-full items-center gap-3 rounded-lg px-4 py-3.5 transition-colors lg:py-3 ${
-                  isActive
-                    ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/20'
-                    : 'hover:bg-slate-800 hover:text-white'
-                }`
-              }
-            >
-              <Icon className="h-5 w-5" />
-              <span className="font-medium">{module.label}</span>
-            </NavLink>
-          );
-        })}
-
-        {!permissions && isLoading && (
-          <div className="px-4 py-3 text-sm text-slate-500">Đang tải menu theo quyền...</div>
-        )}
-
-        {!permissions && error && (
-          <div className="mx-2 rounded-lg border border-amber-900/40 bg-amber-950/30 px-3 py-3 text-sm text-amber-100">
-            Không thể tải menu theo quyền. Vui lòng tải lại.
-          </div>
-        )}
+      <nav className="flex-1 px-3 lg:px-4 py-4 space-y-1 overflow-y-auto">
+        {filteredMenu.map((item) => (
+          <NavLink
+            key={item.key}
+            to={MODULE_REGISTRY[item.key].path}
+            onClick={handleNavClick}
+            className={({ isActive }) =>
+              `w-full flex items-center gap-3 px-4 py-3.5 lg:py-3 rounded-lg transition-colors ${
+                isActive
+                  ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/20'
+                  : 'hover:bg-slate-800 hover:text-white'
+              }`
+            }
+          >
+            <item.icon className="w-5 h-5" />
+            <span className="font-medium">{item.label}</span>
+          </NavLink>
+        ))}
       </nav>
 
       <div className="border-t border-slate-800 p-4">
@@ -140,15 +132,15 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
             {user.name.charAt(0)}
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="truncate text-sm font-medium text-white">{user.name}</p>
-            <p className="truncate text-xs text-slate-500">{ROLE_LABELS[user.role] || user.role}</p>
+            <p className="text-sm font-medium text-white truncate">{user.name}</p>
+            <p className="text-xs text-slate-500 truncate">{ROLE_LABELS[user.role] || user.role}</p>
           </div>
         </div>
         <button
           onClick={logout}
-          className="flex w-full items-center justify-center gap-2 rounded p-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white"
+          className="w-full flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-white p-2 hover:bg-slate-800 rounded"
         >
-          <LogOut className="h-4 w-4" /> Đăng xuất
+          <LogOut className="w-4 h-4" /> Đăng xuất
         </button>
       </div>
     </div>

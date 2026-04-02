@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -95,9 +95,17 @@ interface ServiceCatalogProps {
     onUpdate: (s: ServicePrice) => void;
     onDelete: (id: string) => void;
     onRecordUsage?: (s: ServicePrice) => void;
+    readOnly?: boolean;
 }
 
-export const ServiceCatalog = ({ services, onAdd, onUpdate, onDelete, onRecordUsage }: ServiceCatalogProps) => {
+export const ServiceCatalog = ({
+    services,
+    onAdd,
+    onUpdate,
+    onDelete,
+    onRecordUsage,
+    readOnly = false,
+}: ServiceCatalogProps) => {
     const [activeTab, setActiveTab] = useState<'FIXED' | 'ONE_OFF'>('FIXED');
     const [isEditing, setIsEditing] = useState<ServicePrice | null>(null);
     const [isCreating, setIsCreating] = useState(false);
@@ -108,6 +116,15 @@ export const ServiceCatalog = ({ services, onAdd, onUpdate, onDelete, onRecordUs
         'MEAL': { label: 'Dinh dưỡng', color: 'bg-orange-100 text-orange-800' },
         'OTHER': { label: 'Dịch vụ khác', color: 'bg-purple-100 text-purple-800' },
     };
+
+    useEffect(() => {
+        if (!readOnly) {
+            return;
+        }
+
+        setIsEditing(null);
+        setIsCreating(false);
+    }, [readOnly]);
 
     const handleFormSave = (data: ServiceFormData) => {
         const newService: ServicePrice = {
@@ -177,22 +194,47 @@ export const ServiceCatalog = ({ services, onAdd, onUpdate, onDelete, onRecordUs
                 <div className="flex justify-end gap-2 transition-opacity">
                     {onRecordUsage && (
                         <button
-                            onClick={(e) => { e.stopPropagation(); onRecordUsage(s); }}
-                            className="bg-green-100 text-green-700 p-1.5 rounded hover:bg-green-200"
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (!readOnly) {
+                                    onRecordUsage(s);
+                                }
+                            }}
+                            className="bg-green-100 text-green-700 p-1.5 rounded hover:bg-green-200 disabled:cursor-not-allowed disabled:opacity-50"
                             title="Ghi nhận sử dụng"
+                            aria-label={`service-record-${s.id}`}
+                            disabled={readOnly}
                         >
                             <Tag className="w-4 h-4" />
                         </button>
                     )}
                     <button
-                        onClick={(e) => { e.stopPropagation(); setIsEditing(s); setIsCreating(false); }}
-                        className="bg-blue-100 text-blue-700 p-1.5 rounded hover:bg-blue-200"
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (!readOnly) {
+                                setIsEditing(s);
+                                setIsCreating(false);
+                            }
+                        }}
+                        className="bg-blue-100 text-blue-700 p-1.5 rounded hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label={`service-edit-${s.id}`}
+                        disabled={readOnly}
                     >
                         <Edit2 className="w-4 h-4" />
                     </button>
                     <button
-                        onClick={(e) => { e.stopPropagation(); onDelete(s.id); }}
-                        className="bg-red-100 text-red-700 p-1.5 rounded hover:bg-red-200"
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (!readOnly) {
+                                onDelete(s.id);
+                            }
+                        }}
+                        className="bg-red-100 text-red-700 p-1.5 rounded hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label={`service-delete-${s.id}`}
+                        disabled={readOnly}
                     >
                         <Trash2 className="w-4 h-4" />
                     </button>
@@ -210,12 +252,14 @@ export const ServiceCatalog = ({ services, onAdd, onUpdate, onDelete, onRecordUs
                 <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
                     <div className="flex bg-slate-200 rounded-lg p-1 text-sm font-medium shrink-0">
                         <button
+                            type="button"
                             onClick={() => setActiveTab('FIXED')}
                             className={`px-3 py-1 rounded-md transition-all ${activeTab === 'FIXED' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                             Cố định tháng
                         </button>
                         <button
+                            type="button"
                             onClick={() => setActiveTab('ONE_OFF')}
                             className={`px-3 py-1 rounded-md transition-all ${activeTab === 'ONE_OFF' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
                         >
@@ -223,11 +267,17 @@ export const ServiceCatalog = ({ services, onAdd, onUpdate, onDelete, onRecordUs
                         </button>
                     </div>
                     <button
+                        type="button"
                         onClick={() => {
+                            if (readOnly) {
+                                return;
+                            }
+
                             setIsCreating(true);
                             setIsEditing(null);
                         }}
-                        className="bg-teal-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-700 flex items-center gap-2 shrink-0 ml-auto md:ml-0"
+                        className="bg-teal-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-700 flex items-center gap-2 shrink-0 ml-auto md:ml-0 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={readOnly}
                     >
                         <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Thêm dịch vụ</span>
                         <span className="sm:hidden">Thêm</span>

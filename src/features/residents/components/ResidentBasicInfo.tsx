@@ -11,7 +11,12 @@ interface ResidentBasicInfoProps {
   readOnly?: boolean;
 }
 
-export const ResidentBasicInfo = ({ resident, onEdit, onPrint, readOnly = false }: ResidentBasicInfoProps) => {
+export const ResidentBasicInfo = ({
+  resident,
+  onEdit,
+  onPrint,
+  readOnly = false,
+}: ResidentBasicInfoProps) => {
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-6 items-start md:items-center">
       <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center border-2 border-slate-200">
@@ -53,7 +58,7 @@ export const ResidentBasicInfo = ({ resident, onEdit, onPrint, readOnly = false 
         </button>
         {!readOnly && (
           <button onClick={onEdit} className="bg-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-teal-700 flex items-center gap-2 shadow-sm transition-colors">
-          <SettingsIcon className="w-4 h-4" /> Chỉnh sửa
+            <SettingsIcon className="w-4 h-4" /> Chỉnh sửa
           </button>
         )}
       </div>

@@ -4,7 +4,19 @@ import { Resident, User } from '../../../types/index';
 import { MedicalInfoModal } from './MedicalInfoModal';
 import { DiseaseProgressTimeline } from './DiseaseProgressTimeline';
 
-export const MedicalHistorySection = ({ user, resident, onUpdate, readOnly = false }: { user: User, resident: Resident, onUpdate: (r: Resident) => void, readOnly?: boolean }) => {
+interface MedicalHistorySectionProps {
+  user: User;
+  resident: Resident;
+  onUpdate: (r: Resident) => void;
+  readOnly?: boolean;
+}
+
+export const MedicalHistorySection = ({
+  user,
+  resident,
+  onUpdate,
+  readOnly = false,
+}: MedicalHistorySectionProps) => {
   const [showModal, setShowModal] = useState(false);
 
   return (
@@ -14,23 +26,22 @@ export const MedicalHistorySection = ({ user, resident, onUpdate, readOnly = fal
           user={user}
           resident={resident}
           onClose={() => setShowModal(false)}
-          onSave={(data) => onUpdate({...resident, ...data})}
+          onSave={(data) => onUpdate({ ...resident, ...data })}
         />
       )}
 
-      {/* Summary & Current Condition */}
       <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
         <div className="flex justify-between items-start mb-2">
           <h3 className="font-bold text-blue-900 flex items-center gap-2">
             <Activity className="w-5 h-5" /> Tình trạng hiện tại
           </h3>
           {!readOnly && (
-          <button 
-            onClick={() => setShowModal(true)}
-            className="text-xs bg-white text-blue-700 px-3 py-1.5 rounded border border-blue-200 hover:bg-blue-50 font-medium"
-          >
-            Cập nhật thông tin
-          </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="text-xs bg-white text-blue-700 px-3 py-1.5 rounded border border-blue-200 hover:bg-blue-50 font-medium"
+            >
+              Cập nhật thông tin
+            </button>
           )}
         </div>
         <p className="text-sm text-blue-800 whitespace-pre-wrap">{resident.currentConditionNote || 'Chưa có ghi chú tình trạng.'}</p>
@@ -42,7 +53,6 @@ export const MedicalHistorySection = ({ user, resident, onUpdate, readOnly = fal
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Medical History List */}
         <div className="md:col-span-2">
             <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
               <Stethoscope className="w-5 h-5 text-slate-500" /> Danh sách bệnh lý
@@ -74,8 +84,8 @@ export const MedicalHistorySection = ({ user, resident, onUpdate, readOnly = fal
                         <p className="text-xs text-red-600">Phản ứng: {a.reaction}</p>
                     </div>
                     <span className={`px-2 py-1 rounded text-xs font-bold border ${
-                        a.severity === 'Nặng' ? 'bg-red-200 text-red-900 border-red-300' : 
-                        a.severity === 'Trung bình' ? 'bg-orange-100 text-orange-800 border-orange-200' : 
+                        a.severity === 'Nặng' ? 'bg-red-200 text-red-900 border-red-300' :
+                        a.severity === 'Trung bình' ? 'bg-orange-100 text-orange-800 border-orange-200' :
                         'bg-yellow-100 text-yellow-800 border-yellow-200'
                     }`}>
                         {a.severity}
@@ -87,7 +97,6 @@ export const MedicalHistorySection = ({ user, resident, onUpdate, readOnly = fal
             </div>
         </div>
 
-        {/* Timeline */}
         <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 h-fit">
            <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
               <History className="w-5 h-5 text-slate-500" /> Diễn tiến

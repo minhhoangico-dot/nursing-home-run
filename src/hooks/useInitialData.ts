@@ -6,6 +6,7 @@ import { useIncidentsStore } from '../stores/incidentsStore';
 import { useAuthStore } from '../stores/authStore';
 import { usePermissionStore } from '../stores/permissionStore';
 import { useVisitorsStore } from '../stores/visitorsStore';
+import { useAppSettingsStore } from '../stores/appSettingsStore';
 
 export const useInitialData = () => {
     const [isLoading, setIsLoading] = useState(true);
@@ -18,6 +19,7 @@ export const useInitialData = () => {
     const { fetchUsers, user } = useAuthStore();
     const { fetchPermissions } = usePermissionStore();
     const { fetchVisitors } = useVisitorsStore();
+    const fetchSettings = useAppSettingsStore(state => state.fetchSettings);
     const userId = user?.id;
 
     useEffect(() => {
@@ -26,7 +28,15 @@ export const useInitialData = () => {
             setError(null);
 
             try {
-                await fetchUsers();
+                await Promise.allSettled([
+                    fetchSettings(),
+                    fetchUsers(), // Always fetch users for login
+                ]);
+
+                const { lastLoadError } = useAppSettingsStore.getState();
+                if (lastLoadError) {
+                    console.warn('App settings unavailable, continuing with defaults', lastLoadError);
+                }
 
                 const authenticatedUser = useAuthStore.getState().user;
 
@@ -58,6 +68,7 @@ export const useInitialData = () => {
         fetchMaintenanceRequests,
         fetchPermissions,
         fetchResidents,
+        fetchSettings,
         fetchUsers,
         fetchVisitors,
         userId,

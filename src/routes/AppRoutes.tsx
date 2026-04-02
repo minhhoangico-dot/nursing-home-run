@@ -1,68 +1,54 @@
 import React, { Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
-import { ErrorBoundary, LoadingScreen } from '../components/ui';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { MainLayout } from '../components/layout/MainLayout';
-import { ModuleRoute, DefaultModuleRedirect } from './ModuleRoute';
+import { ErrorBoundary, LoadingScreen } from '../components/ui';
 import { ProtectedRoute } from './ProtectedRoute';
+import { PermissionRoute } from './PermissionRoute';
 
 const LoginPage = React.lazy(() =>
-  import('../features/auth/pages/LoginPage').then((module) => ({ default: module.LoginPage }))
+  import('../features/auth/pages/LoginPage').then((module) => ({ default: module.LoginPage })),
 );
 const ResidentListPage = React.lazy(() =>
-  import('../features/residents/pages/ResidentListPage').then((module) => ({
-    default: module.ResidentListPage,
-  }))
+  import('../features/residents/pages/ResidentListPage').then((module) => ({ default: module.ResidentListPage })),
 );
 const ResidentDetailPage = React.lazy(() =>
-  import('../features/residents/pages/ResidentDetailPage').then((module) => ({
-    default: module.ResidentDetailPage,
-  }))
+  import('../features/residents/pages/ResidentDetailPage').then((module) => ({ default: module.ResidentDetailPage })),
 );
 const RoomMapPage = React.lazy(() =>
-  import('../features/rooms/pages/RoomMapPage').then((module) => ({ default: module.RoomMapPage }))
+  import('../features/rooms/pages/RoomMapPage').then((module) => ({ default: module.RoomMapPage })),
 );
 const IncidentsPage = React.lazy(() =>
-  import('../features/incidents/pages/IncidentsPage').then((module) => ({
-    default: module.IncidentsPage,
-  }))
+  import('../features/incidents/pages/IncidentsPage').then((module) => ({ default: module.IncidentsPage })),
 );
 const NutritionPage = React.lazy(() =>
-  import('../features/nutrition/pages/NutritionPage').then((module) => ({
-    default: module.NutritionPage,
-  }))
+  import('../features/nutrition/pages/NutritionPage').then((module) => ({ default: module.NutritionPage })),
 );
 const VisitorsPage = React.lazy(() =>
-  import('../features/visitors/pages/VisitorsPage').then((module) => ({ default: module.VisitorsPage }))
+  import('../features/visitors/pages/VisitorsPage').then((module) => ({ default: module.VisitorsPage })),
 );
 const DailyMonitoringPage = React.lazy(() =>
-  import('../features/monitoring/pages/DailyMonitoringPage').then((module) => ({
-    default: module.DailyMonitoringPage,
-  }))
+  import('../features/monitoring/pages/DailyMonitoringPage').then((module) => ({ default: module.DailyMonitoringPage })),
 );
 const MaintenancePage = React.lazy(() =>
-  import('../features/maintenance/pages/MaintenancePage').then((module) => ({
-    default: module.MaintenancePage,
-  }))
+  import('../features/maintenance/pages/MaintenancePage').then((module) => ({ default: module.MaintenancePage })),
 );
 const PrintFormsPage = React.lazy(() =>
-  import('../features/print-forms/pages/PrintFormsPage').then((module) => ({
-    default: module.PrintFormsPage,
-  }))
+  import('../features/print-forms/pages/PrintFormsPage').then((module) => ({ default: module.PrintFormsPage })),
 );
 const FinancePage = React.lazy(() =>
-  import('../features/finance/pages/FinancePage').then((module) => ({ default: module.FinancePage }))
+  import('../features/finance/pages/FinancePage').then((module) => ({ default: module.FinancePage })),
 );
 const SettingsPage = React.lazy(() =>
-  import('../features/settings/pages/SettingsPage').then((module) => ({ default: module.SettingsPage }))
+  import('../features/settings/pages/SettingsPage').then((module) => ({ default: module.SettingsPage })),
 );
 const ProfilePage = React.lazy(() =>
-  import('../features/profile').then((module) => ({ default: module.ProfilePage }))
+  import('../features/profile').then((module) => ({ default: module.ProfilePage })),
 );
 const ProceduresPage = React.lazy(() =>
-  import('../features/procedures').then((module) => ({ default: module.ProceduresPage }))
+  import('../features/procedures').then((module) => ({ default: module.ProceduresPage })),
 );
 const WeightTrackingPage = React.lazy(() =>
-  import('../features/weight-tracking').then((module) => ({ default: module.WeightTrackingPage }))
+  import('../features/weight-tracking').then((module) => ({ default: module.WeightTrackingPage })),
 );
 
 const LoadingFallback = () => <LoadingScreen message="Đang tải..." />;
@@ -76,117 +62,116 @@ export const AppRoutes = () => {
 
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
-              <Route path="/" element={<DefaultModuleRedirect />} />
+              <Route path="/" element={<Navigate to="/residents" replace />} />
 
               <Route
                 path="/residents"
-                element={
-                  <ModuleRoute moduleKey="residents">
+                element={(
+                  <PermissionRoute moduleKey="residents">
                     <ResidentListPage />
-                  </ModuleRoute>
-                }
+                  </PermissionRoute>
+                )}
               />
               <Route
                 path="/residents/:id"
-                element={
-                  <ModuleRoute moduleKey="residents">
+                element={(
+                  <PermissionRoute moduleKey="residents">
                     <ResidentDetailPage />
-                  </ModuleRoute>
-                }
+                  </PermissionRoute>
+                )}
               />
 
               <Route
                 path="/rooms"
-                element={
-                  <ModuleRoute moduleKey="rooms">
+                element={(
+                  <PermissionRoute moduleKey="rooms">
                     <RoomMapPage />
-                  </ModuleRoute>
-                }
+                  </PermissionRoute>
+                )}
               />
               <Route
                 path="/nutrition"
-                element={
-                  <ModuleRoute moduleKey="nutrition">
+                element={(
+                  <PermissionRoute moduleKey="nutrition">
                     <NutritionPage />
-                  </ModuleRoute>
-                }
+                  </PermissionRoute>
+                )}
               />
               <Route
                 path="/visitors"
-                element={
-                  <ModuleRoute moduleKey="visitors">
+                element={(
+                  <PermissionRoute moduleKey="visitors">
                     <VisitorsPage />
-                  </ModuleRoute>
-                }
+                  </PermissionRoute>
+                )}
               />
               <Route
                 path="/daily-monitoring"
-                element={
-                  <ModuleRoute moduleKey="daily_monitoring">
+                element={(
+                  <PermissionRoute moduleKey="dailyMonitoring">
                     <DailyMonitoringPage />
-                  </ModuleRoute>
-                }
+                  </PermissionRoute>
+                )}
               />
               <Route
                 path="/procedures"
-                element={
-                  <ModuleRoute moduleKey="procedures">
+                element={(
+                  <PermissionRoute moduleKey="procedures">
                     <ProceduresPage />
-                  </ModuleRoute>
-                }
+                  </PermissionRoute>
+                )}
               />
               <Route
                 path="/weight-tracking"
-                element={
-                  <ModuleRoute moduleKey="weight_tracking">
+                element={(
+                  <PermissionRoute moduleKey="weightTracking">
                     <WeightTrackingPage />
-                  </ModuleRoute>
-                }
+                  </PermissionRoute>
+                )}
               />
               <Route
                 path="/incidents"
-                element={
-                  <ModuleRoute moduleKey="incidents">
+                element={(
+                  <PermissionRoute moduleKey="incidents">
                     <IncidentsPage />
-                  </ModuleRoute>
-                }
+                  </PermissionRoute>
+                )}
               />
               <Route
                 path="/maintenance"
-                element={
-                  <ModuleRoute moduleKey="maintenance">
+                element={(
+                  <PermissionRoute moduleKey="maintenance">
                     <MaintenancePage />
-                  </ModuleRoute>
-                }
+                  </PermissionRoute>
+                )}
               />
               <Route
                 path="/forms"
-                element={
-                  <ModuleRoute moduleKey="forms">
+                element={(
+                  <PermissionRoute moduleKey="forms">
                     <PrintFormsPage />
-                  </ModuleRoute>
-                }
+                  </PermissionRoute>
+                )}
               />
               <Route
                 path="/finance"
-                element={
-                  <ModuleRoute moduleKey="finance">
+                element={(
+                  <PermissionRoute moduleKey="finance">
                     <FinancePage />
-                  </ModuleRoute>
-                }
+                  </PermissionRoute>
+                )}
               />
               <Route
                 path="/settings"
-                element={
-                  <ModuleRoute moduleKey="settings">
+                element={(
+                  <PermissionRoute moduleKey="settings">
                     <SettingsPage />
-                  </ModuleRoute>
-                }
+                  </PermissionRoute>
+                )}
               />
 
               <Route path="/profile" element={<ProfilePage />} />
-
-              <Route path="*" element={<DefaultModuleRedirect />} />
+              <Route path="*" element={<Navigate to="/residents" replace />} />
             </Route>
           </Route>
         </Routes>

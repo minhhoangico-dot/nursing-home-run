@@ -9,10 +9,10 @@ import { ResidentBasicInfo } from '../components/ResidentBasicInfo';
 import { ResidentDetail } from '../components/ResidentDetail';
 import { EditResidentModal } from '../components/EditResidentModal';
 import { ModuleReadOnlyBanner } from '@/src/components/ui/ModuleReadOnlyBanner';
-import { useModuleReadOnly } from '@/src/routes/ModuleAccessContext';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useResidentsStore } from '@/src/stores/residentsStore';
 import { useFinanceStore } from '@/src/stores/financeStore';
+import { useModuleAccess } from '@/src/hooks/useModuleAccess';
 
 export const ResidentDetailPage = () => {
    const { id } = useParams();
@@ -20,7 +20,8 @@ export const ResidentDetailPage = () => {
    const { user } = useAuthStore();
    const { residents, updateResident } = useResidentsStore();
    const { servicePrices, usageRecords, recordUsage } = useFinanceStore();
-   const readOnly = useModuleReadOnly();
+   const residentsAccess = useModuleAccess('residents');
+   const isReadOnly = residentsAccess.mode === 'readOnly';
 
    const [showAssessmentWizard, setShowAssessmentWizard] = useState(false);
    const [showEditModal, setShowEditModal] = useState(false);
@@ -38,7 +39,7 @@ export const ResidentDetailPage = () => {
    if (!resident || !user) return null;
 
    const handleSaveAssessment = async (score: number) => {
-      if (readOnly) return;
+      if (isReadOnly) return;
 
       let level: 1 | 2 | 3 | 4 = 1;
       if (score > 10) level = 2;
@@ -66,7 +67,7 @@ export const ResidentDetailPage = () => {
    };
 
    const handleUpdateInfo = async (data: any) => {
-      if (readOnly) return;
+      if (isReadOnly) return;
 
       try {
          await updateResident({ ...resident, ...data });
@@ -78,7 +79,7 @@ export const ResidentDetailPage = () => {
 
    // Check this: handleMedicalUpdate
    const handleMedicalUpdate = async (updatedResident: any) => {
-      if (readOnly) return;
+      if (isReadOnly) return;
 
       try {
          await updateResident(updatedResident);
@@ -90,9 +91,9 @@ export const ResidentDetailPage = () => {
 
    return (
       <div className="space-y-6">
-         {readOnly && <ModuleReadOnlyBanner />}
+         {isReadOnly && <ModuleReadOnlyBanner />}
 
-         {showAssessmentWizard && !readOnly && (
+         {showAssessmentWizard && !isReadOnly && (
             <AssessmentWizard
                resident={resident}
                onSave={handleSaveAssessment}
@@ -100,13 +101,13 @@ export const ResidentDetailPage = () => {
             />
          )}
 
-         {showEditModal && !readOnly && (
+         {showEditModal && !isReadOnly && (
             <EditResidentModal
                resident={resident}
                onClose={() => setShowEditModal(false)}
                onSave={handleUpdateInfo}
                existingCodes={residents.map(r => r.clinicCode || '')}
-               readOnly={readOnly}
+               readOnly={isReadOnly}
             />
          )}
 
@@ -116,21 +117,33 @@ export const ResidentDetailPage = () => {
 
          <ResidentBasicInfo
             resident={resident}
-            onEdit={() => setShowEditModal(true)}
+            onEdit={() => {
+               if (!isReadOnly) {
+                  setShowEditModal(true);
+               }
+            }}
             onPrint={() => window.print()}
-            readOnly={readOnly}
+            readOnly={isReadOnly}
          />
 
          <ResidentDetail
             user={user}
             resident={resident}
-            readOnly={readOnly}
             onUpdateResident={handleMedicalUpdate}
-            onOpenAssessment={() => setShowAssessmentWizard(true)}
-            onEdit={() => setShowEditModal(true)}
+            onOpenAssessment={() => {
+               if (!isReadOnly) {
+                  setShowAssessmentWizard(true);
+               }
+            }}
+            onEdit={() => {
+               if (!isReadOnly) {
+                  setShowEditModal(true);
+               }
+            }}
             servicePrices={servicePrices}
             usageRecords={usageRecords}
             onRecordUsage={recordUsage} // Directly function from store
+            readOnly={isReadOnly}
          />
       </div>
    );

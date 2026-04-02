@@ -1,47 +1,35 @@
-// @vitest-environment jsdom
-import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom/vitest';
-import { describe, expect, it, vi } from 'vitest';
-import { INITIAL_RESIDENTS } from '../../../data/mockResidents';
-import { SPECIAL_FLOOR_CONFIG } from '../../../data/mockRooms';
-import type { User } from '../../../types';
+import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
+import { RoomMapPage } from './RoomMapPage';
 
-const mockNavigate = vi.fn();
-const mockUpdateResident = vi.fn();
-const mockSelectResident = vi.fn();
-
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
-
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+}));
 
 vi.mock('react-hot-toast', () => ({
-  toast: {
-    success: vi.fn(),
-  },
+  toast: vi.fn(),
+}));
+
+vi.mock('@/src/hooks/useModuleAccess', () => ({
+  useModuleAccess: () => ({
+    mode: 'readOnly',
+    visible: false,
+    canViewFinance: false,
+    canEditFinance: false,
+  }),
 }));
 
 vi.mock('../../../stores/authStore', () => ({
   useAuthStore: () => ({
-    user: {
-      id: 'user-1',
-      name: 'Điều dưỡng A',
-      username: 'nurse-a',
-      role: 'NURSE',
-    } satisfies User,
+    user: { id: 'U1', name: 'Admin', username: 'admin', role: 'ADMIN' },
   }),
 }));
 
 vi.mock('../../../stores/residentsStore', () => ({
   useResidentsStore: () => ({
-    residents: INITIAL_RESIDENTS,
-    updateResident: mockUpdateResident,
-    selectResident: mockSelectResident,
+    residents: [],
+    updateResident: vi.fn(),
+    selectResident: vi.fn(),
   }),
 }));
 
@@ -53,34 +41,43 @@ vi.mock('../../../stores/roomsStore', () => ({
 
 vi.mock('../../../stores/roomConfigStore', () => ({
   useRoomConfigStore: () => ({
-    configs: SPECIAL_FLOOR_CONFIG,
+    configs: [],
     updateRoom: vi.fn(),
     addRoom: vi.fn(),
     deleteRoom: vi.fn(),
   }),
 }));
 
-vi.mock('../components/TransferRoomModal', () => ({
-  TransferRoomModal: () => <div>TransferRoomModal</div>,
+vi.mock('../../../constants/facility', () => ({
+  BUILDING_STRUCTURE: [
+    {
+      id: 'Tòa A',
+      name: 'Tòa A',
+      floors: ['Tầng 2'],
+    },
+  ],
 }));
 
-vi.mock('../components/AssignBedModal', () => ({
-  AssignBedModal: () => <div>AssignBedModal</div>,
+vi.mock('../../../data/index', () => ({
+  generateRooms: () => [
+    {
+      id: 'room-101',
+      number: '101',
+      type: '1 Giường',
+      building: 'Tòa A',
+      floor: 'Tầng 2',
+      beds: [
+        { id: 'bed-101-1', status: 'Available', residentId: null },
+      ],
+    },
+  ],
 }));
-
-vi.mock('../components/RoomEditModal', () => ({
-  RoomEditModal: () => <div>RoomEditModal</div>,
-}));
-
-import { RoomMapPage } from './RoomMapPage';
 
 describe('RoomMapPage', () => {
-  it('hides the discharge action in the occupied-bed detail modal', () => {
+  it('hides room mutation controls in read-only mode', () => {
     render(<RoomMapPage />);
 
-    fireEvent.click(screen.getByText('Lê Thị Lan'));
-
-    expect(screen.getByText(/Cần hỗ trợ nhắc uống thuốc và theo dõi ăn uống đồ ngọt\./i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Làm thủ tục xuất viện' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Chỉnh sửa$/i)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/Thêm phòng/i)).not.toBeInTheDocument();
   });
 });

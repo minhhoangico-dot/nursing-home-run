@@ -9,13 +9,15 @@ interface ResidentFinanceTabProps {
     servicePrices: ServicePrice[];
     usageRecords: ServiceUsage[];
     onRecordUsage: (usage: ServiceUsage) => void;
+    readOnly?: boolean;
 }
 
 export const ResidentFinanceTab: React.FC<ResidentFinanceTabProps> = ({
     resident,
     servicePrices,
     usageRecords,
-    onRecordUsage
+    onRecordUsage,
+    readOnly = false
 }) => {
     const { prescriptions, medicines } = usePrescriptionsStore();
 
@@ -119,6 +121,10 @@ export const ResidentFinanceTab: React.FC<ResidentFinanceTabProps> = ({
     const totalEstimate = totalFixed + totalIncurred + totalMedication;
 
     const handleAddService = (serviceId: string) => {
+        if (readOnly) {
+            return;
+        }
+
         const service = servicePrices.find(s => s.id === serviceId);
         if (service) {
             const usage: ServiceUsage = {
@@ -264,6 +270,8 @@ export const ResidentFinanceTab: React.FC<ResidentFinanceTabProps> = ({
                     <div className="p-4 bg-white border-b border-slate-100">
                         <select
                             className="w-full text-sm border-slate-200 rounded-lg shadow-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                            disabled={readOnly}
+                            aria-label="resident-finance-quick-add"
                             onChange={(e) => {
                                 if (e.target.value) {
                                     handleAddService(e.target.value);
