@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useId } from 'react';
 import { Plus, Trash2, X, Save, AlertCircle, Search, Pill, ChevronDown } from 'lucide-react';
 import { Prescription, PrescriptionItem, Medicine, Resident, User } from '../../../types/index';
 import { usePrescriptionsStore } from '../../../stores/prescriptionStore';
+import { normalizeMedicineText } from '../utils/medicineCatalog';
 
 interface PrescriptionFormProps {
   user: User;
@@ -41,6 +42,45 @@ const createEmptyItem = (defaultStartDate: string): ItemFormData => ({
   continuous: false,
 });
 
+const findExactMedicineMatches = (medicines: Medicine[], value: string) => {
+  const normalizedValue = normalizeMedicineText(value).toLowerCase();
+  if (!normalizedValue) {
+    return [];
+  }
+
+  return medicines.filter((medicine) => {
+    const normalizedName = normalizeMedicineText(medicine.name).toLowerCase();
+    const normalizedIngredient = normalizeMedicineText(medicine.activeIngredient).toLowerCase();
+
+    return normalizedName === normalizedValue || normalizedIngredient === normalizedValue;
+  });
+};
+
+const bindMedicineToItem = (
+  item: ItemFormData,
+  medicines: Medicine[],
+  nextValue: string,
+  selectedMedicine?: Medicine,
+): ItemFormData => {
+  const exactMatches = selectedMedicine ? [selectedMedicine] : findExactMedicineMatches(medicines, nextValue);
+  const matchedMedicine = exactMatches.length === 1 ? exactMatches[0] : undefined;
+
+  if (!matchedMedicine) {
+    return {
+      ...item,
+      medicineId: undefined,
+      medicineName: nextValue,
+    };
+  }
+
+  return {
+    ...item,
+    medicineId: matchedMedicine.id,
+    medicineName: matchedMedicine.name,
+    dosage: item.dosage || matchedMedicine.defaultDosage || '',
+  };
+};
+
 // ─── Medicine Autocomplete ─────────────────────────────────────────
 interface MedicineAutocompleteProps {
   value: string;
@@ -54,6 +94,7 @@ const MedicineAutocomplete = ({ value, medicines, onChange, onAddNew, inputRef }
   const [isOpen, setIsOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
 
   const query = value.toLowerCase();
   const filtered = query.length >= 1
@@ -111,6 +152,15 @@ const MedicineAutocomplete = ({ value, medicines, onChange, onAddNew, inputRef }
       <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 pointer-events-none" />
       <input
         ref={inputRef}
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={showDropdown}
+        aria-controls={showDropdown ? listboxId : undefined}
+        aria-activedescendant={
+          showDropdown && highlightIndex >= 0 && highlightIndex < filtered.length
+            ? `${listboxId}-option-${highlightIndex}`
+            : undefined
+        }
         className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm font-medium outline-none focus:ring-2 focus:ring-teal-500"
         placeholder="Tìm tên thuốc..."
         value={value}
@@ -122,11 +172,18 @@ const MedicineAutocomplete = ({ value, medicines, onChange, onAddNew, inputRef }
         onKeyDown={handleKeyDown}
       />
       {showDropdown && (
-        <div className="absolute z-50 mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-xl max-h-64 overflow-y-auto">
+        <div
+          id={listboxId}
+          role="listbox"
+          className="absolute z-50 mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-xl max-h-64 overflow-y-auto"
+        >
           {filtered.map((med, idx) => (
             <button
               key={med.id}
+              id={`${listboxId}-option-${idx}`}
               type="button"
+              role="option"
+              aria-selected={idx === highlightIndex}
               className={`w-full px-3 py-2 text-left flex items-center gap-2 transition-colors ${idx === highlightIndex ? 'bg-teal-50' : 'hover:bg-slate-50'
                 }`}
               onClick={() => selectMedicine(med)}
@@ -274,13 +331,42 @@ export const PrescriptionForm = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [quickAddIndex, setQuickAddIndex] = useState<number | null>(null);
+  const [isInitialCatalogLoading, setIsInitialCatalogLoading] = useState(medicines.length === 0);
 
   // Refs for auto-focus on new items
   const newItemRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    fetchMedicines();
+    let isMounted = true;
+
+    Promise.resolve(fetchMedicines())
+      .catch(() => undefined)
+      .finally(() => {
+        if (isMounted) {
+          setIsInitialCatalogLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [fetchMedicines]);
+
+  useEffect(() => {
+    if (medicines.length === 0) {
+      return;
+    }
+
+    setItems(prev =>
+      prev.map((item) => {
+        if (item.medicineId || !item.medicineName.trim()) {
+          return item;
+        }
+
+        return bindMedicineToItem(item, medicines, item.medicineName);
+      }),
+    );
+  }, [medicines]);
 
   useEffect(() => {
     if (!editingPrescription) return;
@@ -315,6 +401,7 @@ export const PrescriptionForm = ({
   const selectedResident = initialResident || residents?.find(r => r.id === selectedResidentId);
   const prescriptionCode = editingPrescription?.code ||
     `DT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+  const areMedicinesReady = !isInitialCatalogLoading;
 
   const handleAddItem = () => {
     const newItem = createEmptyItem(defaultStart);
@@ -341,14 +428,28 @@ export const PrescriptionForm = ({
   }, []);
 
   const handleMedicineSelect = (index: number, name: string, medicine?: Medicine) => {
-    const updates: Partial<ItemFormData> = { medicineName: name };
-    if (medicine) {
-      updates.medicineId = medicine.id;
-      if (medicine.defaultDosage) {
-        updates.dosage = medicine.defaultDosage;
-      }
+    const currentItem = items[index];
+
+    if (!currentItem) {
+      return;
     }
-    updateItem(index, updates);
+
+    const normalizedCurrent = normalizeMedicineText(currentItem.medicineName).toLowerCase();
+    const normalizedNext = normalizeMedicineText(name).toLowerCase();
+
+    if (!normalizedNext) {
+      updateItem(index, {
+        medicineId: undefined,
+        medicineName: '',
+      });
+      return;
+    }
+
+    if (currentItem.medicineId && !medicine && normalizedNext !== normalizedCurrent) {
+      return;
+    }
+
+    updateItem(index, bindMedicineToItem(currentItem, medicines, name, medicine));
   };
 
   const handleQuickAddSave = async (index: number, medicineData: Partial<Medicine>) => {
@@ -379,6 +480,10 @@ export const PrescriptionForm = ({
   const handleSubmit = async () => {
     if (!selectedResidentId || !diagnosis) {
       setError('Vui lòng chọn NCT và nhập chẩn đoán');
+      return;
+    }
+    if (items.some(item => item.medicineName.trim() && !item.medicineId)) {
+      setError('Vui lòng chọn thuốc từ danh mục nội bộ');
       return;
     }
     if (items.some(item => !item.medicineName || !item.dosage)) {
@@ -462,7 +567,7 @@ export const PrescriptionForm = ({
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6">
           {error && (
-            <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-100 bg-red-50 p-3 text-red-600">
+            <div role="alert" className="mb-4 flex items-center gap-2 rounded-lg border border-red-100 bg-red-50 p-3 text-red-600">
               <AlertCircle className="h-5 w-5 shrink-0" /> {error}
             </div>
           )}
@@ -694,7 +799,7 @@ export const PrescriptionForm = ({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || !areMedicinesReady}
             className="flex items-center gap-2 rounded-xl bg-teal-600 px-6 py-2.5 font-bold text-white shadow-lg shadow-teal-200 transition-all hover:bg-teal-700 disabled:opacity-70"
           >
             {loading ? 'Đang lưu...' : <><Save className="h-5 w-5" /> {editingPrescription ? 'Lưu điều chỉnh' : 'Lưu đơn thuốc'}</>}

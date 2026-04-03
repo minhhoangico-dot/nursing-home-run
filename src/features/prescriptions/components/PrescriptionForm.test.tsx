@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrescriptionForm } from './PrescriptionForm';
 
@@ -139,7 +139,6 @@ describe('PrescriptionForm', () => {
         name: 'Desloratadine (Aerius 0.5mg/ml)',
       },
     ];
-    resolveFetch?.();
 
     view.rerender(
       <PrescriptionForm
@@ -151,6 +150,10 @@ describe('PrescriptionForm', () => {
     );
 
     expect(getSaveButton()).toBeDisabled();
+
+    await act(async () => {
+      resolveFetch?.();
+    });
 
     await waitFor(() => {
       expect(getSaveButton()).not.toBeDisabled();
@@ -184,7 +187,9 @@ describe('PrescriptionForm', () => {
 
     expect(getSaveButton()).toBeDisabled();
 
-    resolveFetch?.();
+    await act(async () => {
+      resolveFetch?.();
+    });
 
     await waitFor(() => {
       expect(getSaveButton()).not.toBeDisabled();
@@ -221,11 +226,7 @@ describe('PrescriptionForm', () => {
       expect(storeState.createPrescription).not.toHaveBeenCalled();
     });
 
-    expect(
-      screen.getByText((content) =>
-        content.includes('Vui lÃ²ng chá»n thuá»‘c tá»« danh má»¥c ná»™i bá»™'),
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Vui lòng chọn thuốc từ danh mục nội bộ');
   });
 
   it('shows matched catalog suggestions while typing a partial medicine query', () => {

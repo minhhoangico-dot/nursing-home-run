@@ -255,7 +255,7 @@ export const PrescriptionList = ({ user, resident, onUpdate }: { user: User, res
                         <div>
                             <h3 className="font-bold text-teal-800 text-lg flex items-center gap-2">
                                 <Pill className="w-5 h-5" /> Thuốc đang dùng
-                                <span className="bg-teal-200 text-teal-800 text-xs px-2 py-0.5 rounded-full font-bold">
+                                <span aria-hidden="true" className="bg-teal-200 text-teal-800 text-xs px-2 py-0.5 rounded-full font-bold">
                                     {activeItems.length}
                                 </span>
                             </h3>
@@ -270,6 +270,7 @@ export const PrescriptionList = ({ user, resident, onUpdate }: { user: User, res
                             </button>
                             <button
                                 onClick={() => printDailyMedicationSheet(resident, activeItems)}
+                                aria-label="In tổng hợp thuốc đang dùng"
                                 className="flex items-center gap-2 bg-white text-teal-700 border border-teal-200 px-3 py-2 rounded-lg hover:bg-teal-50 shadow-sm transition-all font-medium text-sm whitespace-nowrap shrink-0"
                             >
                                 <Printer className="w-4 h-4" /> In phiếu
@@ -279,7 +280,7 @@ export const PrescriptionList = ({ user, resident, onUpdate }: { user: User, res
                                     onClick={handleOpenCreate}
                                     className="flex items-center gap-2 bg-teal-600 text-white px-3 py-2 rounded-lg hover:bg-teal-700 shadow-sm transition-all font-medium text-sm whitespace-nowrap shrink-0"
                                 >
-                                    <Plus className="w-4 h-4" /> Kê đơn
+                                    <Plus className="w-4 h-4" /> Kê đơn mới
                                 </button>
                             )}
                         </div>

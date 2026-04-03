@@ -9,8 +9,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest",
     "bootstrap:vostro": "node scripts/bootstrap-vostro-supabase.mjs",
     "medicines:import:dry-run": "node scripts/import-his-medicines.mjs --dry-run",
     "medicines:import": "node scripts/import-his-medicines.mjs --apply",

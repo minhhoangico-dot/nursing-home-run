@@ -111,7 +111,7 @@ describe('PrescriptionList', () => {
       expect(fetchPrescriptionsMock).toHaveBeenCalledWith('resident-1');
     });
 
-    expect(screen.getByRole('button', { name: /in phi/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /in tổng hợp thuốc đang dùng/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /in don thuoc|in đơn thuốc/i })).toBeInTheDocument();
     expect(screen.getByText('DT-001')).toBeInTheDocument();
   });

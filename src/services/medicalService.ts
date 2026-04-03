@@ -87,7 +87,7 @@ const mapMaintenanceFromDb = (d: any): MaintenanceRequest => ({
     assignee: d.assignee,
     createdAt: d.created_at,
     completedAt: d.completed_at,
-    cost: d.cost ? Number(d.cost) : undefined,
+    cost: d.cost === null || d.cost === undefined ? undefined : Number(d.cost),
     note: d.note
 });
 
@@ -124,7 +124,9 @@ const mapUserFromDb = (d: any): User => ({
     password: d.password,
     role: d.role,
     floor: d.floor,
-    avatar: d.avatar ?? d.avatar_url
+    avatar: d.avatar ?? d.avatar_url,
+    isActive: d.is_active,
+    updatedAt: d.updated_at
 });
 
 const mapUserToDb = (u: User) => ({
@@ -134,7 +136,9 @@ const mapUserToDb = (u: User) => ({
     password: u.password,
     role: u.role,
     floor: u.floor,
-    avatar: u.avatar
+    avatar: u.avatar,
+    is_active: u.isActive,
+    updated_at: u.updatedAt
 });
 
 const createEmptyRolePermissions = (): RolePermission =>
@@ -393,6 +397,31 @@ export const medicalService = {
             if (error) throw error;
             return (data || []).map(mapUserFromDb);
         },
+        create: async (u: User) => {
+            const { data, error } = await supabase.from('users').insert(mapUserToDb(u)).select().single();
+            if (error) throw error;
+            return mapUserFromDb(data);
+        },
+        update: async (u: User) => {
+            const { data, error } = await supabase.from('users').update(mapUserToDb(u)).eq('id', u.id).select().single();
+            if (error) throw error;
+            return mapUserFromDb(data);
+        },
+        deactivate: async (id: string) => {
+            const { data, error } = await supabase.from('users').update({ is_active: false }).eq('id', id).select().single();
+            if (error) throw error;
+            return mapUserFromDb(data);
+        },
+        reactivate: async (id: string) => {
+            const { data, error } = await supabase.from('users').update({ is_active: true }).eq('id', id).select().single();
+            if (error) throw error;
+            return mapUserFromDb(data);
+        },
+        resetPassword: async (id: string, password: string) => {
+            const { data, error } = await supabase.from('users').update({ password }).eq('id', id).select().single();
+            if (error) throw error;
+            return mapUserFromDb(data);
+        },
         upsert: async (u: User) => {
             const { error } = await supabase.from('users').upsert(mapUserToDb(u));
             if (error) throw error;
@@ -419,11 +448,6 @@ export const medicalService = {
 
             const { error } = await supabase.from('role_permissions').upsert(records);
             if (error) throw error;
-
-            const { data: refreshedData, error: refreshedError } = await supabase.from('role_permissions').select('*').order('role', { ascending: true });
-            if (refreshedError) throw refreshedError;
-
-            return mapRolePermissionsFromDb(refreshedData || []);
         }
     }
 };
