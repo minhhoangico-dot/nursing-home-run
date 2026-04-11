@@ -4,7 +4,17 @@ import { Resident, MedicalVisit, User } from '../../../types/index';
 
 import { Modal } from '@/src/components/ui';
 
-const VisitModal = ({ user, onClose, onSave }: { user: User; onClose: () => void; onSave: (v: MedicalVisit) => void }) => {
+const VisitModal = ({
+   user,
+   onClose,
+   onSave,
+   readOnly = false,
+}: {
+   user: User;
+   onClose: () => void;
+   onSave: (v: MedicalVisit) => void;
+   readOnly?: boolean;
+}) => {
    const [data, setData] = useState({
       complaint: '',
       diagnosis: '',
@@ -80,7 +90,7 @@ export const MedicalVisitsSection = ({
 
    return (
       <div>
-         {showModal && !readOnly && <VisitModal user={user} onClose={() => setShowModal(false)} onSave={handleAddVisit} />}
+         {showModal && !readOnly && <VisitModal user={user} onClose={() => setShowModal(false)} onSave={handleAddVisit} readOnly={readOnly} />}
 
          <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-slate-800 flex items-center gap-2">

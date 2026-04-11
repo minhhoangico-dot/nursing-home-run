@@ -15,9 +15,9 @@ import { MODULE_READONLY_LINKS, getModuleAccess } from './moduleAccess';
 describe('module registry', () => {
   it('keeps profile in the registry while excluding it from admin-managed permissions', () => {
     expect(MODULES.some((module) => module.key === 'profile')).toBe(true);
-    expect(MODULE_KEYS).toContain('weight_tracking');
+    expect(MODULE_KEYS).toContain('weightTracking');
     expect(MODULE_KEYS).toContain('profile');
-    expect(MANAGED_MODULE_KEYS).toContain('weight_tracking');
+    expect(MANAGED_MODULE_KEYS).toContain('weightTracking');
     expect(MANAGED_MODULE_KEYS).not.toContain('profile');
     expect('profile' in DEFAULT_ROLE_PERMISSIONS.ADMIN).toBe(false);
   });
@@ -27,10 +27,10 @@ describe('module registry', () => {
   });
 
   it('uses the existing Vietnamese metadata for managed modules', () => {
-    const weightTrackingModule = MODULES.find((module) => module.key === 'weight_tracking');
+    const weightTrackingModule = MODULES.find((module) => module.key === 'weightTracking');
 
     expect(weightTrackingModule).toMatchObject({
-      key: 'weight_tracking',
+      key: 'weightTracking',
       label: 'Theo dõi cân nặng',
       path: '/weight-tracking',
       title: 'Theo dõi cân nặng',
@@ -96,7 +96,7 @@ describe('module registry', () => {
 
     expect(adminSidebarKeys).toContain('settings');
     expect(adminSidebarKeys).not.toContain('profile');
-    expect(adminSidebarKeys).not.toContain('weight_tracking');
+    expect(adminSidebarKeys).not.toContain('weightTracking');
     expect(getModuleAccess(DEFAULT_ROLE_PERMISSIONS, 'CAREGIVER', 'residents')).toBe('read_only');
     expect(caregiverSidebarKeys).not.toContain('residents');
     expect(caregiverSidebarKeys).toEqual(['nutrition', 'visitors', 'incidents']);

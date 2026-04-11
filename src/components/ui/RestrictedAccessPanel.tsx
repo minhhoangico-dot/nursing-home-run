@@ -21,6 +21,10 @@ const messages: Record<ModuleKey, { title: string; body: string }> = {
     title: 'Không có quyền truy cập',
     body: 'Module này đang bị ẩn với role hiện tại.',
   },
+  medications: {
+    title: 'Không có quyền truy cập Thuốc',
+    body: 'Role hiện tại không được mở quy trình đơn thuốc và thuốc đang dùng.',
+  },
   procedures: {
     title: 'Không có quyền truy cập',
     body: 'Module này đang bị ẩn với role hiện tại.',

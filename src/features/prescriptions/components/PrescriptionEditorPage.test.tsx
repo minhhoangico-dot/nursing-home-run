@@ -81,7 +81,6 @@ describe('PrescriptionEditorPage', () => {
       pausePrescription: vi.fn().mockResolvedValue(undefined),
       cancelPrescription: vi.fn().mockResolvedValue(undefined),
       completePrescription: vi.fn().mockResolvedValue(undefined),
-      getResidentActiveMedicationRows: vi.fn().mockReturnValue([]),
       fetchMedicines: vi.fn().mockResolvedValue(undefined),
       createMedicine: vi.fn().mockResolvedValue(undefined),
       updateMedicine: vi.fn().mockResolvedValue(undefined),

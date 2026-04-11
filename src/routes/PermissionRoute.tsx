@@ -3,6 +3,7 @@ import { ReadOnlyBanner } from '@/src/components/ui/ReadOnlyBanner';
 import { RestrictedAccessPanel } from '@/src/components/ui/RestrictedAccessPanel';
 import { useModuleAccess } from '@/src/hooks/useModuleAccess';
 import type { ModuleKey } from '@/src/types/appSettings';
+import { ModuleAccessProvider } from './ModuleAccessContext';
 
 export const PermissionRoute = ({
   moduleKey,
@@ -18,9 +19,9 @@ export const PermissionRoute = ({
   }
 
   return (
-    <>
+    <ModuleAccessProvider value={access.mode}>
       {access.mode === 'readOnly' && <ReadOnlyBanner />}
       {children}
-    </>
+    </ModuleAccessProvider>
   );
 };

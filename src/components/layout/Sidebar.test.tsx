@@ -36,6 +36,26 @@ vi.mock('@/src/hooks/useFacilityBranding', () => ({
 }));
 
 describe('Sidebar', () => {
+  it('shows the today dashboard entry for every signed-in role', () => {
+    render(
+      <MemoryRouter>
+        <Sidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText(/Hôm nay/i)).toBeInTheDocument();
+  });
+
+  it('shows the top-level medication workflow for clinical users', () => {
+    render(
+      <MemoryRouter>
+        <Sidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByRole('link').some((link) => link.getAttribute('href') === '/medications')).toBe(true);
+  });
+
   it('removes hidden modules from navigation', () => {
     render(
       <MemoryRouter>

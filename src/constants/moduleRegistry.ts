@@ -17,6 +17,7 @@ export const MODULE_REGISTRY: Record<ModuleKey, ModuleRegistryItem> = {
     path: '/daily-monitoring',
     nav: true,
   },
+  medications: { key: 'medications', path: '/medications', nav: true },
   procedures: { key: 'procedures', path: '/procedures', nav: true },
   nutrition: { key: 'nutrition', path: '/nutrition', nav: true },
   maintenance: { key: 'maintenance', path: '/maintenance', nav: true },

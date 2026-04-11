@@ -1,10 +1,10 @@
 import React, { createContext, useContext } from 'react';
-import type { ModuleAccessLevel } from '../lib/moduleAccess';
+import type { ModuleAccessMode } from '../types/appSettings';
 
-const ModuleAccessContext = createContext<ModuleAccessLevel | null>(null);
+const ModuleAccessContext = createContext<ModuleAccessMode | null>(null);
 
 interface ModuleAccessProviderProps {
-  value: ModuleAccessLevel;
+  value: ModuleAccessMode;
   children: React.ReactNode;
 }
 
@@ -12,7 +12,7 @@ export const ModuleAccessProvider = ({ value, children }: ModuleAccessProviderPr
   <ModuleAccessContext.Provider value={value}>{children}</ModuleAccessContext.Provider>
 );
 
-export const useModuleAccessMode = (): ModuleAccessLevel => {
+export const useModuleAccessMode = (): ModuleAccessMode => {
   const accessMode = useContext(ModuleAccessContext);
 
   if (!accessMode) {
@@ -22,4 +22,4 @@ export const useModuleAccessMode = (): ModuleAccessLevel => {
   return accessMode;
 };
 
-export const useModuleReadOnly = (): boolean => useModuleAccessMode() === 'read_only';
+export const useModuleReadOnly = (): boolean => useModuleAccessMode() === 'readOnly';

@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'vitest';
 
+import type { Resident } from '@/src/types';
 import { buildActiveMedicationPrintHtml } from './buildActiveMedicationPrintHtml';
 
 describe('buildActiveMedicationPrintHtml', () => {
   test('renders separate rows for duplicate medicine names from different prescriptions', () => {
-    const html = buildActiveMedicationPrintHtml({
+    const resident = {
       id: 'r-1',
       name: 'Nguyễn Văn A',
       dob: '1950-01-01',
@@ -12,7 +13,9 @@ describe('buildActiveMedicationPrintHtml', () => {
       room: 'A101',
       bed: '02',
       allergies: [],
-    }, [
+    } as Resident;
+
+    const html = buildActiveMedicationPrintHtml(resident, [
       {
         id: 'item-1',
         prescriptionId: 'rx-1',

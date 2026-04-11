@@ -104,7 +104,7 @@ describe('mapMedicineRowToDb', () => {
       source: 'HIS_IMPORT',
       his_service_id: 11253,
     });
-    expect(Date.parse(mapped.updated_at)).not.toBeNaN();
+    expect(Date.parse(String(mapped.updated_at))).not.toBeNaN();
   });
 
   it('defaults manual source and null his service id for partial medicines', () => {
@@ -126,7 +126,7 @@ describe('mapMedicineRowToDb', () => {
       source: 'MANUAL',
       his_service_id: null,
     });
-    expect(Date.parse(mapped.updated_at)).not.toBeNaN();
+    expect(Date.parse(String(mapped.updated_at))).not.toBeNaN();
   });
 
   it('normalizes blank optional fields to null and derives the fallback name', () => {
@@ -166,6 +166,6 @@ describe('mapMedicineRowToDb', () => {
     expect(mapped).not.toHaveProperty('source');
     expect(mapped).not.toHaveProperty('his_service_id');
     expect(mapped).not.toHaveProperty('name');
-    expect(Date.parse(mapped.updated_at)).not.toBeNaN();
+    expect(Date.parse(String(mapped.updated_at))).not.toBeNaN();
   });
 });

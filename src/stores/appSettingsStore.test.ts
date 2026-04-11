@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAppSettingsStore } from './appSettingsStore';
+import { createInitialAppSettingsState, useAppSettingsStore } from './appSettingsStore';
 import { appSettingsService } from '@/src/services/appSettingsService';
 
 vi.mock('@/src/services/appSettingsService', () => ({
@@ -11,7 +11,7 @@ vi.mock('@/src/services/appSettingsService', () => ({
 
 describe('useAppSettingsStore', () => {
   beforeEach(() => {
-    useAppSettingsStore.setState(useAppSettingsStore.getInitialState());
+    useAppSettingsStore.setState(createInitialAppSettingsState());
   });
 
   it('falls back to defaults when remote settings are missing', async () => {

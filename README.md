@@ -1,61 +1,71 @@
-This is a comprehensive web application designed for managing a Nursing Home facility (starting with Floor 3). Ideally suited for tablet usage by nursing staff, supervisors, and administrators.
+# FDC Nursing Home Management System
 
-## Features Implemented
+Internal web application for nursing home operations, optimized for tablets and desktop use by nurses, doctors, supervisors, accountants, and administrators.
 
-### 1. Resident Management
-- **Profile**: Detailed resident profiles with demographics, room allocation, and care levels.
-- **Medical History**: Track diagnoses, allergies, and monitoring plans.
-- **Assessments**: Admission and periodic health assessments.
+## Current Modules
 
-### 2. Daily Operations
-- **Shift Handover**: Structured handover reports between shifts (Morning -> Afternoon -> Night).
-- **Incident Reporting**: Log and track incidents (falls, errors, etc.) with severity levels.
-- **Schedule Management**: Staff scheduling and task assignment.
+- `/dashboard`: role-based "today" dashboard. Nurses see charting/procedure tasks, doctors see clinical and medication alerts, supervisors see incidents and coverage pressure, and accountants see billing/debt exceptions.
+- `/residents` and `/residents/:id`: resident list, resident detail, medical records, prescription workspace, and resident finance tab.
+- `/medications`: top-level medication workflow with pending prescription alerts, active medication summary, print/export entry points, and resident deep links.
+- `/daily-monitoring`: daily vital signs and clinical monitoring.
+- `/procedures`: procedure tracking for injections, IV drip, catheter, oxygen, wound dressing, and related care work.
+- `/rooms`: room map and occupancy view.
+- `/nutrition`: meal and nutrition workflow.
+- `/visitors`: visitor log.
+- `/incidents`: incident and safety tracking.
+- `/maintenance`: facility maintenance requests.
+- `/finance`: billing and finance workflow.
+- `/forms`: print-friendly forms.
+- `/settings`: facility branding and role/module permissions.
+- `/profile`: current user profile.
 
-### 3. Medical Monitoring
-- **Diabetes Monitoring**: Track blood sugar levels (4 times/day + Insulin). Visual charts for trends. High glucose alerts.
-- **Vital Signs**: Regular vital sign logging (BP, HR, SpO2, Temp).
-- **Weight Tracking**: Monthly weight recording, BMI calculation, and trend analysis.
-- **Procedures**: Track medical procedures (dressing change, catheter, etc.) with billing integration.
+## Tech Stack
 
-### 4. Role-Based Dashboards
-- **Doctor**: Medical alerts, recent admissions, critical care list.
-- **Supervisor (Trưởng tầng)**: Staff overview, shift status, procedures summary.
-- **Nurse**: Task lists, care logs.
-- **Accountant**: Billing reports, inventory status.
+- React 19, Vite 6, TypeScript, TailwindCSS.
+- Zustand for state management.
+- React Router DOM 6.30.3.
+- Supabase/PostgreSQL for data.
+- Cloudflare Workers deployment via `wrangler.toml`.
 
-### 5. Print Forms
-- Printable PDF-friendly forms for:
-  - Procedure Records (Phiếu theo dõi thủ thuật).
-  - Weight Tracking (Phiếu theo dõi cân nặng).
-  - Shift Handover (Biên bản giao ban).
+## Local Development
 
-## Technical Stack
-- **Frontend**: React (Vite), TypeScript, TailwindCSS.
-- **State Management**: Zustand.
-- **Backend/Database**: Supabase (PostgreSQL).
-- **Charts**: Recharts.
-- **Deployment**: Cloudflare Workers.
+```bash
+npm install
+npm run dev
+```
 
-## Installation
+Create `.env` with the active Supabase endpoint and anon key:
 
-1. Clone the repository.
-2. Install dependencies: `npm install`.
-3. Set up `.env` with Supabase URL and Key.
-4. Run locally: `npm run dev`.
+```env
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+```
+
+## Verification
+
+Run these checks before handing off changes:
+
+```bash
+npm test
+npm run build
+npx tsc --noEmit
+npm audit --omit=dev
+```
 
 ## Deployment
-1. Set `.env` to the Vostro self-hosted Supabase endpoint.
-2. Bootstrap the Vostro database when needed:
-   `VOSTRO_SUPABASE_SERVICE_ROLE_KEY=... npm run bootstrap:vostro`
-3. Build and deploy the frontend Worker:
-   `npm run deploy:worker`
 
-The production app is served from `https://vdl.fdc-nhanvien.org`, and the frontend talks to `https://supabase.fdc-nhanvien.org`.
+The current production target is the Cloudflare Worker configured in `wrangler.toml`.
 
-## Recent Updates (Dec 2024)
-- Added Diabetes Monitoring Module.
-- Added Medical Procedure Billing Grid.
-- Added Weight Tracking and BMI Analysis.
-- Enhanced Dashboard with Medical Alerts.
-- Implemented Global Error Handling.
+```bash
+npm run build
+npm run deploy:worker
+```
+
+Production app: `https://vdl.fdc-nhanvien.org`  
+Backend target: `https://supabase.fdc-nhanvien.org`
+
+## Current Roadmap Notes
+
+- The active permission model uses camel-case app module keys such as `dailyMonitoring`, `weightTracking`, and `medications`.
+- Medication billing is calculated from prescription items and medicine prices. Rows with missing price or quantity are visibly provisional.
+- The app is still an internal/demo-style tool; auth and RLS hardening remain a separate track.

@@ -52,7 +52,17 @@ const StatusBadge = ({ status }: { status: string }) => {
     }
 };
 
-export const PrescriptionList = ({ user, resident, onUpdate }: { user: User, resident: Resident, onUpdate: (r: Resident) => void }) => {
+export const PrescriptionList = ({
+    user,
+    resident,
+    onUpdate,
+    readOnly = false,
+}: {
+    user: User;
+    resident: Resident;
+    onUpdate: (r: Resident) => void;
+    readOnly?: boolean;
+}) => {
     const [showModal, setShowModal] = useState(false);
     const [showMedicineManager, setShowMedicineManager] = useState(false);
     const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
@@ -142,7 +152,7 @@ export const PrescriptionList = ({ user, resident, onUpdate }: { user: User, res
         setExpandedHistory(expandedHistory === id ? null : id);
     };
 
-    const isDoctor = ['DOCTOR', 'ADMIN', 'SUPERVISOR'].includes(user.role);
+    const isDoctor = !readOnly && ['DOCTOR', 'ADMIN', 'SUPERVISOR'].includes(user.role);
 
     if (isLoading && prescriptions.length === 0) {
         return <div className="p-8 text-center text-slate-400">Đang tải dữ liệu...</div>;

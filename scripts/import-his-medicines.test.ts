@@ -214,7 +214,7 @@ describe('upsertMedicinesToSupabase', () => {
           },
         ],
         {},
-        supabase,
+        supabase as unknown as Parameters<typeof upsertMedicinesToSupabase>[2],
       ),
     ).rejects.toMatchObject({
       message: expect.stringContaining('manual-code collisions'),

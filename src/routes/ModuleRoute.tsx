@@ -96,7 +96,7 @@ export const ModuleRoute = ({ moduleKey, children }: ModuleRouteProps) => {
   }
 
   return (
-    <ModuleAccessProvider value={access}>
+    <ModuleAccessProvider value={access === 'read_only' ? 'readOnly' : 'full'}>
       {children ? <>{children}</> : <Outlet />}
     </ModuleAccessProvider>
   );

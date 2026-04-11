@@ -1,111 +1,120 @@
 # Hướng Dẫn Sử Dụng - Hệ Thống Quản Lý Viện Dưỡng Lão FDC
 
-## 🚀 Bắt Đầu Nhanh
+## Bắt Đầu Nhanh
 
-### Yêu Cầu Hệ Thống
-- Node.js phiên bản 18 trở lên
-- Trình duyệt hiện đại (Chrome, Firefox, Edge)
-- Kết nối Internet ổn định
+### Yêu Cầu
 
-### Cài Đặt & Chạy
+- Node.js 18 trở lên
+- Trình duyệt hiện đại: Chrome, Edge, Firefox
+- Tài khoản người dùng do quản trị viên cấp
+
+### Chạy Ứng Dụng
 
 ```bash
-# 1. Cài đặt dependencies
 npm install
-
-# 2. Chạy ứng dụng (môi trường development)
 npm run dev
-
-# 3. Truy cập: http://localhost:3000
 ```
 
-### Đăng Nhập
-- Sử dụng tài khoản được cấp bởi quản trị viên
-- Mỗi vai trò (Bác sĩ, Điều dưỡng, Trưởng tầng) có giao diện riêng
+Mở địa chỉ local do Vite hiển thị trong terminal.
 
----
+## Đăng Nhập
 
-## 📋 Chức Năng Chính
+1. Mở `/login`.
+2. Chọn hoặc nhập tài khoản được cấp.
+3. Sau khi đăng nhập, hệ thống chuyển vào `/dashboard`.
 
-### 1. **Quản Lý Cư Dân** (Residents)
-- Xem danh sách cư dân theo phòng/tầng
-- Thêm/sửa thông tin cư dân mới
-- Theo dõi lịch sử bệnh án, dị ứng
-- Quản lý đánh giá sức khỏe định kỳ
+Vai trò đang dùng:
 
-### 2. **Theo Dõi Đường Huyết** (Diabetes)
-- Nhập số đo đường huyết 4 lần/ngày (Sáng, Trưa, Chiều, Tối)
-- Ghi nhận liều Insulin
-- Xem biểu đồ xu hướng
-- Cảnh báo đường huyết cao
+- `ADMIN`: toàn quyền hệ thống
+- `DOCTOR`: hồ sơ, theo dõi, đơn thuốc, cảnh báo lâm sàng
+- `SUPERVISOR`: điều phối, sự cố, theo dõi vận hành
+- `NURSE`: nhập liệu chăm sóc, theo dõi ngày, thủ thuật, thuốc
+- `ACCOUNTANT`: tài chính và công nợ
+- `CAREGIVER`: các luồng chăm sóc được cấp quyền
 
-### 3. **Theo Dõi Cân Nặng** (Weight Tracking)
-- Cân hàng tháng
-- Tính chỉ số BMI tự động
-- Phân tích xu hướng tăng/giảm cân
-- In phiếu theo dõi cân nặng
+## Màn Hình Hôm Nay
 
-### 4. **Thủ Thuật Y Tế** (Procedures)
-- Ghi nhận thủ thuật: thay băng, thông tiểu, hút đờm...
-- Tính phí tự động theo bảng giá
-- Xuất báo cáo tháng
+Route: `/dashboard`
 
-### 5. **Giao Ban Ca** (Shift Handover)
-- Tạo biên bản giao ban giữa các ca (Sáng → Chiều → Tối)
-- Ghi chú công việc cần theo dõi
-- In biên bản giao ban
+- Điều dưỡng thấy NCT chưa nhập chỉ số, thủ thuật hôm nay, và lối tắt nhập liệu.
+- Bác sĩ thấy cảnh báo lâm sàng, thuốc sắp hết, và đơn thuốc đang dùng.
+- Trưởng tầng thấy sự cố mới, sự cố đang xử lý, và tình trạng nhập liệu.
+- Kế toán thấy NCT đang nợ, dịch vụ chưa chốt, và phát sinh trong ngày.
 
-### 6. **Báo Cáo Sự Cố** (Incidents)
-- Ghi nhận sự cố: té ngã, sai sót thuốc...
-- Phân loại mức độ nghiêm trọng
-- Theo dõi xử lý
+## Hồ Sơ NCT
 
-### 7. **Quản Lý Tài Chính** (Finance)
-- Theo dõi thu chi hàng tháng
-- Quản lý công nợ cư dân
-- Báo cáo tài chính
+Routes: `/residents`, `/residents/:id`
 
-### 8. **Kho Thuốc & Vật Tư** (Inventory)
-- Quản lý tồn kho
-- Cảnh báo hết hạn
-- Nhập/xuất kho
+- Xem danh sách NCT, lọc theo phòng/tầng/trạng thái.
+- Mở hồ sơ để xem thông tin cá nhân, y tế, theo dõi, đơn thuốc, và tài chính.
+- Nếu module ở chế độ chỉ đọc, các thao tác tạo/sửa sẽ bị ẩn hoặc khóa.
 
----
+## Thuốc Và Đơn Thuốc
 
-## 🖨️ In Phiếu
+Route chính: `/medications`
 
-Các phiếu có thể in PDF:
-- **Phiếu theo dõi thủ thuật**: Procedures → Chọn cư dân → Nút In
-- **Phiếu theo dõi cân nặng**: Weight → Chọn cư dân → Nút In
-- **Biên bản giao ban**: Shift Handover → Nút In
+- Xem thuốc đang dùng trên toàn cơ sở.
+- Xem cảnh báo thuốc sắp hết và đơn đang tạm ngưng.
+- In danh sách thuốc hoặc xuất CSV.
+- Mở nhanh hồ sơ NCT từ từng dòng thuốc.
 
----
+Route kê đơn theo NCT:
 
-## 👥 Vai Trò Người Dùng
+- `/residents/:residentId/medications/new`
+- `/residents/:residentId/medications/:prescriptionId`
+- `/residents/:residentId/medications/:prescriptionId/duplicate`
 
-| Vai Trò | Quyền Truy Cập |
-|---------|----------------|
-| **Bác sĩ** | Xem cảnh báo y tế, danh sách chăm sóc đặc biệt |
-| **Điều dưỡng** | Nhập liệu hàng ngày (đường huyết, vital signs, thủ thuật) |
-| **Trưởng tầng** | Quản lý nhân sự, giao ban, tổng hợp báo cáo |
-| **Kế toán** | Quản lý tài chính, báo cáo thu chi |
-| **Admin** | Toàn quyền hệ thống |
+## Theo Dõi Ngày
 
----
+Route: `/daily-monitoring`
 
-## 🔔 Lưu Ý Quan Trọng
+- Nhập chỉ số sinh hiệu, đường huyết, nhiệt độ, SpO2.
+- Bác sĩ và điều dưỡng dùng dữ liệu này cho cảnh báo lâm sàng trên Dashboard.
 
-- ✅ Nhập dữ liệu **đầy đủ và chính xác** để đảm bảo theo dõi hiệu quả
-- ✅ Kiểm tra **cảnh báo y tế** hàng ngày từ Dashboard
-- ✅ Backup dữ liệu được tự động thực hiện qua Supabase
-- ✅ Sử dụng **máy tính bảng (tablet)** để trải nghiệm tối ưu
+## Thủ Thuật
 
----
+Route: `/procedures`
 
-## 📞 Hỗ Trợ
+- Ghi nhận tiêm, truyền dịch, sonde dạ dày, thông tiểu, rửa bàng quang, đo đường huyết, đo huyết áp, oxy, và thay băng.
+- Dữ liệu thủ thuật được tổng hợp vào Dashboard theo ngày.
 
-Liên hệ quản trị viên hệ thống khi gặp vấn đề kỹ thuật.
+## Sự Cố Và An Toàn
 
----
+Route: `/incidents`
 
-**Phát triển bởi FDC Team** | Phiên bản 1.0 | Cập nhật T12/2024
+- Ghi nhận sự cố, mức độ nghiêm trọng, vị trí, mô tả, xử lý ban đầu.
+- Trưởng tầng theo dõi sự cố mới và sự cố đang xử lý trên Dashboard.
+
+## Tài Chính
+
+Route: `/finance` và tab tài chính trong hồ sơ NCT
+
+- Theo dõi dịch vụ cố định, dịch vụ phát sinh, công nợ, và tiền thuốc.
+- Tiền thuốc được tính từ đơn thuốc Active, số lượng cấp phát, và giá thuốc trong danh mục.
+- Dòng tiền thuốc thiếu giá hoặc thiếu số lượng sẽ hiển thị là tạm tính.
+- Dịch vụ thêm nhanh trong hồ sơ NCT có mô tả nguồn để truy vết.
+
+## Cài Đặt
+
+Route: `/settings`
+
+- Cập nhật thông tin cơ sở và logo.
+- Cấu hình quyền module theo vai trò.
+- Module đang dùng khóa camel-case, ví dụ `dailyMonitoring`, `weightTracking`, `medications`.
+
+## In Biểu Mẫu
+
+Route: `/forms`
+
+- In phiếu thủ thuật.
+- In phiếu theo dõi cân nặng.
+- In các mẫu biểu vận hành đang được cấu hình.
+
+## Kiểm Tra Trước Khi Bàn Giao
+
+```bash
+npm test
+npm run build
+npx tsc --noEmit
+npm audit --omit=dev
+```

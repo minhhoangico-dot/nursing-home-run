@@ -24,7 +24,7 @@ describe('mapMedicineRow', () => {
 });
 
 describe('mapPrescriptionRow', () => {
-  test('normalizes legacy cancelled status into paused', () => {
+  test('preserves cancelled status as a first-class prescription state', () => {
     const result = mapPrescriptionRow({
       id: 'p1',
       code: 'DT-001',
@@ -64,7 +64,7 @@ describe('mapPrescriptionRow', () => {
       ],
     });
 
-    expect(result.status).toBe('Paused');
+    expect(result.status).toBe('Cancelled');
     expect(result.items[0].routeSnapshot).toBe('Uống');
     expect(result.items[0].quantityDispensed).toBe(30);
     expect(result.items[0].specialInstructions).toBe('Đo huyết áp trước uống');

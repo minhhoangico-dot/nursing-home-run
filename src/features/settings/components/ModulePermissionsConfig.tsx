@@ -31,6 +31,7 @@ const MODULE_LABELS: Record<Exclude<ModuleKey, 'finance'>, string> = {
   rooms: 'Sơ đồ phòng',
   visitors: 'Khách thăm',
   dailyMonitoring: 'Theo dõi ngày',
+  medications: 'Thuốc',
   procedures: 'Thủ thuật',
   nutrition: 'Dinh dưỡng',
   maintenance: 'Bảo trì',

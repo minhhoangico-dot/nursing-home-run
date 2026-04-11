@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import { Prescription, PrescriptionItem, Medicine } from '../types/medical';
+import { normalizePrescriptionStatus, Prescription, PrescriptionItem, Medicine } from '../types/medical';
+import { mapMedicineRowFromDb, mapMedicineRowToDb } from '../features/prescriptions/utils/medicineMappers';
+import {
+    buildActiveMedicationSummary,
+    type ActiveMedicationSummaryRow,
+} from '../features/prescriptions/utils/activeMedicationSummary';
 
 interface PrescriptionsState {
     prescriptions: Prescription[];
@@ -21,6 +26,7 @@ interface PrescriptionsState {
     createMedicine: (medicine: Partial<Medicine>) => Promise<void>;
     updateMedicine: (id: string, medicine: Partial<Medicine>) => Promise<void>;
     deleteMedicine: (id: string) => Promise<void>;
+    getResidentActiveMedicationRows: (residentId: string) => ActiveMedicationSummaryRow[];
 }
 
 export const usePrescriptionsStore = create<PrescriptionsState>((set, get) => ({
@@ -28,6 +34,11 @@ export const usePrescriptionsStore = create<PrescriptionsState>((set, get) => ({
     isLoading: false,
     error: null,
     medicines: [],
+    getResidentActiveMedicationRows: (residentId) =>
+        buildActiveMedicationSummary(
+            get().prescriptions.filter((prescription) => prescription.residentId === residentId),
+            { asOfDate: new Date() },
+        ),
 
     fetchPrescriptions: async (residentId) => {
         set({ isLoading: true, error: null });
@@ -58,7 +69,7 @@ export const usePrescriptionsStore = create<PrescriptionsState>((set, get) => ({
                 prescriptionDate: p.prescription_date,
                 startDate: p.start_date,
                 endDate: p.end_date,
-                status: p.status,
+                status: normalizePrescriptionStatus(p.status),
                 notes: p.notes,
                 duplicatedFromId: p.duplicated_from_id,
                 items: (p.items || []).map((i: any) => ({
@@ -287,17 +298,7 @@ export const usePrescriptionsStore = create<PrescriptionsState>((set, get) => ({
             const { data, error } = await supabase.from('medicines').select('*').order('name');
             if (error) throw error;
 
-            const mapped: Medicine[] = data.map((m: any) => ({
-                id: m.id,
-                name: m.name,
-                activeIngredient: m.active_ingredient,
-                unit: m.unit,
-                strength: m.strength,
-                route: m.route,
-                therapeuticGroup: m.therapeutic_group,
-                defaultDosage: m.default_dosage,
-                price: m.price
-            }));
+            const mapped: Medicine[] = data.map((m: any) => mapMedicineRowFromDb(m));
             set({ medicines: mapped });
         } catch (e: any) {
             console.error('Fetch medicines error', e);
@@ -306,16 +307,7 @@ export const usePrescriptionsStore = create<PrescriptionsState>((set, get) => ({
 
     createMedicine: async (medicine) => {
         try {
-            const { error } = await supabase.from('medicines').insert({
-                name: medicine.name,
-                active_ingredient: medicine.activeIngredient,
-                unit: medicine.unit,
-                strength: medicine.strength,
-                route: medicine.route,
-                therapeutic_group: medicine.therapeuticGroup,
-                default_dosage: medicine.defaultDosage,
-                price: medicine.price
-            });
+            const { error } = await supabase.from('medicines').insert(mapMedicineRowToDb(medicine));
             if (error) throw error;
             await get().fetchMedicines();
         } catch (e: any) {
@@ -326,16 +318,10 @@ export const usePrescriptionsStore = create<PrescriptionsState>((set, get) => ({
 
     updateMedicine: async (id, medicine) => {
         try {
-            const { error } = await supabase.from('medicines').update({
-                name: medicine.name,
-                active_ingredient: medicine.activeIngredient,
-                unit: medicine.unit,
-                strength: medicine.strength,
-                route: medicine.route,
-                therapeutic_group: medicine.therapeuticGroup,
-                default_dosage: medicine.defaultDosage,
-                price: medicine.price
-            }).eq('id', id);
+            const { error } = await supabase
+                .from('medicines')
+                .update(mapMedicineRowToDb(medicine, { forUpdate: true }))
+                .eq('id', id);
             if (error) throw error;
             await get().fetchMedicines();
         } catch (e: any) {

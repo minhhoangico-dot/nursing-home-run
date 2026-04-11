@@ -8,6 +8,9 @@ import { PermissionRoute } from './PermissionRoute';
 const LoginPage = React.lazy(() =>
   import('../features/auth/pages/LoginPage').then((module) => ({ default: module.LoginPage })),
 );
+const DashboardPage = React.lazy(() =>
+  import('../features/dashboard').then((module) => ({ default: module.DashboardPage })),
+);
 const ResidentListPage = React.lazy(() =>
   import('../features/residents/pages/ResidentListPage').then((module) => ({ default: module.ResidentListPage })),
 );
@@ -28,6 +31,12 @@ const VisitorsPage = React.lazy(() =>
 );
 const DailyMonitoringPage = React.lazy(() =>
   import('../features/monitoring/pages/DailyMonitoringPage').then((module) => ({ default: module.DailyMonitoringPage })),
+);
+const MedicationsPage = React.lazy(() =>
+  import('../features/prescriptions').then((module) => ({ default: module.MedicationsPage })),
+);
+const PrescriptionEditorPage = React.lazy(() =>
+  import('../features/prescriptions').then((module) => ({ default: module.PrescriptionEditorPage })),
 );
 const MaintenancePage = React.lazy(() =>
   import('../features/maintenance/pages/MaintenancePage').then((module) => ({ default: module.MaintenancePage })),
@@ -62,7 +71,8 @@ export const AppRoutes = () => {
 
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
-              <Route path="/" element={<Navigate to="/residents" replace />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
 
               <Route
                 path="/residents"
@@ -110,6 +120,38 @@ export const AppRoutes = () => {
                 element={(
                   <PermissionRoute moduleKey="dailyMonitoring">
                     <DailyMonitoringPage />
+                  </PermissionRoute>
+                )}
+              />
+              <Route
+                path="/medications"
+                element={(
+                  <PermissionRoute moduleKey="medications">
+                    <MedicationsPage />
+                  </PermissionRoute>
+                )}
+              />
+              <Route
+                path="/residents/:residentId/medications/new"
+                element={(
+                  <PermissionRoute moduleKey="medications">
+                    <PrescriptionEditorPage />
+                  </PermissionRoute>
+                )}
+              />
+              <Route
+                path="/residents/:residentId/medications/:prescriptionId"
+                element={(
+                  <PermissionRoute moduleKey="medications">
+                    <PrescriptionEditorPage />
+                  </PermissionRoute>
+                )}
+              />
+              <Route
+                path="/residents/:residentId/medications/:prescriptionId/duplicate"
+                element={(
+                  <PermissionRoute moduleKey="medications">
+                    <PrescriptionEditorPage />
                   </PermissionRoute>
                 )}
               />

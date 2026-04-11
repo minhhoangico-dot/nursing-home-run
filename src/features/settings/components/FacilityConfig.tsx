@@ -51,7 +51,8 @@ export const FacilityConfig = () => {
         return;
       }
 
-      setConfig((current) => ({ ...current, logoDataUrl: reader.result }));
+      const logoDataUrl = reader.result;
+      setConfig((current) => ({ ...current, logoDataUrl }));
     };
     reader.readAsDataURL(file);
   };

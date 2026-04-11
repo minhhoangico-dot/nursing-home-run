@@ -22,7 +22,15 @@ interface TableProps<T> {
   mobileCardView?: boolean;  // Render as cards on mobile (default: true)
 }
 
-export const Table = <T extends { id?: string | number }>({
+const getRowKey = <T extends object>(item: T, fallback: number) => {
+  if ('id' in item && (typeof item.id === 'string' || typeof item.id === 'number')) {
+    return item.id;
+  }
+
+  return fallback;
+};
+
+export const Table = <T extends object>({
   data,
   columns,
   onRowClick,
@@ -60,7 +68,7 @@ export const Table = <T extends { id?: string | number }>({
             {data.length > 0 ? (
               data.map((item, rowIdx) => (
                 <tr
-                  key={item.id || rowIdx}
+                  key={getRowKey(item, rowIdx)}
                   onClick={() => onRowClick && onRowClick(item)}
                   className={`hover:bg-slate-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
                 >
@@ -89,7 +97,7 @@ export const Table = <T extends { id?: string | number }>({
           {data.length > 0 ? (
             data.map((item, idx) => (
               <div
-                key={item.id || idx}
+                key={getRowKey(item, idx)}
                 onClick={() => onRowClick?.(item)}
                 className={`bg-white rounded-xl border border-slate-200 p-4 shadow-sm ${onRowClick ? 'cursor-pointer active:bg-slate-50' : ''}`}
               >

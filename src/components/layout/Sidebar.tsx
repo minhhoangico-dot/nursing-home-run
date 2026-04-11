@@ -6,7 +6,9 @@ import {
   BedDouble,
   ClipboardList,
   CreditCard,
+  LayoutDashboard,
   LogOut,
+  Pill,
   Printer,
   Settings as SettingsIcon,
   Syringe,
@@ -34,9 +36,18 @@ interface MenuItem {
   icon: LucideIcon;
 }
 
-const MENU_ITEMS: MenuItem[] = [
+interface DashboardMenuItem {
+  key: 'dashboard';
+  label: string;
+  icon: LucideIcon;
+  path: string;
+}
+
+const MENU_ITEMS: Array<MenuItem | DashboardMenuItem> = [
+  { key: 'dashboard', label: 'Hôm nay', icon: LayoutDashboard, path: '/dashboard' },
   { key: 'visitors', label: 'Khách thăm', icon: UserCheck },
   { key: 'dailyMonitoring', label: 'Theo dõi ngày', icon: ClipboardList },
+  { key: 'medications', label: 'Thuốc', icon: Pill },
   { key: 'procedures', label: 'Thủ thuật', icon: Syringe },
   { key: 'nutrition', label: 'Dinh dưỡng', icon: Utensils },
   { key: 'residents', label: 'Danh sách NCT', icon: Users },
@@ -65,6 +76,10 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
   if (!user) return null;
 
   const filteredMenu = MENU_ITEMS.filter((item) => {
+    if (item.key === 'dashboard') {
+      return true;
+    }
+
     if (!MODULE_REGISTRY[item.key].nav) {
       return false;
     }
@@ -110,7 +125,7 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
         {filteredMenu.map((item) => (
           <NavLink
             key={item.key}
-            to={MODULE_REGISTRY[item.key].path}
+            to={item.key === 'dashboard' ? item.path : MODULE_REGISTRY[item.key].path}
             onClick={handleNavClick}
             className={({ isActive }) =>
               `w-full flex items-center gap-3 px-4 py-3.5 lg:py-3 rounded-lg transition-colors ${

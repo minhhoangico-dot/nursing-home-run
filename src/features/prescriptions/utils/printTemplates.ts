@@ -1,5 +1,5 @@
 import { Prescription, PrescriptionItem, Resident } from '../../../types/index';
-import { useRoomConfigStore } from '../../../stores/roomConfigStore';
+import { useAppSettingsStore } from '../../../stores/appSettingsStore';
 import { getFacilityBranding } from '../../../utils/facilityBranding';
 
 const PRINT_STYLES = `
@@ -579,7 +579,7 @@ export const printDailyMedicationSheet = (
     };
 
     const sectionsHtml = times.map(t => renderTimeSection(t, activeItems)).join('');
-    const branding = getFacilityBranding(useRoomConfigStore.getState().facility);
+    const branding = getFacilityBranding(useAppSettingsStore.getState().facility);
 
     const html = `
         <!DOCTYPE html>

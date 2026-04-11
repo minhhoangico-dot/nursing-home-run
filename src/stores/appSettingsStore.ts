@@ -1,4 +1,4 @@
-import { create, type StoreApi, type UseBoundStore } from 'zustand';
+import { create } from 'zustand';
 import { MODULE_KEYS } from '@/src/constants/moduleRegistry';
 import { appSettingsService } from '@/src/services/appSettingsService';
 import type { FacilityInfo, RoleModulePermissionMatrix } from '@/src/types/appSettings';
@@ -27,16 +27,12 @@ type AppSettingsStore = AppSettingsDataState & {
   savePermissions: (permissions: RoleModulePermissionMatrix) => Promise<void>;
 };
 
-type AppSettingsStoreHook = UseBoundStore<StoreApi<AppSettingsStore>> & {
-  getInitialState: () => AppSettingsDataState;
-};
-
 const cloneDefaultFacility = (): FacilityInfo => ({ ...DEFAULT_FACILITY_INFO });
 
 const cloneDefaultPermissions = (): RoleModulePermissionMatrix =>
   normalizeRoleModulePermissions(structuredClone(DEFAULT_ROLE_MODULE_PERMISSIONS));
 
-const createInitialState = (): AppSettingsDataState => ({
+export const createInitialAppSettingsState = (): AppSettingsDataState => ({
   facility: cloneDefaultFacility(),
   permissions: cloneDefaultPermissions(),
   isLoading: false,
@@ -75,7 +71,7 @@ const mergePermissions = (value: unknown): RoleModulePermissionMatrix => {
       continue;
     }
 
-    const roleDefaults = defaults[role] as Record<string, unknown>;
+    const roleDefaults = defaults[role] as unknown as Record<string, unknown>;
 
     for (const moduleKey of MODULE_KEYS) {
       const nextPermission = roleInput[moduleKey];
@@ -95,7 +91,7 @@ const mergePermissions = (value: unknown): RoleModulePermissionMatrix => {
 };
 
 export const useAppSettingsStore = create<AppSettingsStore>((set) => ({
-  ...createInitialState(),
+  ...createInitialAppSettingsState(),
 
   fetchSettings: async () => {
     set({ isLoading: true, lastLoadError: null });
@@ -117,7 +113,7 @@ export const useAppSettingsStore = create<AppSettingsStore>((set) => ({
       });
     } catch (error) {
       set({
-        ...createInitialState(),
+        ...createInitialAppSettingsState(),
         isLoading: false,
         usedFallbackDefaults: true,
         lastLoadError: getErrorMessage(error),
@@ -164,6 +160,4 @@ export const useAppSettingsStore = create<AppSettingsStore>((set) => ({
       throw error;
     }
   },
-})) as AppSettingsStoreHook;
-
-useAppSettingsStore.getInitialState = createInitialState;
+}));

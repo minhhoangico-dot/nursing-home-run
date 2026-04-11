@@ -55,7 +55,7 @@ const mockResident: Resident = {
   careLogs: [],
   currentConditionNote: '',
   lastMedicalUpdate: '2026-03-31',
-  roomType: '2 Giuong',
+  roomType: '2 Giường',
   dietType: 'Normal',
   isDiabetic: false,
 };

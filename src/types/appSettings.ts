@@ -7,6 +7,7 @@ export type ModuleKey =
   | 'rooms'
   | 'visitors'
   | 'dailyMonitoring'
+  | 'medications'
   | 'procedures'
   | 'nutrition'
   | 'maintenance'
@@ -42,6 +43,7 @@ export interface RoleModulePermissions {
   rooms: ModuleVisibilityPermission;
   visitors: ModuleVisibilityPermission;
   dailyMonitoring: ModuleVisibilityPermission;
+  medications: ModuleVisibilityPermission;
   procedures: ModuleVisibilityPermission;
   nutrition: ModuleVisibilityPermission;
   maintenance: ModuleVisibilityPermission;

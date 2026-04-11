@@ -4,7 +4,17 @@ import { Resident, MonitoringPlan, User } from '../../../types/index';
 
 import { Modal } from '@/src/components/ui';
 
-const MonitoringModal = ({ user, onClose, onSave }: { user: User; onClose: () => void; onSave: (m: MonitoringPlan) => void }) => {
+const MonitoringModal = ({
+    user,
+    onClose,
+    onSave,
+    readOnly = false,
+}: {
+    user: User;
+    onClose: () => void;
+    onSave: (m: MonitoringPlan) => void;
+    readOnly?: boolean;
+}) => {
     const [data, setData] = useState({
         type: 'Theo dõi huyết áp',
         frequency: 'Mỗi 4 giờ',
@@ -87,7 +97,7 @@ export const MonitoringPlansSection = ({
 
     return (
         <div className="space-y-6">
-            {showModal && !readOnly && <MonitoringModal user={user} onClose={() => setShowModal(false)} onSave={handleAddMonitoring} />}
+            {showModal && !readOnly && <MonitoringModal user={user} onClose={() => setShowModal(false)} onSave={handleAddMonitoring} readOnly={readOnly} />}
 
             <div className="flex justify-between items-center">
                 <h3 className="font-semibold text-slate-800 flex items-center gap-2">

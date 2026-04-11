@@ -1,5 +1,11 @@
 export * from './user';
-export * from './permissions';
+export { MANAGED_MODULE_KEYS } from './permissions';
+export type {
+    ManagedModuleKey,
+    ModuleKey as PermissionModuleKey,
+    RolePermission,
+    RolePermissionMap,
+} from './permissions';
 export * from './medical';
 export * from './resident';
 export * from './room';
@@ -9,7 +15,17 @@ export * from './incident';
 export * from './schedule';
 export * from './handover';
 export * from './visitor';
-export * from './appSettings';
+export type {
+    AppModuleKey,
+    FacilityInfo,
+    FinanceModulePermission,
+    ModuleAccessMode,
+    ModuleKey as AppSettingsModuleKey,
+    ModuleVisibilityPermission,
+    RoleModulePermissionMatrix,
+    RoleModulePermissions,
+    RoleModulePermissionsMap,
+} from './appSettings';
 // =============================================
 // BLOOD SUGAR MONITORING
 // =============================================

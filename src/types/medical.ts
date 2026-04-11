@@ -5,13 +5,14 @@ export interface Assessment {
   assessor: string;
 }
 
-export type PrescriptionStatus = 'Active' | 'Paused' | 'Completed';
-export type LegacyPrescriptionStatus = PrescriptionStatus | 'Cancelled';
+export type PrescriptionStatus = 'Active' | 'Paused' | 'Completed' | 'Cancelled';
+export type LegacyPrescriptionStatus = PrescriptionStatus;
 
 export function normalizePrescriptionStatus(
   status?: string | null,
 ): PrescriptionStatus {
-  if (status === 'Cancelled' || status === 'Paused') return 'Paused';
+  if (status === 'Cancelled') return 'Cancelled';
+  if (status === 'Paused') return 'Paused';
   if (status === 'Completed') return 'Completed';
   return 'Active';
 }
@@ -30,7 +31,8 @@ export interface Medicine {
   defaultDosage?: string;
   defaultFrequency?: number;
   price?: number;
-  source?: 'MANUAL' | 'IMPORT';
+  source?: 'MANUAL' | 'HIS_IMPORT';
+  hisServiceId?: number;
 }
 
 export interface PrescriptionItemSchedule {
@@ -159,7 +161,7 @@ export interface MedicalCondition {
 export interface Allergy {
   id: string;
   allergen: string;
-  severity: 'Nhe' | 'Trung binh' | 'Nang';
+  severity: 'Nhe' | 'Trung binh' | 'Nang' | 'Nhẹ' | 'Trung bình' | 'Nặng';
   reaction: string;
 }
 
