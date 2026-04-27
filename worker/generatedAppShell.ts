@@ -1,1 +1,1 @@
-export const APP_SHELL_PATH = '/app-shell-BRxzSXF4.html';
+export const APP_SHELL_PATH = '/app-shell-D4_PU1CA.html';
