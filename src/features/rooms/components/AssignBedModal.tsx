@@ -8,24 +8,34 @@ interface AssignBedModalProps {
    targetBed: { id: string, roomNumber: string, bedLabel: string, building: string, floor: string, type: string };
    readOnly?: boolean;
    onClose: () => void;
-   onAssign: (residentId: string) => void;
+   onAssign: (residentId: string) => Promise<void> | void;
 }
 
 export const AssignBedModal = ({ residents, targetBed, readOnly = false, onClose, onAssign }: AssignBedModalProps) => {
    const [selectedId, setSelectedId] = useState<string>('');
+   const [isSubmitting, setIsSubmitting] = useState(false);
 
    const waitingResidents = residents.filter(r =>
       r.status === 'Active' && (r.room === 'Chưa xếp' || !r.room || r.room === 'N/A')
    );
 
-   const handleSubmit = () => {
+   const handleSubmit = async () => {
       if (readOnly) {
          onClose();
          return;
       }
 
-      if (selectedId) {
-         onAssign(selectedId);
+      if (!selectedId || isSubmitting) {
+         return;
+      }
+
+      try {
+         setIsSubmitting(true);
+         await onAssign(selectedId);
+      } catch {
+         // Parent handles the error toast; keep the modal open for retry.
+      } finally {
+         setIsSubmitting(false);
       }
    };
 
@@ -94,7 +104,7 @@ export const AssignBedModal = ({ residents, targetBed, readOnly = false, onClose
             <div className="flex justify-end pt-4 gap-2 border-t border-slate-100">
                <Button variant="secondary" onClick={onClose}>Hủy bỏ</Button>
                {!readOnly && (
-                  <Button onClick={handleSubmit} disabled={!selectedId}>
+                  <Button onClick={() => void handleSubmit()} disabled={!selectedId || isSubmitting}>
                      Xác nhận xếp phòng
                   </Button>
                )}

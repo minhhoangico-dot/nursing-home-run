@@ -37,7 +37,7 @@ interface BedDetailModalProps {
    user: User;
    readOnly: boolean;
    onClose: () => void;
-   onAction: (action: string, bedId: string) => void;
+   onAction: (action: string, bedId: string) => Promise<void> | void;
    resident?: ResidentListItem;
 }
 
@@ -53,6 +53,10 @@ const BedDetailModal = ({
    resident,
    readOnly = false,
 }: BedDetailModalProps) => {
+   const handleActionClick = (action: string, targetId: string) => {
+      void Promise.resolve(onAction(action, targetId)).catch(() => undefined);
+   };
+
    return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 relative">
@@ -93,11 +97,11 @@ const BedDetailModal = ({
                      <p>Tình trạng: {resident.currentConditionNote || 'Ổn định'}</p>
                   </div>
                   <div className="mt-4 flex gap-2">
-                     <button onClick={() => onAction('view_resident', resident.id)} className="flex-1 bg-white border border-slate-200 text-teal-700 py-2 rounded-lg font-medium hover:bg-teal-50 flex items-center justify-center gap-2 text-sm">
+                     <button onClick={() => handleActionClick('view_resident', resident.id)} className="flex-1 bg-white border border-slate-200 text-teal-700 py-2 rounded-lg font-medium hover:bg-teal-50 flex items-center justify-center gap-2 text-sm">
                         Xem hồ sơ
                      </button>
                      {!readOnly && (
-                        <button onClick={() => onAction('transfer', resident.id)} className="flex-1 bg-teal-600 text-white py-2 rounded-lg font-medium hover:bg-teal-700 flex items-center justify-center gap-2 text-sm shadow-sm">
+                        <button onClick={() => handleActionClick('transfer', resident.id)} className="flex-1 bg-teal-600 text-white py-2 rounded-lg font-medium hover:bg-teal-700 flex items-center justify-center gap-2 text-sm shadow-sm">
                            <ArrowRightLeft className="w-4 h-4" /> Chuyển phòng
                         </button>
                      )}
@@ -112,19 +116,19 @@ const BedDetailModal = ({
             {!readOnly && (
                <div className="grid grid-cols-1 gap-3">
                   {bed.status === 'Occupied' ? (
-                     <button onClick={() => onAction('discharge', bed.id)} className="w-full py-2 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 flex items-center justify-center gap-2">
+                     <button onClick={() => handleActionClick('discharge', bed.id)} className="w-full py-2 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 flex items-center justify-center gap-2">
                         <LogOut className="w-4 h-4" /> Làm thủ tục xuất viện
                      </button>
                   ) : bed.status === 'Maintenance' ? (
-                     <button onClick={() => onAction('end_maintenance', bed.id)} className="w-full py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 flex items-center justify-center gap-2">
+                     <button onClick={() => handleActionClick('end_maintenance', bed.id)} className="w-full py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 flex items-center justify-center gap-2">
                         <CheckCircle2 className="w-4 h-4" /> Hoàn tất bảo trì
                      </button>
                   ) : (
                      <>
-                        <button onClick={() => onAction('assign', bed.id)} className="w-full py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 flex items-center justify-center gap-2">
+                        <button onClick={() => handleActionClick('assign', bed.id)} className="w-full py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 flex items-center justify-center gap-2">
                            <UserPlus className="w-4 h-4" /> Xếp bệnh nhân mới
                         </button>
-                        <button onClick={() => onAction('start_maintenance', bed.id)} className="w-full py-2 bg-orange-50 text-orange-600 font-medium rounded-lg hover:bg-orange-100 flex items-center justify-center gap-2">
+                        <button onClick={() => handleActionClick('start_maintenance', bed.id)} className="w-full py-2 bg-orange-50 text-orange-600 font-medium rounded-lg hover:bg-orange-100 flex items-center justify-center gap-2">
                            <Wrench className="w-4 h-4" /> Báo hỏng / Bảo trì
                         </button>
                      </>
@@ -179,6 +183,8 @@ export const RoomMapPage = () => {
       maintenance: roomsOnFloor.reduce((acc, r) => acc + r.beds.filter(b => b.status === 'Maintenance').length, 0),
    };
    const available = stats.total - stats.occupied - stats.maintenance;
+   const getMutationErrorMessage = (error: unknown, fallback: string) =>
+      error instanceof Error && error.message ? error.message : fallback;
 
    if (!user) return null;
 
@@ -218,15 +224,19 @@ export const RoomMapPage = () => {
       } else if (action === 'discharge') {
          if (resident) {
             if (window.confirm(`Bạn có chắc chắn muốn làm thủ tục xuất viện cho ${resident.name}?`)) {
-               await updateResident({
-                  ...resident,
-                  status: 'Discharged',
-                  room: 'N/A',
-                  bed: 'N/A',
-                  floor: 'N/A'
-               });
-               toast.success(`Hồ sơ của ${resident.name} đã cập nhật.`);
-               setSelectedBed(null);
+               try {
+                  await updateResident({
+                     ...resident,
+                     status: 'Discharged',
+                     room: 'N/A',
+                     bed: 'N/A',
+                     floor: 'N/A'
+                  });
+                  toast.success(`Hồ sơ của ${resident.name} đã cập nhật.`);
+                  setSelectedBed(null);
+               } catch (error) {
+                  toast.error(getMutationErrorMessage(error, `Không thể cập nhật hồ sơ của ${resident.name}.`));
+               }
             }
          }
       } else if (action === 'assign') {
@@ -254,16 +264,20 @@ export const RoomMapPage = () => {
 
       const resident = residents.find(r => r.id === residentId);
       if (resident && assignTarget) {
-         await updateResident({
-            ...resident,
-            building: assignTarget.building,
-            floor: assignTarget.floor,
-            room: assignTarget.roomNumber,
-            bed: assignTarget.bedLabel,
-            roomType: assignTarget.type
-         });
-         toast.success(`Đã xếp ${resident.name} vào P.${assignTarget.roomNumber}`);
-         setAssignTarget(null);
+         try {
+            await updateResident({
+               ...resident,
+               building: assignTarget.building,
+               floor: assignTarget.floor,
+               room: assignTarget.roomNumber,
+               bed: assignTarget.bedLabel,
+               roomType: assignTarget.type
+            });
+            toast.success(`Đã xếp ${resident.name} vào P.${assignTarget.roomNumber}`);
+            setAssignTarget(null);
+         } catch (error) {
+            toast.error(getMutationErrorMessage(error, `Không thể xếp ${resident.name} vào P.${assignTarget.roomNumber}.`));
+         }
       }
    };
 
@@ -273,12 +287,16 @@ export const RoomMapPage = () => {
       }
 
       if (transferResident) {
-         await updateResident({
-            ...transferResident,
-            ...data
-         });
-         setTransferResident(null);
-         toast.success('Chuyển phòng thành công');
+         try {
+            await updateResident({
+               ...transferResident,
+               ...data
+            });
+            setTransferResident(null);
+            toast.success('Chuyển phòng thành công');
+         } catch (error) {
+            toast.error(getMutationErrorMessage(error, `Không thể chuyển phòng cho ${transferResident.name}.`));
+         }
       }
    };
 
