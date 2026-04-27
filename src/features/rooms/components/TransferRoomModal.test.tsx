@@ -7,7 +7,7 @@ import { TransferRoomModal } from './TransferRoomModal';
 const { BUILDING, FLOOR, ROOM_TYPE, generatedRooms } = vi.hoisted(() => ({
   BUILDING: 'T\u00f2a A',
   FLOOR: 'T\u1ea7ng 2',
-  ROOM_TYPE: '2 Gi\u01b0\u1eddng',
+  ROOM_TYPE: '2 Gi\u01b0\u1eddng' as const,
   generatedRooms: [
     {
       id: 'room-203',

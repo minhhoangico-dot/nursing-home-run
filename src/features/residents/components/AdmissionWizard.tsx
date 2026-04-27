@@ -199,6 +199,25 @@ export const AdmissionWizard = ({
       }
    };
 
+   const handleSaveAndDownload = async () => {
+      const valid = await trigger();
+      if (!valid) {
+         toast.error('Vui lòng kiểm tra lại các trường thông tin.');
+         return;
+      }
+      setSubmitting(true);
+      try {
+         const ctx = buildContractCtx();
+         const blob = await buildContractDocx(ctx);
+         saveAs(blob, buildContractFileName(ctx));
+         await handleSubmit(onSubmit)();
+      } catch (error) {
+         console.error(error);
+         toast.error(`Lỗi tạo hợp đồng: ${(error as Error).message}`);
+         setSubmitting(false);
+      }
+   };
+
    const onSubmit = async (data: FormData) => {
       setSubmitting(true);
       try {
@@ -601,15 +620,26 @@ export const AdmissionWizard = ({
                      Tiếp tục <ArrowRight className="w-4 h-4" />
                   </button>
                ) : (
-                  <button
-                     type="button"
-                     disabled={submitting}
-                     onClick={handleSubmit(onSubmit)}
-                     className="flex items-center gap-2 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-60 shadow-lg shadow-teal-900/10"
-                  >
-                     <CheckCircle2 className="w-4 h-4" />
-                     {submitting ? 'Đang lưu…' : 'Hoàn tất & Tiếp nhận'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                     <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={handleSubmit(onSubmit)}
+                        className="flex items-center gap-2 px-4 py-2 border border-teal-600 text-teal-700 rounded-lg hover:bg-teal-50 disabled:opacity-60"
+                     >
+                        <CheckCircle2 className="w-4 h-4" />
+                        {submitting ? 'Đang lưu…' : 'Lưu không tải'}
+                     </button>
+                     <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={handleSaveAndDownload}
+                        className="flex items-center gap-2 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-60 shadow-lg shadow-teal-900/10"
+                     >
+                        <FileDown className="w-4 h-4" />
+                        {submitting ? 'Đang xử lý…' : 'Lưu & tải hợp đồng'}
+                     </button>
+                  </div>
                )}
             </div>
          </div>
