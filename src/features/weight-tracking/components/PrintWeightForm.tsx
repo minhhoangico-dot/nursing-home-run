@@ -1,12 +1,12 @@
 import React from 'react';
-import { Resident } from '@/src/types/resident';
+import { ResidentListItem } from '@/src/types/resident';
 import { WeightRecord } from '@/src/types';
 import { useFacilityBranding } from '@/src/hooks/useFacilityBranding';
 import { fallbackFacilityLogo } from '@/src/utils/facilityBranding';
 
 interface PrintWeightFormProps {
     month: string;
-    residents: Resident[];
+    residents: ResidentListItem[];
     records: WeightRecord[];
 }
 

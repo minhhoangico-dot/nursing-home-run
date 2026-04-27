@@ -6,7 +6,7 @@ import { formatCurrency } from '../../data';
 import { useAuthStore } from '../../stores/authStore';
 import { useResidentsStore } from '../../stores/residentsStore';
 import { useIncidentsStore } from '../../stores/incidentsStore';
-import { Resident } from '../../types';
+import { ResidentListItem } from '../../types';
 
 interface HeaderProps {
    title: string;
@@ -110,7 +110,7 @@ export const Header = ({ title, onMenuClick }: HeaderProps) => {
       setShowNotifications(false);
    };
 
-   const handleSelectResident = (resident: Resident) => {
+   const handleSelectResident = (resident: ResidentListItem) => {
       useResidentsStore.getState().selectResident(resident);
       navigate(`/residents/${resident.id}`);
       setSearch('');

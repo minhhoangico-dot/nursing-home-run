@@ -14,7 +14,7 @@ import { useModuleAccess } from '@/src/hooks/useModuleAccess';
 
 export const ResidentListPage = () => {
    const navigate = useNavigate();
-   const { residents, addResident, selectResident } = useResidentsStore();
+   const { residents, residentDetails, fetchResidentDetail, addResident, selectResident } = useResidentsStore();
    const residentsAccess = useModuleAccess('residents');
    const isReadOnly = residentsAccess.mode === 'readOnly';
 
@@ -40,11 +40,27 @@ export const ResidentListPage = () => {
       return matchSearch && matchBuilding && matchFloor && matchStatus;
    }), [residents, search, buildingFilter, floorFilter, statusFilter]);
 
+   useEffect(() => {
+      if (viewMode !== 'list') {
+         return;
+      }
+
+      void Promise.all(filtered.map((resident) => fetchResidentDetail(resident.id))).catch(() => undefined);
+   }, [fetchResidentDetail, filtered, viewMode]);
+
+   const filteredWithDetails = useMemo(() => (
+      filtered.map((resident) => ({
+         ...resident,
+         medicalHistory: residentDetails[resident.id]?.medicalHistory,
+         allergies: residentDetails[resident.id]?.allergies,
+      }))
+   ), [filtered, residentDetails]);
+
    const activeFilterCount = [buildingFilter, floorFilter, statusFilter].filter(Boolean).length;
 
-   const handleSelect = (r: any) => {
-      selectResident(r);
-      navigate(`/residents/${r.id}`);
+   const handleSelect = (resident: any) => {
+      selectResident(resident);
+      navigate(`/residents/${resident.id}`);
    };
 
    const handleAddResident = async (data: any) => {
@@ -77,7 +93,7 @@ export const ResidentListPage = () => {
             <AdmissionWizard
                onSave={handleAddResident}
                onCancel={() => setShowWizard(false)}
-               existingCodes={residents.map(r => r.clinicCode || '')}
+               existingCodes={residents.map(r => r.clinicCode || '').filter(Boolean)}
             />
          )}
 
@@ -172,7 +188,7 @@ export const ResidentListPage = () => {
          {viewMode === 'list' ? (
             <>
                <div className="hidden md:block">
-                  <ResidentList data={filtered} onSelect={handleSelect} />
+                  <ResidentList data={filteredWithDetails} onSelect={handleSelect} />
                </div>
 
                <div className="md:hidden space-y-3">
@@ -200,7 +216,6 @@ export const ResidentListPage = () => {
             </div>
          )}
 
-         {/* Mobile FAB - Add new resident */}
          {!isReadOnly && (
             <button
                onClick={() => setShowWizard(true)}

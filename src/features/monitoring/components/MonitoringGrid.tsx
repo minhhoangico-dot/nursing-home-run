@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Resident, BloodSugarRecord } from '@/src/types';
+import { ResidentListItem, BloodSugarRecord } from '@/src/types';
 import { DailyMonitoringRecord, DailyMonitoringUpdate } from '@/src/types/dailyMonitoring';
 import { Loader2 } from 'lucide-react';
 import { useMonitoringStore } from '@/src/stores/monitoringStore';
@@ -8,7 +8,7 @@ import { BloodSugarInput } from './BloodSugarInput';
 
 interface MonitoringGridProps {
     month: Date;
-    residents: Resident[];
+    residents: ResidentListItem[];
     dailyRecords: DailyMonitoringRecord[];
     bsRecords: BloodSugarRecord[];
     isLoading: boolean;

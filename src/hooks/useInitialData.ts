@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useResidentsStore } from '../stores/residentsStore';
-import { useRoomsStore } from '../stores/roomsStore';
-import { useFinanceStore } from '../stores/financeStore';
-import { useIncidentsStore } from '../stores/incidentsStore';
 import { useAuthStore } from '../stores/authStore';
 import { usePermissionStore } from '../stores/permissionStore';
-import { useVisitorsStore } from '../stores/visitorsStore';
 import { useAppSettingsStore } from '../stores/appSettingsStore';
 
 export const useInitialData = () => {
@@ -13,12 +9,8 @@ export const useInitialData = () => {
     const [error, setError] = useState<Error | null>(null);
 
     const { fetchResidents } = useResidentsStore();
-    const { fetchMaintenanceRequests } = useRoomsStore();
-    const { fetchFinanceData } = useFinanceStore();
-    const { fetchIncidents } = useIncidentsStore();
     const { fetchUsers, user } = useAuthStore();
     const { fetchPermissions } = usePermissionStore();
-    const { fetchVisitors } = useVisitorsStore();
     const fetchSettings = useAppSettingsStore(state => state.fetchSettings);
     const userId = user?.id;
 
@@ -48,10 +40,6 @@ export const useInitialData = () => {
 
                 await Promise.all([
                     fetchResidents(),
-                    fetchMaintenanceRequests(),
-                    fetchFinanceData(),
-                    fetchIncidents(),
-                    fetchVisitors(),
                 ]);
             } catch (err) {
                 console.error('Error fetching initial data:', err);
@@ -63,14 +51,10 @@ export const useInitialData = () => {
 
         void initData();
     }, [
-        fetchFinanceData,
-        fetchIncidents,
-        fetchMaintenanceRequests,
         fetchPermissions,
         fetchResidents,
         fetchSettings,
         fetchUsers,
-        fetchVisitors,
         userId,
     ]);
 

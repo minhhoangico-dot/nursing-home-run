@@ -1,11 +1,11 @@
 import React from 'react';
-import { Resident } from '@/src/types/resident';
+import { ResidentListItem } from '@/src/types/resident';
 import { ProcedureRecord } from '@/src/types';
 
 interface ProcedureGridProps {
     month: number;
     year: number;
-    residents: Resident[];
+    residents: ResidentListItem[];
     records: ProcedureRecord[];
     selectedType: string | null;
     isLoading: boolean;

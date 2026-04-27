@@ -1,4 +1,4 @@
-import { Resident, Room, MaintenanceRequest } from '../types/index';
+import { ResidentListItem, Room, MaintenanceRequest } from '../types/index';
 import { BUILDING_STRUCTURE } from '../constants/facility';
 
 export const SPECIAL_FLOOR_CONFIG: Record<string, Record<string, Array<{ number: string, beds: number, type: Room['type'] }>>> = {
@@ -77,7 +77,7 @@ export const SPECIAL_FLOOR_CONFIG: Record<string, Record<string, Array<{ number:
 };
 
 export const generateRooms = (
-  residents: Resident[],
+  residents: ResidentListItem[],
   maintenanceRequests: MaintenanceRequest[] = [],
   customConfigs: typeof SPECIAL_FLOOR_CONFIG = SPECIAL_FLOOR_CONFIG
 ): Room[] => {

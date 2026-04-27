@@ -1,4 +1,4 @@
-import type { Prescription, Resident } from '@/src/types';
+import type { Prescription, ResidentListItem } from '@/src/types';
 import {
   buildActiveMedicationSummary,
   type ActiveMedicationSummaryRow,
@@ -34,14 +34,14 @@ export interface MedicationWorkspaceSummary {
 
 export interface MedicationWorkspaceInput {
   today: string;
-  residents: Resident[];
+  residents: ResidentListItem[];
   prescriptions: Prescription[];
 }
 
-const findResident = (residents: Resident[], residentId: string) =>
+const findResident = (residents: ResidentListItem[], residentId: string) =>
   residents.find((resident) => resident.id === residentId);
 
-const getResidentName = (residents: Resident[], residentId: string) =>
+const getResidentName = (residents: ResidentListItem[], residentId: string) =>
   findResident(residents, residentId)?.name ?? residentId;
 
 const getResidentPath = (residentId: string) => `/residents/${residentId}`;

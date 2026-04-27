@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Resident, BloodSugarRecord } from '@/src/types';
+import { ResidentListItem, BloodSugarRecord } from '@/src/types';
 import { DailyMonitoringRecord, DailyMonitoringUpdate } from '@/src/types/dailyMonitoring';
 import { Loader2, Heart, Thermometer, Wind, Check, Droplets, ChevronDown, ChevronUp } from 'lucide-react';
 import { useMonitoringStore } from '@/src/stores/monitoringStore';
@@ -8,7 +8,7 @@ import { useBloodSugarStore } from '@/src/stores/bloodSugarStore';
 interface MobileMonitoringViewProps {
     month: Date;
     selectedDay: number;
-    residents: Resident[];
+    residents: ResidentListItem[];
     dailyRecords: DailyMonitoringRecord[];
     bsRecords: BloodSugarRecord[];
     isLoading: boolean;

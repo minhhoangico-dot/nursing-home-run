@@ -18,7 +18,7 @@ export const ResidentDetailPage = () => {
    const { id } = useParams();
    const navigate = useNavigate();
    const { user } = useAuthStore();
-   const { residents, updateResident } = useResidentsStore();
+   const { residents, residentDetails, fetchResidentDetail, updateResident } = useResidentsStore();
    const { servicePrices, usageRecords, recordUsage } = useFinanceStore();
    const residentsAccess = useModuleAccess('residents');
    const isReadOnly = residentsAccess.mode === 'readOnly';
@@ -26,17 +26,35 @@ export const ResidentDetailPage = () => {
    const [showAssessmentWizard, setShowAssessmentWizard] = useState(false);
    const [showEditModal, setShowEditModal] = useState(false);
 
-   const resident = residents.find(r => r.id === id);
+   const resident = id ? residentDetails[id] : undefined;
+   const residentListItem = residents.find(r => r.id === id);
 
    useEffect(() => {
-      if (!resident && residents.length > 0) {
-         // Not found but residents loaded implies invalid ID
-         toast.error('Không tìm thấy thông tin NCT');
-         navigate('/residents');
+      if (!id || resident) {
+         return;
       }
-   }, [resident, residents, navigate]);
 
-   if (!resident || !user) return null;
+      void fetchResidentDetail(id).catch(() => undefined);
+   }, [fetchResidentDetail, id, resident]);
+
+   useEffect(() => {
+      if (!id || resident || residentListItem || residents.length === 0) {
+         return;
+      }
+
+      toast.error('Không tìm thấy thông tin NCT');
+      navigate('/residents');
+   }, [id, navigate, resident, residentListItem, residents.length]);
+
+   if (!user) return null;
+
+   if (!resident) {
+      return (
+         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+            Đang tải hồ sơ NCT...
+         </div>
+      );
+   }
 
    const handleSaveAssessment = async (score: number) => {
       if (isReadOnly) return;
@@ -77,7 +95,6 @@ export const ResidentDetailPage = () => {
       }
    };
 
-   // Check this: handleMedicalUpdate
    const handleMedicalUpdate = async (updatedResident: any) => {
       if (isReadOnly) return;
 
@@ -106,7 +123,7 @@ export const ResidentDetailPage = () => {
                resident={resident}
                onClose={() => setShowEditModal(false)}
                onSave={handleUpdateInfo}
-               existingCodes={residents.map(r => r.clinicCode || '')}
+               existingCodes={residents.map(r => r.clinicCode || '').filter(Boolean)}
                readOnly={isReadOnly}
             />
          )}
@@ -142,7 +159,7 @@ export const ResidentDetailPage = () => {
             }}
             servicePrices={servicePrices}
             usageRecords={usageRecords}
-            onRecordUsage={recordUsage} // Directly function from store
+            onRecordUsage={recordUsage}
             readOnly={isReadOnly}
          />
       </div>

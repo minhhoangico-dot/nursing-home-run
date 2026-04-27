@@ -7,9 +7,40 @@ import { PrescriptionEditorPage } from '../pages/PrescriptionEditorPage';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useResidentsStore } from '@/src/stores/residentsStore';
 import { usePrescriptionsStore } from '@/src/stores/prescriptionStore';
+import type { Resident } from '@/src/types';
 
 describe('PrescriptionEditorPage', () => {
   beforeEach(() => {
+    const residentDetail: Resident = {
+      id: 'R1',
+      clinicCode: 'NCT-001',
+      name: 'Lê Thị Lan',
+      dob: '1950-01-01',
+      gender: 'Nữ',
+      room: '202',
+      bed: 'A',
+      floor: '2',
+      building: 'A',
+      careLevel: 2,
+      status: 'Active',
+      admissionDate: '2026-01-01',
+      guardianName: 'Nguyễn Văn B',
+      guardianPhone: '0900000000',
+      balance: 0,
+      currentConditionNote: '',
+      lastMedicalUpdate: '2026-03-30',
+      roomType: '2 Giường',
+      dietType: 'Normal',
+      isDiabetic: false,
+      assessments: [],
+      prescriptions: [],
+      medicalVisits: [],
+      specialMonitoring: [],
+      medicalHistory: [],
+      allergies: [],
+      careLogs: [],
+    };
+
     useAuthStore.setState({
       user: {
         id: 'u1',
@@ -27,42 +58,16 @@ describe('PrescriptionEditorPage', () => {
     });
 
     useResidentsStore.setState({
-      residents: [
-        {
-          id: 'R1',
-          clinicCode: 'NCT-001',
-          name: 'Lê Thị Lan',
-          dob: '1950-01-01',
-          gender: 'Nữ',
-          room: '202',
-          bed: 'A',
-          floor: '2',
-          building: 'A',
-          careLevel: 2,
-          status: 'Active',
-          admissionDate: '2026-01-01',
-          guardianName: 'Nguyễn Văn B',
-          guardianPhone: '0900000000',
-          balance: 0,
-          assessments: [],
-          prescriptions: [],
-          medicalVisits: [],
-          specialMonitoring: [],
-          medicalHistory: [],
-          allergies: [],
-          careLogs: [],
-          currentConditionNote: '',
-          lastMedicalUpdate: '2026-03-30',
-          roomType: '2 Giường',
-          dietType: 'Normal',
-          isDiabetic: false,
-        },
-      ],
+      residents: [residentDetail],
+      residentDetails: {
+        R1: residentDetail,
+      },
       selectedResident: null,
       isLoading: false,
       isSyncing: false,
       error: null,
       fetchResidents: vi.fn(),
+      fetchResidentDetail: vi.fn().mockResolvedValue(residentDetail),
       addResident: vi.fn(),
       updateResident: vi.fn(),
       deleteResident: vi.fn(),

@@ -45,6 +45,10 @@ export default {
         }
       }
 
+      if (documentResponse.status === 404) {
+        documentResponse = await env.ASSETS.fetch(new Request(new URL('/', request.url), request));
+      }
+
       return withDocumentCacheHeaders(documentResponse);
     }
 

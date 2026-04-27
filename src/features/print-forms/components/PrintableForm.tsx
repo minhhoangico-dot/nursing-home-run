@@ -1,17 +1,27 @@
 import React from 'react';
 import { Printer } from 'lucide-react';
-import { User, Resident } from '../../../types/index';
+import { User, ResidentListItem } from '../../../types/index';
 import { useFacilityBranding } from '@/src/hooks/useFacilityBranding';
 import { fallbackFacilityLogo } from '@/src/utils/facilityBranding';
+import { useResidentsStore } from '@/src/stores/residentsStore';
 
-export const PrintableForm = ({ user, residents, type, formId, config, onClose }: { user: User, residents: Resident[], type: string, formId?: string, config?: any, onClose: () => void }) => {
+export const PrintableForm = ({ user, residents, type, formId, config, onClose }: { user: User, residents: ResidentListItem[], type: string, formId?: string, config?: any, onClose: () => void }) => {
    const building = config?.building || 'Tòa A';
    const floor = config?.floor || 'Tầng 1';
    const dateStr = config?.date ? new Date(config.date).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN');
    const shift = config?.shift || 'Sáng';
    const branding = useFacilityBranding();
+   const { residentDetails, fetchResidentDetail } = useResidentsStore();
 
    const filteredResidents = residents.filter(r => r.floor === floor && r.building === building);
+
+   React.useEffect(() => {
+      if (type !== 'PHIẾU PHÁT THUỐC') {
+         return;
+      }
+
+      void Promise.all(filteredResidents.map((resident) => fetchResidentDetail(resident.id))).catch(() => undefined);
+   }, [fetchResidentDetail, filteredResidents, type]);
 
    return (
       <div className="fixed inset-0 bg-white z-[9999] overflow-auto">
@@ -72,11 +82,11 @@ export const PrintableForm = ({ user, residents, type, formId, config, onClose }
                         </tr>
                      </thead>
                      <tbody>
-                        {filteredResidents.map((r, i) => (
-                           <React.Fragment key={i}>
+                        {filteredResidents.map((resident, index) => (
+                           <React.Fragment key={index}>
                               <tr className="h-10">
-                                 <td className="border border-slate-900 p-2 text-center font-bold" rowSpan={2}>{r.room}</td>
-                                 <td className="border border-slate-900 p-2 font-medium" rowSpan={2}>{r.name}</td>
+                                 <td className="border border-slate-900 p-2 text-center font-bold" rowSpan={2}>{resident.room}</td>
+                                 <td className="border border-slate-900 p-2 font-medium" rowSpan={2}>{resident.name}</td>
                                  <td className="border border-slate-900 p-1 text-center">07:00</td>
                                  <td className="border border-slate-900 p-1"></td>
                                  <td className="border border-slate-900 p-1"></td>
@@ -116,13 +126,13 @@ export const PrintableForm = ({ user, residents, type, formId, config, onClose }
                         </tr>
                      </thead>
                      <tbody>
-                        {filteredResidents.map((r, i) => (
-                           <tr key={i}>
-                              <td className="border border-slate-900 p-2 text-center font-bold">{r.room}</td>
-                              <td className="border border-slate-900 p-2">{r.name}</td>
+                        {filteredResidents.map((resident, index) => (
+                           <tr key={index}>
+                              <td className="border border-slate-900 p-2 text-center font-bold">{resident.room}</td>
+                              <td className="border border-slate-900 p-2">{resident.name}</td>
                               <td className="border border-slate-900 p-2">
                                  {(() => {
-                                    const activeItems = r.prescriptions
+                                    const activeItems = (residentDetails[resident.id]?.prescriptions || [])
                                        .filter(p => p.status === 'Active')
                                        .flatMap(p => p.items || []);
 
@@ -130,8 +140,8 @@ export const PrintableForm = ({ user, residents, type, formId, config, onClose }
                                        return <span className="text-slate-400 italic">Không có thuốc</span>;
                                     }
 
-                                    return activeItems.map((item, idx) => (
-                                       <div key={idx} className="mb-1">• {item.medicineName} ({item.dosage})</div>
+                                    return activeItems.map((item, itemIndex) => (
+                                       <div key={itemIndex} className="mb-1">• {item.medicineName} ({item.dosage})</div>
                                     ));
                                  })()}
                               </td>
@@ -173,10 +183,10 @@ export const PrintableForm = ({ user, residents, type, formId, config, onClose }
                         </tr>
                      </thead>
                      <tbody>
-                        {filteredResidents.map((r, i) => (
-                           <tr key={i} className="h-12">
-                              <td className="border border-slate-900 p-2 text-center font-bold">{r.room}</td>
-                              <td className="border border-slate-900 p-2">{r.name}</td>
+                        {filteredResidents.map((resident, index) => (
+                           <tr key={index} className="h-12">
+                              <td className="border border-slate-900 p-2 text-center font-bold">{resident.room}</td>
+                              <td className="border border-slate-900 p-2">{resident.name}</td>
                               <td className="border border-slate-900 p-2 text-center">Cơm</td>
                               <td className="border border-slate-900 p-1"></td>
                               <td className="border border-slate-900 p-1"></td>
@@ -261,8 +271,8 @@ export const PrintableForm = ({ user, residents, type, formId, config, onClose }
                         </tr>
                      </thead>
                      <tbody>
-                        {['Nguyễn Thị Lan (YT)', 'Trần Văn Hùng (ĐD)', 'Lê Thị Mai (ĐD)', 'Phạm Văn Tú (HL)'].map((name, i) => (
-                           <tr key={i} className="h-12">
+                        {['Nguyễn Thị Lan (YT)', 'Trần Văn Hùng (ĐD)', 'Lê Thị Mai (ĐD)', 'Phạm Văn Tú (HL)'].map((name, index) => (
+                           <tr key={index} className="h-12">
                               <td className="border border-slate-900 p-2 text-left font-bold">{name}</td>
                               <td className="border border-slate-900 p-2">{Math.random() > 0.3 ? 'Sáng' : 'OFF'}</td>
                               <td className="border border-slate-900 p-2">{Math.random() > 0.3 ? 'Chiều' : 'Sáng'}</td>

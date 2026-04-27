@@ -7,13 +7,16 @@ import { useToast } from '../../../app/providers';
 import { useModuleReadOnly } from '../../../routes/ModuleAccessContext';
 import { useRoomsStore } from '../../../stores/roomsStore';
 import { useAuthStore } from '../../../stores/authStore';
+import { useDeferredStoreLoad } from '@/src/hooks/useDeferredStoreLoad';
 
 export const MaintenancePage = () => {
    const [showModal, setShowModal] = useState(false);
    const { addToast } = useToast();
-   const { maintenanceRequests, addMaintenanceRequest } = useRoomsStore();
+   const { maintenanceRequests, addMaintenanceRequest, fetchMaintenanceRequests, isLoaded } = useRoomsStore();
    const { user } = useAuthStore();
    const readOnly = useModuleReadOnly();
+
+   useDeferredStoreLoad(fetchMaintenanceRequests, isLoaded);
 
    const handleCreate = async (data: any) => {
       if (readOnly) {

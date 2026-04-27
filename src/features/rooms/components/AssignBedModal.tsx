@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { AlertCircle, Calendar, User } from 'lucide-react';
-import { Resident } from '../../../types/index';
+import { ResidentListItem } from '../../../types/index';
 import { Button, Modal } from '../../../components/ui/index';
 
 interface AssignBedModalProps {
-   residents: Resident[];
+   residents: ResidentListItem[];
    targetBed: { id: string, roomNumber: string, bedLabel: string, building: string, floor: string, type: string };
    readOnly?: boolean;
    onClose: () => void;

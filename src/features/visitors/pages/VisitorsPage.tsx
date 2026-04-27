@@ -8,15 +8,19 @@ import { useToast } from '../../../app/providers';
 import { useModuleReadOnly } from '../../../routes/ModuleAccessContext';
 import { useResidentsStore } from '../../../stores/residentsStore';
 import { useVisitorsStore } from '../../../stores/visitorsStore';
+import { Resident } from '../../../types/index';
+import { useDeferredStoreLoad } from '@/src/hooks/useDeferredStoreLoad';
 
 export const VisitorsPage = () => {
-   const { visitors, addVisitor, checkOutVisitor } = useVisitorsStore();
+   const { visitors, addVisitor, checkOutVisitor, fetchVisitors, isLoaded } = useVisitorsStore();
    const { residents } = useResidentsStore();
    const readOnly = useModuleReadOnly();
    const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
    const [showModal, setShowModal] = useState(false);
    const [search, setSearch] = useState('');
    const { addToast } = useToast();
+
+   useDeferredStoreLoad(fetchVisitors, isLoaded);
 
    const filteredVisitors = visitors.filter(v => {
       const matchSearch = v.visitorName.toLowerCase().includes(search.toLowerCase()) ||
@@ -71,7 +75,7 @@ export const VisitorsPage = () => {
 
          {showModal && !readOnly && (
             <CheckInModal
-               residents={residents}
+               residents={residents as unknown as Resident[]}
                onClose={() => setShowModal(false)}
                onSave={handleSave}
             />

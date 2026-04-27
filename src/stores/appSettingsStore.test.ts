@@ -52,4 +52,16 @@ describe('useAppSettingsStore', () => {
     expect(useAppSettingsStore.getState().usedFallbackDefaults).toBe(true);
     expect(useAppSettingsStore.getState().lastLoadError).toContain('offline');
   });
+
+  it('keeps the PostgREST error message when the backend returns a plain object', async () => {
+    vi.mocked(appSettingsService.fetchMany).mockRejectedValue({
+      code: 'PGRST205',
+      message: 'relation "public.app_settings" does not exist',
+    });
+
+    await useAppSettingsStore.getState().fetchSettings();
+
+    expect(useAppSettingsStore.getState().usedFallbackDefaults).toBe(true);
+    expect(useAppSettingsStore.getState().lastLoadError).toContain('app_settings');
+  });
 });

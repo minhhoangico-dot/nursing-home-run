@@ -1,13 +1,13 @@
 import React from 'react';
 import { ProcedureRecord } from '@/src/types';
-import { Resident } from '@/src/types/resident';
+import { ResidentListItem } from '@/src/types/resident';
 import { useFacilityBranding } from '@/src/hooks/useFacilityBranding';
 import { fallbackFacilityLogo } from '@/src/utils/facilityBranding';
 
 interface PrintProcedureFormProps {
     month: number;
     year: number;
-    residents: Resident[];
+    residents: ResidentListItem[];
     data: ProcedureRecord[];
     procedureType?: string;
 }

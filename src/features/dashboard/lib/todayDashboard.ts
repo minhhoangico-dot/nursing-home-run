@@ -2,7 +2,7 @@ import type {
   Incident,
   Prescription,
   ProcedureRecord,
-  Resident,
+  ResidentListItem,
   Role,
   ServiceUsage,
 } from '@/src/types';
@@ -41,7 +41,7 @@ export interface TodayDashboardSummary {
 export interface TodayDashboardInput {
   role: Role;
   today: string;
-  residents: Resident[];
+  residents: ResidentListItem[];
   dailyRecords: DailyMonitoringRecord[];
   procedureRecords: ProcedureRecord[];
   incidents: Incident[];
@@ -65,7 +65,7 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-const getActiveResidents = (residents: Resident[]) =>
+const getActiveResidents = (residents: ResidentListItem[]) =>
   residents.filter((resident) => resident.status === 'Active');
 
 const hasAnyProcedure = (record: ProcedureRecord) =>
@@ -97,7 +97,7 @@ const isClinicalRecordAlert = (record: DailyMonitoringRecord) =>
   (record.temperature ?? 0) >= 38 ||
   (record.sp02 ?? 100) < 94;
 
-const findResidentName = (residents: Resident[], residentId: string) =>
+const findResidentName = (residents: ResidentListItem[], residentId: string) =>
   residents.find((resident) => resident.id === residentId)?.name ?? residentId;
 
 const getSharedMetrics = (input: TodayDashboardInput) => {

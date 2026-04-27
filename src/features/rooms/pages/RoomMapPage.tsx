@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { Resident, Room, User } from '../../../types/index';
+import { ResidentListItem, Room, User } from '../../../types/index';
 import { BUILDING_STRUCTURE } from '../../../constants/facility';
 import { generateRooms } from '../../../data/index';
 import { TransferRoomModal } from '../components/TransferRoomModal';
@@ -38,7 +38,7 @@ interface BedDetailModalProps {
    readOnly: boolean;
    onClose: () => void;
    onAction: (action: string, bedId: string) => void;
-   resident?: Resident;
+   resident?: ResidentListItem;
 }
 
 const BedDetailModal = ({
@@ -150,7 +150,7 @@ export const RoomMapPage = () => {
    const [isEditMode, setIsEditMode] = useState(false);
    const [editingRoom, setEditingRoom] = useState<{ roomNumber: string; bedCount: number; roomType: any } | null>(null);
    const [selectedBed, setSelectedBed] = useState<{ bed: any; roomNumber: string; roomType: string; building: string; floor: string } | null>(null);
-   const [transferResident, setTransferResident] = useState<Resident | null>(null);
+   const [transferResident, setTransferResident] = useState<ResidentListItem | null>(null);
    const [assignTarget, setAssignTarget] = useState<any | null>(null);
 
    useEffect(() => {

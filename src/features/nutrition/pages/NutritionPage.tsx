@@ -18,7 +18,7 @@ const DIET_CONFIG: Record<DietType, { label: string; color: string; icon: any; o
 
 export const NutritionPage = () => {
    const { user } = useAuthStore();
-   const { residents } = useResidentsStore();
+   const { residents, residentDetails, fetchResidentDetail } = useResidentsStore();
    const readOnly = useModuleReadOnly();
    const [searchTerm, setSearchTerm] = useState('');
    const printRef = useRef<HTMLDivElement>(null);
@@ -27,9 +27,14 @@ export const NutritionPage = () => {
 
    const activeResidents = residents.filter(r => r.status === 'Active');
 
+   React.useEffect(() => {
+      void Promise.all(activeResidents.map((resident) => fetchResidentDetail(resident.id))).catch(() => undefined);
+   }, [activeResidents, fetchResidentDetail]);
+
    const specialDietResidents = activeResidents.filter(r => {
+      const allergies = residentDetails[r.id]?.allergies || [];
       const isSpecialDiet = r.dietType !== 'Normal';
-      const hasAllergy = r.allergies && r.allergies.length > 0;
+      const hasAllergy = allergies.length > 0;
       const hasNote = r.dietNote && r.dietNote.trim().length > 0;
 
       const matchesSearch = r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -43,8 +48,8 @@ export const NutritionPage = () => {
       return a.room.localeCompare(b.room);
    });
 
-   const stats = activeResidents.reduce((acc, r) => {
-      const type = r.dietType as DietType;
+   const stats = activeResidents.reduce((acc, resident) => {
+      const type = resident.dietType as DietType;
       acc[type] = (acc[type] || 0) + 1;
       return acc;
    }, {} as Record<string, number>);
@@ -57,7 +62,6 @@ export const NutritionPage = () => {
       <div className="space-y-6 h-full flex flex-col">
          {readOnly && <ModuleReadOnlyBanner />}
 
-         {/* Header - Hidden on Print */}
          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
             <div>
                <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -87,7 +91,6 @@ export const NutritionPage = () => {
             </div>
          </div>
 
-         {/* Summary Cards */}
          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 print:grid-cols-5 print:gap-2">
             {(['Tube', 'Porridge', 'Soup', 'Pureed', 'Cut'] as DietType[]).map(type => (
                <div key={type} className={`p-4 rounded-xl border ${DIET_CONFIG[type].color} bg-opacity-50 border-white/50 shadow-sm print:border-slate-300 print:shadow-none`}>
@@ -104,11 +107,9 @@ export const NutritionPage = () => {
             ))}
          </div>
 
-         {/* Main Content Area */}
          <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 overflow-hidden flex flex-col print:shadow-none print:border-none print:h-auto">
-            {/* Print Header */}
             <div className="hidden print:block p-8 pb-0 text-center">
-               <h1 className="text-2xl font-bold uppercase text-slate-900 mb-2">Danh sách Chế độ ăn Đặc biệt</h1>
+               <h1 className="text-2xl font-bold uppercase text-slate-900 mb-2">Danh sách Chế độ Ăn Đặc biệt</h1>
                <p className="text-slate-500">Ngày: {new Date().toLocaleDateString('vi-VN')} | Giờ in: {new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
                <div className="mt-4 border-b border-slate-300 w-full"></div>
             </div>
@@ -131,44 +132,45 @@ export const NutritionPage = () => {
                            </td>
                         </tr>
                      ) : (
-                        specialDietResidents.map((r, idx) => {
-                           const dietConfig = DIET_CONFIG[r.dietType as DietType] || DIET_CONFIG.Normal;
+                        specialDietResidents.map((resident) => {
+                           const dietConfig = DIET_CONFIG[resident.dietType as DietType] || DIET_CONFIG.Normal;
+                           const allergies = residentDetails[resident.id]?.allergies || [];
+
                            return (
-                              <tr key={r.id} className="hover:bg-slate-50 print:hover:bg-transparent break-inside-avoid">
+                              <tr key={resident.id} className="hover:bg-slate-50 print:hover:bg-transparent break-inside-avoid">
                                  <td className="py-3 px-4 md:px-6 text-slate-800 font-medium align-top w-24">
-                                    {r.room}
+                                    {resident.room}
                                  </td>
                                  <td className="py-3 px-4 md:px-6 text-slate-800 font-bold align-top w-48">
-                                    {r.name}
+                                    {resident.name}
                                     <div className="text-xs text-slate-400 font-normal print:hidden">
-                                       {new Date().getFullYear() - new Date(r.dob).getFullYear()} tuổi
+                                       {new Date().getFullYear() - new Date(resident.dob).getFullYear()} tuổi
                                     </div>
                                  </td>
                                  <td className="py-3 px-4 md:px-6 align-top w-40">
                                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${dietConfig.color} print:bg-transparent print:text-black print:border print:border-slate-300 print:px-0 print:py-0`}>
-                                       {/* Icon only on screen */}
                                        <dietConfig.icon className="w-3.5 h-3.5 print:hidden" />
                                        {dietConfig.label.toUpperCase()}
                                     </span>
                                  </td>
                                  <td className="py-3 px-4 md:px-6 align-top">
                                     <div className="space-y-1">
-                                       {r.dietType === 'Tube' && (
+                                       {resident.dietType === 'Tube' && (
                                           <div className="text-sm text-red-700 font-medium">⚠️ Ăn qua Sonde</div>
                                        )}
-                                       {r.dietNote && (
+                                       {resident.dietNote && (
                                           <div className="text-sm text-slate-700">
                                              <span className="font-semibold text-slate-500 text-xs uppercase mr-1">Lưu ý:</span>
-                                             {r.dietNote}
+                                             {resident.dietNote}
                                           </div>
                                        )}
-                                       {r.allergies && r.allergies.length > 0 && (
+                                       {allergies.length > 0 && (
                                           <div className="text-sm text-red-600 font-medium bg-red-50 p-1.5 rounded inline-block print:bg-transparent print:p-0 print:text-black">
                                              <span className="font-bold text-red-700 text-xs uppercase mr-1 print:text-black">☠️ Dị ứng:</span>
-                                             {r.allergies.map(a => a.allergen).join(', ')}
+                                             {allergies.map(a => a.allergen).join(', ')}
                                           </div>
                                        )}
-                                       {!r.dietNote && (!r.allergies || r.allergies.length === 0) && r.dietType !== 'Normal' && (
+                                       {!resident.dietNote && allergies.length === 0 && resident.dietType !== 'Normal' && (
                                           <span className="text-slate-400 text-sm italic">-</span>
                                        )}
                                     </div>
@@ -181,7 +183,6 @@ export const NutritionPage = () => {
                </table>
             </div>
 
-            {/* Print Footer */}
             <div className="hidden print:flex justify-between mt-8 pt-8 px-8 text-sm text-slate-600">
                <div className="text-center">
                   <p className="font-bold mb-16">Người lập phiếu</p>

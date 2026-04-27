@@ -5,6 +5,7 @@ import { db } from '../services/databaseService';
 interface IncidentsState {
     incidents: Incident[];
     isLoading: boolean;
+    isLoaded: boolean;
     isSyncing: boolean;
     error: string | null;
 
@@ -16,6 +17,7 @@ interface IncidentsState {
 export const useIncidentsStore = create<IncidentsState>((set) => ({
     incidents: [],
     isLoading: false,
+    isLoaded: false,
     isSyncing: false,
     error: null,
 
@@ -23,7 +25,7 @@ export const useIncidentsStore = create<IncidentsState>((set) => ({
         set({ isLoading: true });
         try {
             const data = await db.incidents.getAll();
-            set({ incidents: data, isLoading: false });
+            set({ incidents: data, isLoading: false, isLoaded: true });
         } catch (error) {
             set({ error: (error as Error).message, isLoading: false });
         }
@@ -33,7 +35,7 @@ export const useIncidentsStore = create<IncidentsState>((set) => ({
         set({ isSyncing: true });
         try {
             await db.incidents.upsert(incident);
-            set(state => ({ incidents: [incident, ...state.incidents], isSyncing: false }));
+            set(state => ({ incidents: [incident, ...state.incidents], isSyncing: false, isLoaded: true }));
         } catch (error) {
             set({ error: (error as Error).message, isSyncing: false });
         }
@@ -45,7 +47,8 @@ export const useIncidentsStore = create<IncidentsState>((set) => ({
             await db.incidents.upsert(incident);
             set(state => ({
                 incidents: state.incidents.map(i => i.id === incident.id ? incident : i),
-                isSyncing: false
+                isSyncing: false,
+                isLoaded: true,
             }));
         } catch (error) {
             set({ error: (error as Error).message, isSyncing: false });

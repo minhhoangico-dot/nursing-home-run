@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowRight, BedDouble, Building, CheckCircle2 } from 'lucide-react';
-import { Resident } from '../../../types/index';
+import { ResidentListItem } from '../../../types/index';
 import { generateRooms } from '../../../data/index';
 import { Button, Modal } from '../../../components/ui/index';
 import { useToast } from '../../../app/providers';
 
 interface TransferRoomModalProps {
-   resident: Resident;
-   allResidents: Resident[];
+   resident: ResidentListItem;
+   allResidents: ResidentListItem[];
    readOnly?: boolean;
    onClose: () => void;
    onSave: (data: { room: string; bed: string; floor: string; building: string; roomType: any }) => void;

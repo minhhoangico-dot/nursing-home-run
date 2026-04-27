@@ -2,9 +2,60 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { DailyMonitoringRecord, DailyMonitoringUpdate } from '../types/dailyMonitoring';
 import { toast } from 'react-hot-toast';
+import { getDateMonthRange } from '@/src/utils/monthDateRange';
+
+export const DAILY_MONITORING_COLUMNS = [
+    'id',
+    'resident_id',
+    'record_date',
+    'sp02',
+    'pulse',
+    'temperature',
+    'bp_morning',
+    'bp_afternoon',
+    'bp_evening',
+    'blood_sugar',
+    'bowel_movements',
+    'notes',
+    'created_at',
+    'updated_at',
+    'created_by',
+].join(',');
+
+const getMonthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+const trimMonthCache = <T,>(recordsByMonth: Record<string, T[]>) => {
+    const keys = Object.keys(recordsByMonth).sort();
+
+    if (keys.length <= 3) {
+        return recordsByMonth;
+    }
+
+    const trimmed = { ...recordsByMonth };
+    const keysToRemove = keys.slice(0, keys.length - 3);
+    keysToRemove.forEach((key) => {
+        delete trimmed[key];
+    });
+    return trimmed;
+};
+
+const upsertMonthRecord = (records: DailyMonitoringRecord[], record: DailyMonitoringRecord) => {
+    const existingIndex = records.findIndex(
+        (currentRecord) => currentRecord.resident_id === record.resident_id && currentRecord.record_date === record.record_date,
+    );
+
+    if (existingIndex >= 0) {
+        const nextRecords = [...records];
+        nextRecords[existingIndex] = record;
+        return nextRecords;
+    }
+
+    return [...records, record];
+};
 
 interface MonitoringStore {
     records: DailyMonitoringRecord[];
+    recordsByMonth: Record<string, DailyMonitoringRecord[]>;
     isLoading: boolean;
     currentMonth: Date;
 
@@ -17,31 +68,46 @@ interface MonitoringStore {
 
 export const useMonitoringStore = create<MonitoringStore>((set, get) => ({
     records: [],
+    recordsByMonth: {},
     isLoading: false,
     currentMonth: new Date(),
 
     setCurrentMonth: (date: Date) => set({ currentMonth: date }),
 
     fetchDailyRecords: async (date: Date) => {
-        set({ isLoading: true });
-        try {
-            // Simplified: Fetch whole month or just specific days?
-            // The grid needs a month. `fetchRecords` was fetching a month.
-            // Let's assume the input `date` determines the month.
-            const year = date.getFullYear();
-            const month = date.getMonth() + 1;
+        const monthKey = getMonthKey(date);
+        const cachedRecords = get().recordsByMonth[monthKey];
 
-            const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-            const endDate = `${year}-${String(month).padStart(2, '0')}-31`; // Loose end date
+        if (cachedRecords) {
+            set({ records: cachedRecords, isLoading: false });
+        } else {
+            set({ isLoading: true });
+        }
+
+        try {
+            const { startDate, endDate } = getDateMonthRange(date);
 
             const { data, error } = await supabase
                 .from('daily_monitoring')
-                .select('*')
+                .select(DAILY_MONITORING_COLUMNS)
                 .gte('record_date', startDate)
                 .lte('record_date', endDate);
 
             if (error) throw error;
-            set({ records: data || [], isLoading: false });
+
+            const records = (data ?? []) as unknown as DailyMonitoringRecord[];
+            set((state) => {
+                const nextRecordsByMonth = trimMonthCache({
+                    ...state.recordsByMonth,
+                    [monthKey]: records,
+                });
+
+                return {
+                    records,
+                    recordsByMonth: nextRecordsByMonth,
+                    isLoading: false,
+                };
+            });
         } catch (error) {
             console.error('Error fetching daily records:', error);
             set({ isLoading: false });
@@ -51,24 +117,11 @@ export const useMonitoringStore = create<MonitoringStore>((set, get) => ({
     fetchLatestReadings: async () => {
         try {
             const { data, error } = await supabase
-                .from('daily_monitoring')
-                .select('*')
-                .order('resident_id', { ascending: true })
-                .order('record_date', { ascending: false });
+                .from('latest_daily_monitoring')
+                .select(DAILY_MONITORING_COLUMNS);
 
             if (error) throw error;
-
-            // Client-side distinct on resident_id since Supabase simple client doesn't support distinct on easy directly without raw SQL or rpc sometimes
-            // Actually, standard distinct on via query builder: .select('*').distinct('resident_id') ? No, syntax is different.
-            // Let's just do client side dedup for safety/speed now given dataset size is small.
-            const unique = new Map<string, DailyMonitoringRecord>();
-            data?.forEach(r => {
-                if (!unique.has(r.resident_id)) {
-                    unique.set(r.resident_id, r);
-                }
-            });
-
-            return Array.from(unique.values());
+            return (data ?? []) as unknown as DailyMonitoringRecord[];
         } catch (error) {
             console.error('Error fetching latest readings:', error);
             return [];
@@ -79,13 +132,13 @@ export const useMonitoringStore = create<MonitoringStore>((set, get) => ({
         try {
             const { data, error } = await supabase
                 .from('daily_monitoring')
-                .select('*')
+                .select(DAILY_MONITORING_COLUMNS)
                 .eq('resident_id', residentId)
                 .order('record_date', { ascending: false })
-                .limit(30); // Get last 30 entries
+                .limit(30);
 
             if (error) throw error;
-            return data || [];
+            return (data ?? []) as unknown as DailyMonitoringRecord[];
         } catch (error) {
             console.error('Error fetching resident records:', error);
             return [];
@@ -94,35 +147,31 @@ export const useMonitoringStore = create<MonitoringStore>((set, get) => ({
 
     updateRecord: async (update: DailyMonitoringUpdate) => {
         try {
-            // Upsert: Try to update if exists, or insert if not
-            // We use upsert matching on (resident_id, record_date) unique constraint
             const { data, error } = await supabase
                 .from('daily_monitoring')
                 .upsert({
                     ...update,
                     updated_at: new Date().toISOString()
                 }, { onConflict: 'resident_id,record_date' })
-                .select()
+                .select(DAILY_MONITORING_COLUMNS)
                 .single();
 
             if (error) throw error;
+            const record = data as unknown as DailyMonitoringRecord;
 
-            // Update local state if record belongs to current view (simple check)
-            // But we might be in ResidentDetail view where 'records' (monthly) isn't the main focus or is different
-            // We update 'records' anyway if it matches
-            set(state => {
-                const existingIndex = state.records.findIndex(
-                    r => r.resident_id === update.resident_id && r.record_date === update.record_date
-                );
+            set((state) => {
+                const monthKey = update.record_date.slice(0, 7);
+                const currentMonthKey = getMonthKey(state.currentMonth);
+                const cachedMonthRecords = state.recordsByMonth[monthKey] || (currentMonthKey === monthKey ? state.records : []);
+                const nextMonthRecords = upsertMonthRecord(cachedMonthRecords, record);
 
-                if (existingIndex >= 0) {
-                    const newRecords = [...state.records];
-                    newRecords[existingIndex] = data;
-                    return { records: newRecords };
-                } else {
-                    // Only add if it belongs to current month view? For now just add, simple
-                    return { records: [...state.records, data] };
-                }
+                return {
+                    records: currentMonthKey === monthKey ? nextMonthRecords : state.records,
+                    recordsByMonth: trimMonthCache({
+                        ...state.recordsByMonth,
+                        [monthKey]: nextMonthRecords,
+                    }),
+                };
             });
 
             toast.success('Đã lưu chỉ số');

@@ -8,13 +8,16 @@ import { useModuleReadOnly } from '../../../routes/ModuleAccessContext';
 import { useIncidentsStore } from '../../../stores/incidentsStore';
 import { useAuthStore } from '../../../stores/authStore';
 import { useResidentsStore } from '../../../stores/residentsStore';
+import { useDeferredStoreLoad } from '@/src/hooks/useDeferredStoreLoad';
 
 export const IncidentsPage = () => {
    const { user } = useAuthStore();
    const { residents } = useResidentsStore();
-   const { incidents, addIncident, updateIncident } = useIncidentsStore();
+   const { incidents, addIncident, updateIncident, fetchIncidents, isLoaded } = useIncidentsStore();
    const readOnly = useModuleReadOnly();
    const [showReportModal, setShowReportModal] = useState(false);
+
+   useDeferredStoreLoad(fetchIncidents, isLoaded);
 
    if (!user) return null;
 

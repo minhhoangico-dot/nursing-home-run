@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../../../stores/authStore';
 import { useResidentsStore } from '../../../stores/residentsStore';
 import { useFinanceStore } from '../../../stores/financeStore';
-import { Resident } from '../../../types/index';
+import { ResidentListItem } from '../../../types/index';
 import { INITIAL_PRICES } from '../../../data/index';
+import { useDeferredStoreLoad } from '@/src/hooks/useDeferredStoreLoad';
 
 import { MonthlyBillingConfig } from '../components/MonthlyBillingConfig';
 import { InvoicePreview } from '../components/InvoicePreview';
@@ -11,18 +12,20 @@ import { InvoicePreview } from '../components/InvoicePreview';
 export const FinancePage = () => {
    const { user } = useAuthStore();
    const { residents } = useResidentsStore();
-   const { usageRecords } = useFinanceStore();
+   const { usageRecords, fetchFinanceData, isLoaded } = useFinanceStore();
 
    const [previewData, setPreviewData] = useState<{
-      resident: Resident;
+      resident: ResidentListItem;
       month: string;
       fixedCosts: { name: string; amount: number }[];
       incurredCosts: any[];
    } | null>(null);
 
+   useDeferredStoreLoad(fetchFinanceData, isLoaded);
+
    if (!user) return null;
 
-   const handlePrintBill = (resident: Resident, month: string) => {
+   const handlePrintBill = (resident: ResidentListItem, month: string) => {
       // Re-calculate fixed costs logic to pass to preview
       // Ideally this helper logic should be shared or passed up, but for now duplicate the calculation or just trust the view.
       // Wait, MonthlyBillingConfig does the calculation inside.

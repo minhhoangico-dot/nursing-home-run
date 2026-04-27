@@ -1,12 +1,12 @@
 import React from 'react';
 import { X, Printer } from 'lucide-react';
-import { Resident, ServiceUsage } from '../../../types';
+import { ResidentListItem, ServiceUsage } from '../../../types';
 import { formatCurrency } from '../../../data/index';
 import { useFacilityBranding } from '@/src/hooks/useFacilityBranding';
 import { fallbackFacilityLogo } from '@/src/utils/facilityBranding';
 
 interface InvoicePreviewProps {
-    resident: Resident;
+    resident: ResidentListItem;
     month: string;
     fixedCosts: { name: string; amount: number }[];
     incurredCosts: ServiceUsage[];

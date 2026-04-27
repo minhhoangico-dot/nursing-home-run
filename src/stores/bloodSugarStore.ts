@@ -1,16 +1,40 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { BloodSugarRecord } from '../types';
+import { getYearMonthRange } from '@/src/utils/monthDateRange';
 
-interface BloodSugarState {
-    records: BloodSugarRecord[];
-    isLoading: boolean;
-    error: string | null;
-    fetchRecords: (residentId: string) => Promise<void>;
-    addRecord: (record: Omit<BloodSugarRecord, 'id' | 'createdAt'>) => Promise<void>;
-    updateRecord: (id: string, updates: Partial<BloodSugarRecord>) => Promise<void>;
-    fetchAllRecords: (month: string) => Promise<void>;
-}
+export const BLOOD_SUGAR_COLUMNS = [
+    'id',
+    'resident_id',
+    'record_date',
+    'morning_before_meal',
+    'morning_after_meal',
+    'lunch_before_meal',
+    'lunch_after_meal',
+    'dinner_before_meal',
+    'dinner_after_meal',
+    'insulin_units',
+    'insulin_time',
+    'administered_by',
+    'notes',
+    'created_at',
+    'created_by',
+].join(',');
+
+const trimMonthCache = <T,>(recordsByMonth: Record<string, T[]>) => {
+    const keys = Object.keys(recordsByMonth).sort();
+
+    if (keys.length <= 3) {
+        return recordsByMonth;
+    }
+
+    const trimmed = { ...recordsByMonth };
+    const keysToRemove = keys.slice(0, keys.length - 3);
+    keysToRemove.forEach((key) => {
+        delete trimmed[key];
+    });
+    return trimmed;
+};
 
 const mapRecord = (record: any): BloodSugarRecord => ({
     id: record.id,
@@ -60,8 +84,32 @@ const buildUpdates = (updates: Partial<BloodSugarRecord>) => {
     return dbUpdates;
 };
 
-export const useBloodSugarStore = create<BloodSugarState>((set) => ({
+const upsertMonthRecord = (records: BloodSugarRecord[], record: BloodSugarRecord) => {
+    const existingIndex = records.findIndex((currentRecord) => currentRecord.id === record.id);
+
+    if (existingIndex >= 0) {
+        const nextRecords = [...records];
+        nextRecords[existingIndex] = record;
+        return nextRecords;
+    }
+
+    return [record, ...records];
+};
+
+interface BloodSugarState {
+    records: BloodSugarRecord[];
+    recordsByMonth: Record<string, BloodSugarRecord[]>;
+    isLoading: boolean;
+    error: string | null;
+    fetchRecords: (residentId: string) => Promise<void>;
+    addRecord: (record: Omit<BloodSugarRecord, 'id' | 'createdAt'>) => Promise<void>;
+    updateRecord: (id: string, updates: Partial<BloodSugarRecord>) => Promise<void>;
+    fetchAllRecords: (month: string) => Promise<void>;
+}
+
+export const useBloodSugarStore = create<BloodSugarState>((set, get) => ({
     records: [],
+    recordsByMonth: {},
     isLoading: false,
     error: null,
 
@@ -70,7 +118,7 @@ export const useBloodSugarStore = create<BloodSugarState>((set) => ({
         try {
             const { data, error } = await supabase
                 .from('blood_sugar_records')
-                .select('*')
+                .select(BLOOD_SUGAR_COLUMNS)
                 .eq('resident_id', residentId)
                 .order('record_date', { ascending: false });
 
@@ -86,24 +134,35 @@ export const useBloodSugarStore = create<BloodSugarState>((set) => ({
     },
 
     fetchAllRecords: async (month) => {
-        set({ isLoading: true, error: null });
+        const cachedRecords = get().recordsByMonth[month];
+
+        if (cachedRecords) {
+            set({ records: cachedRecords, isLoading: false, error: null });
+        } else {
+            set({ isLoading: true, error: null });
+        }
+
         try {
-            const start = `${month}-01`;
-            const end = `${month}-31`;
+            const { startDate: start, endDate: end } = getYearMonthRange(month);
 
             const { data, error } = await supabase
                 .from('blood_sugar_records')
-                .select('*')
+                .select(BLOOD_SUGAR_COLUMNS)
                 .gte('record_date', start)
                 .lte('record_date', end)
                 .order('record_date', { ascending: false });
 
             if (error) throw error;
 
-            set({
-                records: (data || []).map(mapRecord),
-                isLoading: false
-            });
+            const records = (data || []).map(mapRecord);
+            set((state) => ({
+                records,
+                recordsByMonth: trimMonthCache({
+                    ...state.recordsByMonth,
+                    [month]: records,
+                }),
+                isLoading: false,
+            }));
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
         }
@@ -115,13 +174,22 @@ export const useBloodSugarStore = create<BloodSugarState>((set) => ({
             const { data, error } = await supabase
                 .from('blood_sugar_records')
                 .insert(buildInsert(record))
-                .select()
+                .select(BLOOD_SUGAR_COLUMNS)
                 .single();
 
             if (error) throw error;
 
+            const mappedRecord = mapRecord(data);
+            const monthKey = mappedRecord.recordDate.slice(0, 7);
+
             set((state) => ({
-                records: [mapRecord(data), ...state.records],
+                records: [mappedRecord, ...state.records],
+                recordsByMonth: state.recordsByMonth[monthKey]
+                    ? trimMonthCache({
+                        ...state.recordsByMonth,
+                        [monthKey]: upsertMonthRecord(state.recordsByMonth[monthKey], mappedRecord),
+                    })
+                    : state.recordsByMonth,
                 isLoading: false
             }));
         } catch (error: any) {
@@ -140,10 +208,29 @@ export const useBloodSugarStore = create<BloodSugarState>((set) => ({
 
             if (error) throw error;
 
-            set((state) => ({
-                records: state.records.map(record => record.id === id ? { ...record, ...updates } : record),
-                isLoading: false
-            }));
+            set((state) => {
+                const records = state.records.map((record) => record.id === id ? { ...record, ...updates } : record);
+                const updatedRecord = records.find((record) => record.id === id);
+
+                if (!updatedRecord) {
+                    return {
+                        records,
+                        isLoading: false,
+                    };
+                }
+
+                const monthKey = updatedRecord.recordDate.slice(0, 7);
+                return {
+                    records,
+                    recordsByMonth: state.recordsByMonth[monthKey]
+                        ? trimMonthCache({
+                            ...state.recordsByMonth,
+                            [monthKey]: upsertMonthRecord(state.recordsByMonth[monthKey], updatedRecord),
+                        })
+                        : state.recordsByMonth,
+                    isLoading: false
+                };
+            });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
             throw error;

@@ -1,79 +1,173 @@
 import { create } from 'zustand';
-import { Resident } from '../types';
+import { Resident, ResidentListItem } from '../types';
 import { db } from '../services/databaseService';
+import { mapResidentToListItem } from '../services/residentService';
+
+type SelectedResident = ResidentListItem | Resident;
+
+const residentDetailRequests = new Map<string, Promise<Resident>>();
+
+const isResidentDetail = (resident: Resident | ResidentListItem): resident is Resident =>
+    Array.isArray((resident as Resident).assessments) &&
+    Array.isArray((resident as Resident).prescriptions) &&
+    Array.isArray((resident as Resident).medicalHistory);
 
 interface ResidentsState {
-    residents: Resident[];
-    selectedResident: Resident | null;
+    residents: ResidentListItem[];
+    residentDetails: Record<string, Resident>;
+    selectedResident: SelectedResident | null;
     isLoading: boolean;
     isSyncing: boolean; // For background syncs
     error: string | null;
 
     fetchResidents: () => Promise<void>;
+    fetchResidentDetail: (id: string) => Promise<Resident>;
     addResident: (resident: Resident) => Promise<void>;
-    updateResident: (resident: Resident) => Promise<void>;
+    updateResident: (resident: Resident | ResidentListItem) => Promise<void>;
     deleteResident: (id: string) => Promise<void>; // Note: DB service needs delete method or we just hide it?
-    selectResident: (resident: Resident | null) => void;
+    selectResident: (resident: SelectedResident | null) => void;
 }
 
-export const useResidentsStore = create<ResidentsState>((set, get) => ({
-    residents: [],
-    selectedResident: null,
-    isLoading: false,
-    isSyncing: false,
-    error: null,
-
-    fetchResidents: async () => {
-        set({ isLoading: true, error: null });
-        try {
-            const residents = await db.residents.getAll();
-            set({ residents, isLoading: false });
-        } catch (error) {
-            set({ error: (error as Error).message, isLoading: false });
+export const useResidentsStore = create<ResidentsState>((set, get) => {
+    const loadResidentDetail = async (id: string) => {
+        const existingRequest = residentDetailRequests.get(id);
+        if (existingRequest) {
+            return existingRequest;
         }
-    },
 
-    addResident: async (resident) => {
-        set({ isSyncing: true, error: null });
-        // Optimistic update
-        const currentResidents = get().residents;
-        set({ residents: [resident, ...currentResidents] });
+        const request = db.residents
+            .getById(id)
+            .then((resident) => {
+                set((state) => ({
+                    residentDetails: {
+                        ...state.residentDetails,
+                        [id]: resident,
+                    },
+                    residents: state.residents.map((item) =>
+                        item.id === id ? mapResidentToListItem(resident) : item,
+                    ),
+                    selectedResident: state.selectedResident?.id === id ? resident : state.selectedResident,
+                }));
+                return resident;
+            })
+            .catch((error) => {
+                set({ error: (error as Error).message });
+                throw error;
+            })
+            .finally(() => {
+                residentDetailRequests.delete(id);
+            });
 
-        try {
-            await db.residents.upsert(resident);
-            set({ isSyncing: false });
-        } catch (error) {
-            // Revert on error
-            set({ residents: currentResidents, error: (error as Error).message, isSyncing: false });
-            throw error;
-        }
-    },
+        residentDetailRequests.set(id, request);
+        return request;
+    };
 
-    updateResident: async (resident) => {
-        set({ isSyncing: true, error: null });
-        const currentResidents = get().residents;
-        const currentSelected = get().selectedResident;
+    return {
+        residents: [],
+        residentDetails: {},
+        selectedResident: null,
+        isLoading: false,
+        isSyncing: false,
+        error: null,
 
-        // Optimistic update
-        set({
-            residents: currentResidents.map(r => r.id === resident.id ? resident : r),
-            selectedResident: currentSelected?.id === resident.id ? resident : currentSelected
-        });
+        fetchResidents: async () => {
+            set({ isLoading: true, error: null });
+            try {
+                const residents = await db.residents.getAll();
+                set({ residents, isLoading: false });
+            } catch (error) {
+                set({ error: (error as Error).message, isLoading: false });
+            }
+        },
 
-        try {
-            await db.residents.upsert(resident);
-            set({ isSyncing: false });
-        } catch (error) {
-            set({ residents: currentResidents, selectedResident: currentSelected, error: (error as Error).message, isSyncing: false });
-            throw error;
-        }
-    },
+        fetchResidentDetail: async (id) => {
+            const cachedResident = get().residentDetails[id];
+            if (cachedResident) {
+                void loadResidentDetail(id).catch(() => undefined);
+                return cachedResident;
+            }
 
-    deleteResident: async (id) => {
-        // Not implemented in DB service yet, just local state removal for now
-        const currentResidents = get().residents;
-        set({ residents: currentResidents.filter(r => r.id !== id) });
-    },
+            return loadResidentDetail(id);
+        },
 
-    selectResident: (resident) => set({ selectedResident: resident }),
-}));
+        addResident: async (resident) => {
+            set({ isSyncing: true, error: null });
+            const currentResidents = get().residents;
+            const currentResidentDetails = get().residentDetails;
+
+            set({
+                residents: [mapResidentToListItem(resident), ...currentResidents],
+                residentDetails: {
+                    ...currentResidentDetails,
+                    [resident.id]: resident,
+                },
+            });
+
+            try {
+                await db.residents.upsert(resident);
+                set({ isSyncing: false });
+            } catch (error) {
+                set({
+                    residents: currentResidents,
+                    residentDetails: currentResidentDetails,
+                    error: (error as Error).message,
+                    isSyncing: false,
+                });
+                throw error;
+            }
+        },
+
+        updateResident: async (resident) => {
+            set({ isSyncing: true, error: null });
+            const currentResidents = get().residents;
+            const currentResidentDetails = get().residentDetails;
+            const currentSelected = get().selectedResident;
+
+            const fullResident = isResidentDetail(resident)
+                ? resident
+                : {
+                    ...(get().residentDetails[resident.id] || await get().fetchResidentDetail(resident.id)),
+                    ...resident,
+                };
+
+            set({
+                residents: currentResidents.map((item) =>
+                    item.id === fullResident.id ? mapResidentToListItem(fullResident) : item,
+                ),
+                residentDetails: {
+                    ...currentResidentDetails,
+                    [fullResident.id]: fullResident,
+                },
+                selectedResident: currentSelected?.id === fullResident.id ? fullResident : currentSelected,
+            });
+
+            try {
+                await db.residents.upsert(fullResident);
+                set({ isSyncing: false });
+            } catch (error) {
+                set({
+                    residents: currentResidents,
+                    residentDetails: currentResidentDetails,
+                    selectedResident: currentSelected,
+                    error: (error as Error).message,
+                    isSyncing: false,
+                });
+                throw error;
+            }
+        },
+
+        deleteResident: async (id) => {
+            const currentResidents = get().residents;
+            const currentResidentDetails = get().residentDetails;
+            const { [id]: _deletedResident, ...remainingResidentDetails } = currentResidentDetails;
+
+            set({
+                residents: currentResidents.filter((resident) => resident.id !== id),
+                residentDetails: remainingResidentDetails,
+                selectedResident: get().selectedResident?.id === id ? null : get().selectedResident,
+            });
+        },
+
+        selectResident: (resident) => set({ selectedResident: resident }),
+    };
+});

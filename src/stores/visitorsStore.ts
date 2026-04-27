@@ -5,6 +5,7 @@ import { db } from '../services/databaseService';
 interface VisitorsState {
     visitors: VisitorLog[];
     isLoading: boolean;
+    isLoaded: boolean;
     error: string | null;
 
     fetchVisitors: () => Promise<void>;
@@ -15,13 +16,14 @@ interface VisitorsState {
 export const useVisitorsStore = create<VisitorsState>((set, get) => ({
     visitors: [],
     isLoading: false,
+    isLoaded: false,
     error: null,
 
     fetchVisitors: async () => {
         set({ isLoading: true });
         try {
             const data = await db.visitors.getAll();
-            set({ visitors: data, isLoading: false });
+            set({ visitors: data, isLoading: false, isLoaded: true });
         } catch (error) {
             set({ error: (error as Error).message, isLoading: false });
         }
@@ -31,7 +33,7 @@ export const useVisitorsStore = create<VisitorsState>((set, get) => ({
         set({ isLoading: true });
         try {
             await db.visitors.upsert(log);
-            set(state => ({ visitors: [log, ...state.visitors], isLoading: false }));
+            set(state => ({ visitors: [log, ...state.visitors], isLoading: false, isLoaded: true }));
         } catch (error) {
             set({ error: (error as Error).message, isLoading: false });
         }
@@ -46,7 +48,8 @@ export const useVisitorsStore = create<VisitorsState>((set, get) => ({
                 await db.visitors.upsert(updated);
                 set(state => ({
                     visitors: state.visitors.map(v => v.id === id ? updated : v),
-                    isLoading: false
+                    isLoading: false,
+                    isLoaded: true,
                 }));
             }
         } catch (error) {

@@ -8,6 +8,7 @@ import { db } from '../services/databaseService';
 interface RoomsState {
     maintenanceRequests: MaintenanceRequest[];
     isLoading: boolean;
+    isLoaded: boolean;
     isSyncing: boolean;
     error: string | null;
 
@@ -19,6 +20,7 @@ interface RoomsState {
 export const useRoomsStore = create<RoomsState>((set) => ({
     maintenanceRequests: [],
     isLoading: false,
+    isLoaded: false,
     isSyncing: false,
     error: null,
 
@@ -26,7 +28,7 @@ export const useRoomsStore = create<RoomsState>((set) => ({
         set({ isLoading: true });
         try {
             const reqs = await db.maintenance.getAll();
-            set({ maintenanceRequests: reqs, isLoading: false });
+            set({ maintenanceRequests: reqs, isLoading: false, isLoaded: true });
         } catch (error) {
             set({ error: (error as Error).message, isLoading: false });
         }
@@ -36,7 +38,7 @@ export const useRoomsStore = create<RoomsState>((set) => ({
         set({ isSyncing: true });
         try {
             await db.maintenance.upsert(req);
-            set(state => ({ maintenanceRequests: [req, ...state.maintenanceRequests], isSyncing: false }));
+            set(state => ({ maintenanceRequests: [req, ...state.maintenanceRequests], isSyncing: false, isLoaded: true }));
         } catch (error) {
             set({ error: (error as Error).message, isSyncing: false });
         }
@@ -47,7 +49,7 @@ export const useRoomsStore = create<RoomsState>((set) => ({
         try {
             // Bulk upsert logic
             await db.maintenance.bulkUpsert(reqs);
-            set({ maintenanceRequests: reqs, isSyncing: false });
+            set({ maintenanceRequests: reqs, isSyncing: false, isLoaded: true });
         } catch (error) {
             set({ error: (error as Error).message, isSyncing: false });
         }

@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Search, ChevronRight, Printer, AlertCircle } from 'lucide-react';
-import { Resident, ServiceUsage } from '../../../types/index';
+import { ResidentListItem, ServiceUsage } from '../../../types/index';
 import { formatCurrency } from '../../../data/index';
 import { INITIAL_PRICES } from '../../../data/index';
 
 interface MonthlyBillingConfigProps {
-    residents: Resident[];
+    residents: ResidentListItem[];
     usageRecords: ServiceUsage[];
-    onPrintBill: (resident: Resident, month: string) => void;
+    onPrintBill: (resident: ResidentListItem, month: string) => void;
 }
 
 export const MonthlyBillingConfig = ({ residents, usageRecords, onPrintBill }: MonthlyBillingConfigProps) => {
@@ -20,7 +20,7 @@ export const MonthlyBillingConfig = ({ residents, usageRecords, onPrintBill }: M
     };
 
     // Helper to calculate fixed costs
-    const calculateFixedCosts = (resident: Resident) => {
+    const calculateFixedCosts = (resident: ResidentListItem) => {
         let total = 0;
         const details = [];
 

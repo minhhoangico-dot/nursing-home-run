@@ -7,6 +7,7 @@ interface FinanceState {
     servicePrices: ServicePrice[];
     usageRecords: ServiceUsage[];
     isLoading: boolean;
+    isLoaded: boolean;
     isSyncing: boolean;
     error: string | null;
 
@@ -23,6 +24,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     servicePrices: [],
     usageRecords: [],
     isLoading: false,
+    isLoaded: false,
     isSyncing: false,
     error: null,
 
@@ -34,7 +36,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
                 db.finance.getPrices(),
                 db.finance.getUsage()
             ]);
-            set({ transactions, servicePrices: prices, usageRecords: usage, isLoading: false });
+            set({ transactions, servicePrices: prices, usageRecords: usage, isLoading: false, isLoaded: true });
         } catch (error) {
             set({ error: (error as Error).message, isLoading: false });
         }
@@ -44,7 +46,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         set({ isSyncing: true });
         try {
             await db.finance.addTransaction(t);
-            set(state => ({ transactions: [t, ...state.transactions], isSyncing: false }));
+            set(state => ({ transactions: [t, ...state.transactions], isSyncing: false, isLoaded: true }));
         } catch (error) {
             set({ error: (error as Error).message, isSyncing: false });
         }
@@ -59,7 +61,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
                 const newPrices = exists
                     ? state.servicePrices.map(s => s.id === p.id ? p : s)
                     : [...state.servicePrices, p];
-                return { servicePrices: newPrices, isSyncing: false };
+                return { servicePrices: newPrices, isSyncing: false, isLoaded: true };
             });
         } catch (error) {
             set({ error: (error as Error).message, isSyncing: false });
@@ -70,7 +72,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         set({ isSyncing: true });
         try {
             await db.finance.deletePrice(id);
-            set(state => ({ servicePrices: state.servicePrices.filter(s => s.id !== id), isSyncing: false }));
+            set(state => ({ servicePrices: state.servicePrices.filter(s => s.id !== id), isSyncing: false, isLoaded: true }));
         } catch (error) {
             set({ error: (error as Error).message, isSyncing: false });
         }
@@ -80,7 +82,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         set({ isSyncing: true });
         try {
             await db.finance.upsertUsage(u);
-            set(state => ({ usageRecords: [u, ...state.usageRecords], isSyncing: false }));
+            set(state => ({ usageRecords: [u, ...state.usageRecords], isSyncing: false, isLoaded: true }));
         } catch (error) {
             set({ error: (error as Error).message, isSyncing: false });
         }
@@ -102,7 +104,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
                 return Promise.resolve();
             }));
 
-            set({ isSyncing: false });
+            set({ isSyncing: false, isLoaded: true });
         } catch (error) {
             set({ error: (error as Error).message, isSyncing: false });
             // Could revert here if strict

@@ -9,7 +9,7 @@ export interface CareLog {
   importance?: 'Normal' | 'High';
 }
 
-export interface Resident {
+export interface ResidentListItem {
   id: string;
   clinicCode?: string;
   name: string;
@@ -25,14 +25,6 @@ export interface Resident {
   guardianName: string;
   guardianPhone: string;
   balance: number;
-  assessments: Assessment[];
-  prescriptions: Prescription[];
-  medicalVisits: MedicalVisit[];
-  specialMonitoring: MonitoringPlan[];
-  medicalHistory: MedicalCondition[];
-  allergies: Allergy[];
-  vitalSigns?: VitalSign[];
-  careLogs: CareLog[];
   currentConditionNote: string;
   lastMedicalUpdate: string;
   lastUpdatedBy?: string;
@@ -41,6 +33,17 @@ export interface Resident {
   dietNote?: string;
   isDiabetic: boolean;
   height?: number; // In meters
+}
+
+export interface Resident extends ResidentListItem {
+  assessments: Assessment[];
+  prescriptions: Prescription[];
+  medicalVisits: MedicalVisit[];
+  specialMonitoring: MonitoringPlan[];
+  medicalHistory: MedicalCondition[];
+  allergies: Allergy[];
+  vitalSigns?: VitalSign[];
+  careLogs: CareLog[];
   locationStatus?: 'Present' | 'Home' | 'Hospital';
   absentStartDate?: string; // ISO Date String
 }
