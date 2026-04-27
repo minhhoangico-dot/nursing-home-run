@@ -8,6 +8,7 @@ import { AssessmentWizard } from '@/src/features/assessments/components/Assessme
 import { ResidentBasicInfo } from '../components/ResidentBasicInfo';
 import { ResidentDetail } from '../components/ResidentDetail';
 import { EditResidentModal } from '../components/EditResidentModal';
+import { TransferRoomModal } from '@/src/features/rooms/components/TransferRoomModal';
 import { ModuleReadOnlyBanner } from '@/src/components/ui/ModuleReadOnlyBanner';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useResidentsStore } from '@/src/stores/residentsStore';
@@ -25,6 +26,7 @@ export const ResidentDetailPage = () => {
 
    const [showAssessmentWizard, setShowAssessmentWizard] = useState(false);
    const [showEditModal, setShowEditModal] = useState(false);
+   const [showTransferModal, setShowTransferModal] = useState(false);
 
    const resident = id ? residentDetails[id] : undefined;
    const residentListItem = residents.find(r => r.id === id);
@@ -95,6 +97,25 @@ export const ResidentDetailPage = () => {
       }
    };
 
+   const handleTransfer = async (data: {
+      room: string;
+      bed: string;
+      floor: string;
+      building: string;
+      roomType: string;
+   }) => {
+      if (isReadOnly) return;
+
+      try {
+         await updateResident({ ...resident, ...data } as typeof resident);
+         setShowTransferModal(false);
+         toast.success('Chuyển phòng thành công');
+      } catch (error) {
+         const message = error instanceof Error && error.message ? error.message : `Không thể chuyển phòng cho ${resident.name}.`;
+         toast.error(message);
+      }
+   };
+
    const handleMedicalUpdate = async (updatedResident: any) => {
       if (isReadOnly) return;
 
@@ -125,6 +146,19 @@ export const ResidentDetailPage = () => {
                onSave={handleUpdateInfo}
                existingCodes={residents.map(r => r.clinicCode || '').filter(Boolean)}
                readOnly={isReadOnly}
+               onRequestTransfer={() => {
+                  setShowEditModal(false);
+                  setShowTransferModal(true);
+               }}
+            />
+         )}
+
+         {showTransferModal && !isReadOnly && (
+            <TransferRoomModal
+               resident={resident}
+               allResidents={residents}
+               onClose={() => setShowTransferModal(false)}
+               onSave={handleTransfer}
             />
          )}
 

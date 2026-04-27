@@ -78,7 +78,7 @@ const mapResidentToDb = (resident: Resident) => ({
     vital_signs: resident.vitalSigns,
     care_logs: resident.careLogs,
     current_condition_note: resident.currentConditionNote,
-    last_medical_update: resident.lastMedicalUpdate,
+    last_medical_update: resident.lastMedicalUpdate || null,
     last_updated_by: resident.lastUpdatedBy,
     room_type: resident.roomType,
     diet_type: resident.dietType,

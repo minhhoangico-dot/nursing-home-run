@@ -24,6 +24,13 @@ export interface ResidentListItem {
   admissionDate: string;
   guardianName: string;
   guardianPhone: string;
+  guardianAddress?: string;
+  guardianIdCard?: string;
+  guardianRelation?: string;
+  idCard?: string;
+  contractNumber?: string;
+  contractSignedDate?: string;
+  contractMonthlyFee?: number;
   balance: number;
   currentConditionNote: string;
   lastMedicalUpdate: string;

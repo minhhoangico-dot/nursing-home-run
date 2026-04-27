@@ -94,6 +94,8 @@ export const ResidentListPage = () => {
                onSave={handleAddResident}
                onCancel={() => setShowWizard(false)}
                existingCodes={residents.map(r => r.clinicCode || '').filter(Boolean)}
+               existingContractNumbers={residents.map(r => r.contractNumber || '').filter(Boolean)}
+               allResidents={residents}
             />
          )}
 

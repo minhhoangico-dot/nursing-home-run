@@ -38,7 +38,7 @@ export const MedicalInfoModal = ({ user, resident, onClose, onSave }: { user: Us
       currentConditionNote: note,
       medicalHistory: history,
       allergies: allergies,
-      lastMedicalUpdate: new Date().toLocaleDateString('vi-VN'),
+      lastMedicalUpdate: new Date().toISOString().slice(0, 10),
       lastUpdatedBy: user.name
     });
     onClose();
