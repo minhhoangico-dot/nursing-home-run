@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, ChevronRight, Printer, AlertCircle } from 'lucide-react';
 import { ResidentListItem, ServiceUsage } from '../../../types/index';
 import { formatCurrency } from '../../../data/index';
-import { INITIAL_PRICES } from '../../../data/index';
+import { calculateFixedCosts, getMonthlyUsage } from '../utils/calculateMonthlyBilling';
 
 interface MonthlyBillingConfigProps {
     residents: ResidentListItem[];
@@ -19,46 +19,11 @@ export const MonthlyBillingConfig = ({ residents, usageRecords, onPrintBill }: M
         setExpandedResidentId(prev => prev === id ? null : id);
     };
 
-    // Helper to calculate fixed costs
-    const calculateFixedCosts = (resident: ResidentListItem) => {
-        let total = 0;
-        const details = [];
-
-        // Room Cost
-        const roomPrice = INITIAL_PRICES.find(p => p.category === 'ROOM' && p.name.includes(resident.roomType))?.price || 0;
-        if (roomPrice > 0) {
-            total += roomPrice;
-            details.push({ name: `Phòng ${resident.roomType}`, amount: roomPrice });
-        }
-
-        // Care Cost
-        const carePrice = INITIAL_PRICES.find(p => p.category === 'CARE' && p.name.includes(`Cấp độ ${resident.careLevel}`))?.price || 0;
-        if (carePrice > 0) {
-            total += carePrice;
-            details.push({ name: `CS Cấp độ ${resident.careLevel}`, amount: carePrice });
-        }
-
-        // Meal Cost
-        const mealPrice = INITIAL_PRICES.find(p => p.category === 'MEAL' && p.name.includes('Suất ăn tiêu chuẩn'))?.price || 0;
-        if (resident.dietType !== 'Tube') {
-            total += mealPrice;
-            details.push({ name: 'Suất ăn tiêu chuẩn', amount: mealPrice });
-        }
-
-        return { total, details };
-    };
-
     const billingData = useMemo(() => {
         return residents.map(resident => {
-            // Fixed Costs
             const fixed = calculateFixedCosts(resident);
 
-            // Incurred Costs (Usage Records for selected month)
-            const monthlyUsage = usageRecords.filter(u =>
-                u.residentId === resident.id &&
-                u.date.startsWith(selectedMonth)
-            );
-
+            const monthlyUsage = getMonthlyUsage(usageRecords, resident.id, selectedMonth);
             const incurredTotal = monthlyUsage.reduce((sum, u) => sum + u.totalAmount, 0);
 
             // Total Due

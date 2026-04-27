@@ -20,6 +20,7 @@ export const Tabs = ({ tabs, activeTab, onChange, className = '' }: TabsProps) =
         {tabs.map(tab => (
           <button
             key={tab.id}
+            type="button"
             onClick={() => onChange(tab.id)}
             className={`pb-3 px-3 md:px-1 text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-2 flex-shrink-0 touch-target ${activeTab === tab.id
                 ? 'text-teal-600 border-b-2 border-teal-600'

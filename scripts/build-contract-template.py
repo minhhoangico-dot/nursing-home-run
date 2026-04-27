@@ -1,7 +1,10 @@
 """
 One-off generator: convert the lawyer-approved contract sample
-(`docs/HĐ MẪU 3 PHỤ LỤC 4.2026.docx`) into a docxtemplater-ready
-template at `public/templates/contract_template_v1.docx`.
+(`docs/HĐ MẪU 3 PHỤ LỤC 4.2026.docx`) into two docxtemplater-ready files:
+
+  - `public/templates/contract_template_v1.docx` — full contract
+  - `public/templates/assessment_template_v1.docx` — Phụ lục 2 only
+    (Phiếu đánh giá mức độ chăm sóc NCT)
 
 Run from repo root:
     python scripts/build-contract-template.py
@@ -17,6 +20,7 @@ from docx.oxml.ns import qn
 
 SOURCE = Path("docs/HĐ MẪU 3 PHỤ LỤC 4.2026.docx")
 DEST = Path("public/templates/contract_template_v1.docx")
+DEST_ASSESSMENT = Path("public/templates/assessment_template_v1.docx")
 
 
 def replace_in_runs(paragraph, old: str, new: str) -> bool:
@@ -163,6 +167,97 @@ def main() -> None:
 
     doc.save(str(DEST))
     print(f"Wrote {DEST}")
+
+    build_assessment_template()
+
+
+# ── Phụ lục 2: Phiếu đánh giá cấp độ chăm sóc ─────────────────────────────
+# Spans body children from the paragraph "ĐÁNH GIÁ MỨC ĐỘ CHĂM SÓC NGƯỜI CAO TUỔI"
+# through the signature table that immediately follows P232. Detected by
+# scanning paragraph text for the start/end markers so that small edits to
+# the contract source (extra blank paragraphs, etc.) don't break extraction.
+
+ASSESSMENT_START_TEXT = "ĐÁNH GIÁ MỨC ĐỘ CHĂM SÓC NGƯỜI CAO TUỔI"
+ASSESSMENT_NEXT_PHU_LUC_TEXT = "CAM KẾT CỦA BÊN A"
+
+
+def build_assessment_template() -> None:
+    doc = Document(str(SOURCE))
+    body = doc.element.body
+
+    children = list(body.iterchildren())
+
+    start_idx = None
+    end_idx = None  # exclusive — first child that belongs to Phụ lục 3
+    for idx, child in enumerate(children):
+        if child.tag != qn("w:p"):
+            continue
+        text = "".join(t.text or "" for t in child.iter(qn("w:t")))
+        if start_idx is None and ASSESSMENT_START_TEXT in text:
+            start_idx = idx
+        elif start_idx is not None and ASSESSMENT_NEXT_PHU_LUC_TEXT in text:
+            end_idx = idx
+            break
+
+    if start_idx is None or end_idx is None:
+        raise SystemExit(
+            f"Could not locate Phụ lục 2 boundaries in {SOURCE}. "
+            f"start={start_idx}, end={end_idx}"
+        )
+
+    # Trim trailing empty paragraphs and the signature table that belongs
+    # to the next section's page break. We keep everything up to (but not
+    # including) end_idx, then walk back to drop trailing blanks.
+    keep_until = end_idx - 1
+    while keep_until > start_idx:
+        c = children[keep_until]
+        if c.tag == qn("w:p"):
+            text = "".join(t.text or "" for t in c.iter(qn("w:t"))).strip()
+            if not text:
+                keep_until -= 1
+                continue
+        break
+
+    # Remove children outside [start_idx, keep_until]
+    for idx, child in enumerate(children):
+        if idx < start_idx or idx > keep_until:
+            parent = child.getparent()
+            if parent is not None:
+                parent.remove(child)
+
+    # Apply placeholder substitutions on the remaining content.
+    # Header "(Kèm theo thỏa thuận số ...)" becomes contract-aware.
+    for p in doc.paragraphs:
+        if p.text.startswith("(Kèm theo thỏa thuận số"):
+            replace_in_runs(
+                p,
+                "(Kèm theo thỏa thuận số         /202 /DV-VDL ngày)",
+                "(Kèm theo thỏa thuận số {contract_number}/2026/DV-VDL ngày {signed_date_full})",
+            )
+            break
+
+    # Resident metadata fields (P190-P193 in source). Match by line prefix
+    # because dotted fillers vary slightly.
+    field_replacements = [
+        ("Họ và tên người NCT:", "Họ và tên người NCT: {resident_name}"),
+        ("Ngày tháng năm sinh:", "Ngày tháng năm sinh: {resident_dob}"),
+        ("Ngày đánh giá:", "Ngày đánh giá: {assessment_date}"),
+        ("Người đánh giá (Họ tên/Chức vụ):", "Người đánh giá (Họ tên/Chức vụ): {assessor_name}"),
+    ]
+
+    for p in doc.paragraphs:
+        text = p.text
+        for prefix, replacement in field_replacements:
+            if text.startswith(prefix):
+                # Replace whole paragraph text via runs
+                for r in list(p.runs):
+                    r._element.getparent().remove(r._element)
+                p.add_run(replacement)
+                break
+
+    DEST_ASSESSMENT.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(str(DEST_ASSESSMENT))
+    print(f"Wrote {DEST_ASSESSMENT}")
 
 
 if __name__ == "__main__":

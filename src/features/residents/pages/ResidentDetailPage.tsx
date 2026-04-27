@@ -8,7 +8,13 @@ import { AssessmentWizard } from '@/src/features/assessments/components/Assessme
 import { ResidentBasicInfo } from '../components/ResidentBasicInfo';
 import { ResidentDetail } from '../components/ResidentDetail';
 import { EditResidentModal } from '../components/EditResidentModal';
+import { PrintMenuModal } from '../components/PrintMenuModal';
 import { TransferRoomModal } from '@/src/features/rooms/components/TransferRoomModal';
+import { InvoicePreview } from '@/src/features/finance/components/InvoicePreview';
+import {
+   calculateFixedCosts,
+   getMonthlyUsage,
+} from '@/src/features/finance/utils/calculateMonthlyBilling';
 import { ModuleReadOnlyBanner } from '@/src/components/ui/ModuleReadOnlyBanner';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useResidentsStore } from '@/src/stores/residentsStore';
@@ -22,11 +28,14 @@ export const ResidentDetailPage = () => {
    const { residents, residentDetails, fetchResidentDetail, updateResident } = useResidentsStore();
    const { servicePrices, usageRecords, recordUsage } = useFinanceStore();
    const residentsAccess = useModuleAccess('residents');
+   const financeAccess = useModuleAccess('finance');
    const isReadOnly = residentsAccess.mode === 'readOnly';
 
    const [showAssessmentWizard, setShowAssessmentWizard] = useState(false);
    const [showEditModal, setShowEditModal] = useState(false);
    const [showTransferModal, setShowTransferModal] = useState(false);
+   const [showPrintMenu, setShowPrintMenu] = useState(false);
+   const [invoiceMonth, setInvoiceMonth] = useState<string | null>(null);
 
    const resident = id ? residentDetails[id] : undefined;
    const residentListItem = residents.find(r => r.id === id);
@@ -162,6 +171,26 @@ export const ResidentDetailPage = () => {
             />
          )}
 
+         {showPrintMenu && (
+            <PrintMenuModal
+               resident={resident}
+               user={user}
+               canViewFinance={financeAccess.canViewFinance}
+               onClose={() => setShowPrintMenu(false)}
+               onShowInvoice={(month) => setInvoiceMonth(month)}
+            />
+         )}
+
+         {invoiceMonth && (
+            <InvoicePreview
+               resident={resident}
+               month={invoiceMonth}
+               fixedCosts={calculateFixedCosts(resident).details}
+               incurredCosts={getMonthlyUsage(usageRecords, resident.id, invoiceMonth)}
+               onClose={() => setInvoiceMonth(null)}
+            />
+         )}
+
          <button onClick={() => navigate('/residents')} className="flex items-center gap-2 text-slate-500 hover:text-teal-600 transition-colors no-print">
             <ChevronRight className="w-4 h-4 rotate-180" /> Quay lại danh sách
          </button>
@@ -173,7 +202,7 @@ export const ResidentDetailPage = () => {
                   setShowEditModal(true);
                }
             }}
-            onPrint={() => window.print()}
+            onPrint={() => setShowPrintMenu(true)}
             readOnly={isReadOnly}
          />
 
