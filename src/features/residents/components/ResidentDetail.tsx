@@ -138,10 +138,7 @@ export const ResidentDetail = ({
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
                         <div className="space-y-1">
                            <label className="text-xs text-slate-500 font-medium uppercase tracking-wide">Mã hồ sơ</label>
-                           <p className="font-semibold text-slate-800 flex items-center gap-2">
-                              {resident.id}
-                              <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full font-normal">System ID</span>
-                           </p>
+                           <p className="font-semibold text-slate-800">{resident.clinicCode}</p>
                         </div>
 
                         <div className="space-y-1">

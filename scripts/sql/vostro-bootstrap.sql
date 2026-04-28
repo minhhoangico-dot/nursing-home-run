@@ -27,7 +27,7 @@ ALTER TABLE IF EXISTS public.users
 
 CREATE TABLE IF NOT EXISTS public.residents (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    clinic_code TEXT,
+    clinic_code TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     dob DATE,
     gender TEXT,

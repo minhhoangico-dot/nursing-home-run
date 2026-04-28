@@ -4,6 +4,7 @@ import { buildPrescriptionPrintHtml } from './printTemplates';
 
 const resident: Resident = {
   id: 'resident-1',
+  clinicCode: '26-0001',
   name: 'Hoang Minh Anh',
   dob: '2016-06-07',
   gender: 'Nam',

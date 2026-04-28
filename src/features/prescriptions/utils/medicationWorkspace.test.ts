@@ -8,6 +8,7 @@ import {
 
 const resident = (overrides: Partial<Resident>): Resident => ({
   id: overrides.id ?? 'r1',
+  clinicCode: overrides.clinicCode ?? '26-0001',
   name: overrides.name ?? 'Lan',
   dob: '1940-01-01',
   gender: 'Nữ',

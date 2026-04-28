@@ -3,6 +3,7 @@ import { Resident } from '../types/index';
 export const INITIAL_RESIDENTS: Resident[] = [
   {
     id: 'R001',
+    clinicCode: '23-0001',
     name: 'Nguyễn Văn Minh',
     dob: '1945-05-15',
     gender: 'Nam',
@@ -81,6 +82,7 @@ export const INITIAL_RESIDENTS: Resident[] = [
   },
   {
     id: 'R002',
+    clinicCode: '23-0002',
     name: 'Lê Thị Lan',
     dob: '1950-11-20',
     gender: 'Nữ',
@@ -140,6 +142,7 @@ export const INITIAL_RESIDENTS: Resident[] = [
   },
   {
     id: 'R003',
+    clinicCode: '23-0003',
     name: 'Trần Thế Hiển',
     dob: '1938-02-10',
     gender: 'Nam',

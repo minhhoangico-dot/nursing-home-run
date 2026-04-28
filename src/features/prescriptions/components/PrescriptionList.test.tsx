@@ -33,6 +33,7 @@ import { PrescriptionList } from './PrescriptionList';
 
 const mockResident: Resident = {
   id: 'resident-1',
+  clinicCode: '25-0001',
   name: 'Nguyen Van A',
   dob: '1940-01-01',
   gender: 'Nam',

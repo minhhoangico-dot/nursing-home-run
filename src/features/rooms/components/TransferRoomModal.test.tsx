@@ -34,6 +34,7 @@ describe('TransferRoomModal', () => {
       <TransferRoomModal
         resident={{
           id: 'resident-1',
+          clinicCode: '26-0001',
           name: 'Resident One',
           dob: '1950-01-01',
           gender: 'Nam',

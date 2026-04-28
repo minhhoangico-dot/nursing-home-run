@@ -11,7 +11,7 @@ export interface CareLog {
 
 export interface ResidentListItem {
   id: string;
-  clinicCode?: string;
+  clinicCode: string;
   name: string;
   dob: string;
   gender: 'Nam' | 'Nữ';

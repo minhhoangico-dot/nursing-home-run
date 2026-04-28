@@ -6,6 +6,7 @@ import { buildTodayDashboard } from './todayDashboard';
 
 const resident = (overrides: Partial<Resident>): Resident => ({
   id: overrides.id ?? 'resident-1',
+  clinicCode: overrides.clinicCode ?? '26-0001',
   name: overrides.name ?? 'Nguyen Van A',
   dob: '1940-01-01',
   gender: 'Nam',
