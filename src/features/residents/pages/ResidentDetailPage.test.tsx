@@ -77,7 +77,9 @@ vi.mock('@/src/stores/financeStore', () => ({
   useFinanceStore: () => ({
     servicePrices: [],
     usageRecords: [],
+    residentFixedServices: [],
     recordUsage: vi.fn(),
+    replaceResidentFixedServices: vi.fn(),
   }),
 }));
 

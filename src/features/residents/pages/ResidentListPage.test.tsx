@@ -55,6 +55,15 @@ vi.mock('@/src/stores/residentsStore', () => ({
   }),
 }));
 
+vi.mock('@/src/stores/financeStore', () => ({
+  useFinanceStore: () => ({
+    servicePrices: [],
+    fetchFinanceData: vi.fn(),
+    isLoaded: true,
+    replaceResidentFixedServices: vi.fn(),
+  }),
+}));
+
 vi.mock('../components/ResidentFilters', () => ({
   ResidentFilters: () => <div>Resident filters</div>,
 }));

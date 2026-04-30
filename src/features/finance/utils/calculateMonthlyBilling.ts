@@ -1,37 +1,29 @@
-import { ResidentListItem, ServiceUsage } from '@/src/types/index';
-import { INITIAL_PRICES } from '@/src/data/index';
+import { ResidentFixedServiceAssignment, ResidentListItem, ServiceUsage } from '@/src/types/index';
+import { getMissingRequiredFixedCategories } from './fixedServiceAssignments';
 
 export interface FixedCostBreakdown {
   total: number;
   details: { name: string; amount: number }[];
+  missingRequiredCategories: string[];
 }
 
-export const calculateFixedCosts = (resident: ResidentListItem): FixedCostBreakdown => {
-  const details: { name: string; amount: number }[] = [];
-  let total = 0;
+export const calculateFixedCosts = (
+  resident: ResidentListItem,
+  fixedServices: ResidentFixedServiceAssignment[] = [],
+): FixedCostBreakdown => {
+  const residentFixedServices = fixedServices.filter(
+    (assignment) => assignment.residentId === resident.id && assignment.status === 'Active',
+  );
+  const details = residentFixedServices.map((assignment) => ({
+    name: assignment.serviceName,
+    amount: assignment.totalAmount,
+  }));
 
-  const roomPrice =
-    INITIAL_PRICES.find(p => p.category === 'ROOM' && p.name.includes(resident.roomType))?.price || 0;
-  if (roomPrice > 0) {
-    total += roomPrice;
-    details.push({ name: `Phòng ${resident.roomType}`, amount: roomPrice });
-  }
-
-  const carePrice =
-    INITIAL_PRICES.find(p => p.category === 'CARE' && p.name.includes(`Cấp độ ${resident.careLevel}`))?.price || 0;
-  if (carePrice > 0) {
-    total += carePrice;
-    details.push({ name: `CS Cấp độ ${resident.careLevel}`, amount: carePrice });
-  }
-
-  const mealPrice =
-    INITIAL_PRICES.find(p => p.category === 'MEAL' && p.name.includes('Suất ăn tiêu chuẩn'))?.price || 0;
-  if (resident.dietType !== 'Tube' && mealPrice > 0) {
-    total += mealPrice;
-    details.push({ name: 'Suất ăn tiêu chuẩn', amount: mealPrice });
-  }
-
-  return { total, details };
+  return {
+    total: details.reduce((sum, detail) => sum + detail.amount, 0),
+    details,
+    missingRequiredCategories: getMissingRequiredFixedCategories(residentFixedServices),
+  };
 };
 
 export const getMonthlyUsage = (

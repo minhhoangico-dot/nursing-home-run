@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { FinancialTransaction, ServicePrice, ServiceUsage } from '../types';
+import { FinancialTransaction, ResidentFixedServiceAssignment, ServicePrice, ServiceUsage } from '../types';
 
 const normalizeText = (value?: string) =>
     (value || '')
@@ -68,6 +68,33 @@ const deleteById = async (table: string, id: number | string) => {
 
 const hasPersistedNumericId = (p: ServicePrice): p is ServicePrice & { originalId: number } =>
     typeof p.originalId === 'number';
+
+const mapResidentFixedServiceFromDb = (row: any): ResidentFixedServiceAssignment => ({
+    id: row.id,
+    residentId: row.resident_id,
+    serviceId: row.service_id,
+    serviceName: row.service_name,
+    category: row.category,
+    unitPrice: Number(row.unit_price),
+    quantity: Number(row.quantity),
+    totalAmount: Number(row.total_amount),
+    effectiveFrom: row.effective_from,
+    status: row.status,
+});
+
+const mapResidentFixedServiceToDb = (assignment: ResidentFixedServiceAssignment) => ({
+    id: assignment.id,
+    resident_id: assignment.residentId,
+    service_id: assignment.serviceId,
+    service_name: assignment.serviceName,
+    category: assignment.category,
+    unit_price: assignment.unitPrice,
+    quantity: assignment.quantity,
+    total_amount: assignment.totalAmount,
+    effective_from: assignment.effectiveFrom,
+    status: assignment.status,
+    updated_at: new Date().toISOString(),
+});
 
 const upsertAdditionalService = async (p: ServicePrice) => {
     const code = toAdditionalServiceCode(p);
@@ -339,5 +366,36 @@ export const financeService = {
             total_amount: u.totalAmount, description: u.description, status: u.status
         });
         if (error) throw error;
+    },
+    getResidentFixedServices: async () => {
+        const { data, error } = await supabase
+            .from('resident_fixed_services')
+            .select('*')
+            .order('resident_id', { ascending: true });
+
+        if (error) throw error;
+
+        return (data || []).map(mapResidentFixedServiceFromDb);
+    },
+    replaceResidentFixedServices: async (
+        residentId: string,
+        assignments: ResidentFixedServiceAssignment[],
+    ) => {
+        const { error: deleteError } = await supabase
+            .from('resident_fixed_services')
+            .delete()
+            .eq('resident_id', residentId);
+
+        if (deleteError) throw deleteError;
+
+        if (!assignments.length) {
+            return;
+        }
+
+        const { error: upsertError } = await supabase
+            .from('resident_fixed_services')
+            .upsert(assignments.map(mapResidentFixedServiceToDb));
+
+        if (upsertError) throw upsertError;
     }
 };

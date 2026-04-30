@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, FileText, User as UserIcon, Calendar, CreditCard, Home, Bed, Activity, Clock } from 'lucide-react';
 import { Tabs } from '@/src/components/ui';
-import { Resident, User, ServicePrice, ServiceUsage } from '@/src/types/index';
+import { Resident, User, ResidentFixedServiceAssignment, ServicePrice, ServiceUsage } from '@/src/types/index';
 import { MedicalHistorySection } from '@/src/features/medical/components/MedicalHistorySection';
 import { VitalSignsSection } from '@/src/features/medical/components/VitalSignsSection';
 import { PrescriptionList } from '@/src/features/prescriptions/components/PrescriptionList';
@@ -24,7 +24,9 @@ interface ResidentDetailProps {
    onEdit: () => void;
    servicePrices: ServicePrice[];
    usageRecords: ServiceUsage[];
+   fixedServices?: ResidentFixedServiceAssignment[];
    onRecordUsage: (u: ServiceUsage) => void;
+   onReplaceFixedServices?: (assignments: ResidentFixedServiceAssignment[]) => void;
 }
 
 const missingValue = 'Chưa cập nhật';
@@ -60,7 +62,9 @@ export const ResidentDetail = ({
    onEdit,
    servicePrices,
    usageRecords,
+   fixedServices = [],
    onRecordUsage,
+   onReplaceFixedServices = () => {},
    readOnly = false,
 }: ResidentDetailProps) => {
    const [activeTab, setActiveTab] = useState('info');
@@ -322,7 +326,9 @@ export const ResidentDetail = ({
                      resident={resident}
                      servicePrices={servicePrices}
                      usageRecords={usageRecords}
+                     fixedServices={fixedServices}
                      onRecordUsage={onRecordUsage}
+                     onReplaceFixedServices={onReplaceFixedServices}
                      readOnly={isFinanceReadOnly}
                   />
                </div>

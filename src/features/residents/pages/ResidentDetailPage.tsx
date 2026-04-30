@@ -27,7 +27,13 @@ export const ResidentDetailPage = () => {
    const navigate = useNavigate();
    const { user } = useAuthStore();
    const { residents, residentDetails, fetchResidentDetail, updateResident } = useResidentsStore();
-   const { servicePrices, usageRecords, recordUsage } = useFinanceStore();
+   const {
+      servicePrices,
+      usageRecords,
+      residentFixedServices,
+      recordUsage,
+      replaceResidentFixedServices,
+   } = useFinanceStore();
    const residentsAccess = useModuleAccess('residents');
    const financeAccess = useModuleAccess('finance');
    const isReadOnly = residentsAccess.mode === 'readOnly';
@@ -199,7 +205,7 @@ export const ResidentDetailPage = () => {
             <InvoicePreview
                resident={resident}
                month={invoiceMonth}
-               fixedCosts={calculateFixedCosts(resident).details}
+               fixedCosts={calculateFixedCosts(resident, residentFixedServices).details}
                incurredCosts={getMonthlyUsage(usageRecords, resident.id, invoiceMonth)}
                onClose={() => setInvoiceMonth(null)}
             />
@@ -236,7 +242,9 @@ export const ResidentDetailPage = () => {
             }}
             servicePrices={servicePrices}
             usageRecords={usageRecords}
+            fixedServices={residentFixedServices}
             onRecordUsage={recordUsage}
+            onReplaceFixedServices={(assignments) => replaceResidentFixedServices(resident.id, assignments)}
             readOnly={isReadOnly}
          />
       </div>

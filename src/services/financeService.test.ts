@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { financeService } from './financeService';
 import { supabase } from '../lib/supabase';
+import type { ResidentFixedServiceAssignment } from '../types';
 
 vi.mock('../lib/supabase', () => ({
   supabase: {
@@ -121,5 +122,87 @@ describe('financeService pricing catalog', () => {
       }),
     );
     expect(eq).toHaveBeenCalledWith('code', 'SVC012');
+  });
+
+  it('maps resident fixed services from Supabase rows', async () => {
+    const order = vi.fn(() => Promise.resolve({
+      data: [
+        {
+          id: 'RFS-1',
+          resident_id: 'RES-1',
+          service_id: 'ROOM_2',
+          service_name: 'Phong 2 nguoi',
+          category: 'ROOM',
+          unit_price: '4500000',
+          quantity: '1',
+          total_amount: '4500000',
+          effective_from: '2026-04-30',
+          status: 'Active',
+        },
+      ],
+      error: null,
+    }));
+    const select = vi.fn(() => ({ order }));
+
+    vi.mocked(supabase.from).mockReturnValue({ select } as never);
+
+    const assignments = await financeService.getResidentFixedServices();
+
+    expect(supabase.from).toHaveBeenCalledWith('resident_fixed_services');
+    expect(select).toHaveBeenCalledWith('*');
+    expect(order).toHaveBeenCalledWith('resident_id', { ascending: true });
+    expect(assignments).toEqual([
+      {
+        id: 'RFS-1',
+        residentId: 'RES-1',
+        serviceId: 'ROOM_2',
+        serviceName: 'Phong 2 nguoi',
+        category: 'ROOM',
+        unitPrice: 4500000,
+        quantity: 1,
+        totalAmount: 4500000,
+        effectiveFrom: '2026-04-30',
+        status: 'Active',
+      },
+    ]);
+  });
+
+  it('replaces resident fixed services with snapshot rows', async () => {
+    const eq = vi.fn(() => Promise.resolve({ error: null }));
+    const deleteFn = vi.fn(() => ({ eq }));
+    const upsert = vi.fn(() => Promise.resolve({ error: null }));
+    const assignmentRows: ResidentFixedServiceAssignment[] = [
+      {
+        id: 'RFS-1',
+        residentId: 'RES-1',
+        serviceId: 'ROOM_2',
+        serviceName: 'Phong 2 nguoi',
+        category: 'ROOM',
+        unitPrice: 4500000,
+        quantity: 1,
+        totalAmount: 4500000,
+        effectiveFrom: '2026-04-30',
+        status: 'Active',
+      },
+    ];
+
+    vi.mocked(supabase.from).mockReturnValue({ delete: deleteFn, upsert } as never);
+
+    await financeService.replaceResidentFixedServices('RES-1', assignmentRows);
+
+    expect(supabase.from).toHaveBeenCalledWith('resident_fixed_services');
+    expect(deleteFn).toHaveBeenCalled();
+    expect(eq).toHaveBeenCalledWith('resident_id', 'RES-1');
+    expect(upsert).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: 'RFS-1',
+        resident_id: 'RES-1',
+        service_id: 'ROOM_2',
+        service_name: 'Phong 2 nguoi',
+        unit_price: 4500000,
+        total_amount: 4500000,
+        effective_from: '2026-04-30',
+      }),
+    ]);
   });
 });

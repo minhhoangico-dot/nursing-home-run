@@ -9,12 +9,21 @@ import { ResidentList } from '../components/ResidentList';
 import { Button } from '../../../components/ui';
 import { ModuleReadOnlyBanner } from '../../../components/ui/ModuleReadOnlyBanner';
 import { useResidentsStore } from '../../../stores/residentsStore';
+import { useFinanceStore } from '@/src/stores/financeStore';
 import { StatusBadge } from '../../../components/shared/StatusBadge';
 import { useModuleAccess } from '@/src/hooks/useModuleAccess';
+import { useDeferredStoreLoad } from '@/src/hooks/useDeferredStoreLoad';
+import type { ResidentFixedServiceAssignment } from '@/src/types';
 
 export const ResidentListPage = () => {
    const navigate = useNavigate();
    const { residents, residentDetails, fetchResidentDetail, addResident, selectResident } = useResidentsStore();
+   const {
+      servicePrices,
+      fetchFinanceData,
+      isLoaded: isFinanceLoaded,
+      replaceResidentFixedServices,
+   } = useFinanceStore();
    const residentsAccess = useModuleAccess('residents');
    const isReadOnly = residentsAccess.mode === 'readOnly';
 
@@ -31,6 +40,8 @@ export const ResidentListPage = () => {
          setShowWizard(false);
       }
    }, [isReadOnly]);
+
+   useDeferredStoreLoad(fetchFinanceData, isFinanceLoaded);
 
    const filtered = useMemo(() => residents.filter(r => {
       const matchSearch = r.name.toLowerCase().includes(search.toLowerCase()) || r.room.includes(search);
@@ -63,7 +74,10 @@ export const ResidentListPage = () => {
       navigate(`/residents/${resident.id}`);
    };
 
-   const handleAddResident = async (data: any) => {
+   const handleAddResident = async (
+      data: any,
+      fixedServices: ResidentFixedServiceAssignment[] = [],
+   ) => {
       if (isReadOnly) {
          setShowWizard(false);
          toast.error('Module is in read-only mode');
@@ -72,6 +86,7 @@ export const ResidentListPage = () => {
 
       try {
          await addResident(data);
+         await replaceResidentFixedServices(data.id, fixedServices);
          setShowWizard(false);
          toast.success(`Đã tạo hồ sơ cho NCT ${data.name}`);
       } catch (error) {
@@ -96,6 +111,7 @@ export const ResidentListPage = () => {
                existingCodes={residents.map(r => r.clinicCode || '').filter(Boolean)}
                existingContractNumbers={residents.map(r => r.contractNumber || '').filter(Boolean)}
                allResidents={residents}
+               servicePrices={servicePrices}
             />
          )}
 

@@ -1,11 +1,12 @@
 import { create } from 'zustand';
-import { FinancialTransaction, ServicePrice, ServiceUsage } from '../types';
+import { FinancialTransaction, ResidentFixedServiceAssignment, ServicePrice, ServiceUsage } from '../types';
 import { db } from '../services/databaseService';
 
 interface FinanceState {
     transactions: FinancialTransaction[];
     servicePrices: ServicePrice[];
     usageRecords: ServiceUsage[];
+    residentFixedServices: ResidentFixedServiceAssignment[];
     isLoading: boolean;
     isLoaded: boolean;
     isSyncing: boolean;
@@ -16,6 +17,7 @@ interface FinanceState {
     updateServicePrice: (p: ServicePrice) => Promise<void>;
     deleteServicePrice: (id: string) => Promise<void>;
     recordUsage: (u: ServiceUsage) => Promise<void>;
+    replaceResidentFixedServices: (residentId: string, assignments: ResidentFixedServiceAssignment[]) => Promise<void>;
     markAsBilled: (ids: string[]) => Promise<void>;
 }
 
@@ -23,6 +25,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     transactions: [],
     servicePrices: [],
     usageRecords: [],
+    residentFixedServices: [],
     isLoading: false,
     isLoaded: false,
     isSyncing: false,
@@ -31,12 +34,20 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     fetchFinanceData: async () => {
         set({ isLoading: true });
         try {
-            const [transactions, prices, usage] = await Promise.all([
+            const [transactions, prices, usage, residentFixedServices] = await Promise.all([
                 db.finance.getTransactions(),
                 db.finance.getPrices(),
-                db.finance.getUsage()
+                db.finance.getUsage(),
+                db.finance.getResidentFixedServices(),
             ]);
-            set({ transactions, servicePrices: prices, usageRecords: usage, isLoading: false, isLoaded: true });
+            set({
+                transactions,
+                servicePrices: prices,
+                usageRecords: usage,
+                residentFixedServices,
+                isLoading: false,
+                isLoaded: true,
+            });
         } catch (error) {
             set({ error: (error as Error).message, isLoading: false });
         }
@@ -85,6 +96,24 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
             set(state => ({ usageRecords: [u, ...state.usageRecords], isSyncing: false, isLoaded: true }));
         } catch (error) {
             set({ error: (error as Error).message, isSyncing: false });
+        }
+    },
+
+    replaceResidentFixedServices: async (residentId, assignments) => {
+        set({ isSyncing: true });
+        try {
+            await db.finance.replaceResidentFixedServices(residentId, assignments);
+            set(state => ({
+                residentFixedServices: [
+                    ...state.residentFixedServices.filter(assignment => assignment.residentId !== residentId),
+                    ...assignments,
+                ],
+                isSyncing: false,
+                isLoaded: true,
+            }));
+        } catch (error) {
+            set({ error: (error as Error).message, isSyncing: false });
+            throw error;
         }
     },
 
