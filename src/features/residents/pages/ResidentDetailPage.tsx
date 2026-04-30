@@ -144,9 +144,9 @@ export const ResidentDetailPage = () => {
 
       try {
          await updateResident(updatedResident);
-         toast.success('Hồ sơ sức khỏe đã được cập nhật');
+         toast.success('Cập nhật hồ sơ thành công');
       } catch (error) {
-         toast.error('Lỗi khi cập nhật HSBA');
+         toast.error('Lỗi khi cập nhật hồ sơ');
       }
    };
 

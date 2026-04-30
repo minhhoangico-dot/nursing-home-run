@@ -243,6 +243,8 @@ export const ResidentDetail = ({
                         <ResidentDocumentsGrid
                            resident={resident}
                            className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
+                           readOnly={readOnly}
+                           onUpdateResident={onUpdateResident}
                         />
                      </div>
                   </div>

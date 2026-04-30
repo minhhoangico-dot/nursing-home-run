@@ -8,6 +8,12 @@ import { getResidentDocSignedUrl } from '@/src/services/residentDocumentsService
 
 vi.mock('@/src/services/residentDocumentsService', () => ({
   getResidentDocSignedUrl: vi.fn(),
+  listResidentOtherDocuments: vi.fn(() => Promise.resolve([])),
+  uploadResidentDocument: vi.fn(),
+  uploadResidentOtherDocument: vi.fn(),
+  validateResidentDocFile: vi.fn(() => null),
+  validateResidentOtherDocFile: vi.fn(() => null),
+  MAX_OTHER_DOC_FILES: 5,
 }));
 
 const residentFixture: Resident = {
@@ -110,6 +116,6 @@ describe('ResidentDetail', () => {
       'src',
       'https://signed.example/id-card-front.jpg',
     );
-    expect(screen.queryByRole('button', { name: /Tải lên/i })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Chọn file CCCD NCT - mặt sau')).toBeInTheDocument();
   });
 });
