@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,11 +16,17 @@ import {
 import { saveAs } from 'file-saver';
 import { toast } from 'react-hot-toast';
 
-import { Resident, ResidentListItem } from '@/src/types/index';
+import { FixedServiceCategory, Resident, ResidentFixedServiceAssignment, ResidentListItem, ServicePrice } from '@/src/types/index';
 import { generateClinicCode } from '@/src/utils/clinicCodeUtils';
-import { generateRooms } from '@/src/data/index';
+import { formatCurrency, generateRooms } from '@/src/data/index';
 import { useRoomConfigStore } from '@/src/stores/roomConfigStore';
 import { BUILDING_STRUCTURE, getFloorsForBuilding } from '@/src/constants/facility';
+import {
+   createFixedServiceAssignment,
+   getMissingRequiredFixedCategories,
+   REQUIRED_FIXED_SERVICE_CATEGORIES,
+   suggestDefaultFixedServices,
+} from '@/src/features/finance/utils/fixedServiceAssignments';
 import {
    buildContractDocx,
    buildContractFileName,
@@ -66,11 +72,15 @@ const admissionSchema = z.object({
 type FormData = z.infer<typeof admissionSchema>;
 
 interface AdmissionWizardProps {
-   onSave: (data: Partial<Resident>) => Promise<void> | void;
+   onSave: (
+      data: Partial<Resident>,
+      fixedServices: ResidentFixedServiceAssignment[],
+   ) => Promise<void> | void;
    onCancel: () => void;
    existingCodes?: string[];
    existingContractNumbers?: string[];
    allResidents?: ResidentListItem[];
+   servicePrices?: ServicePrice[];
 }
 
 const STEPS = [
@@ -87,18 +97,26 @@ const STEP_FIELDS: Record<number, (keyof FormData)[]> = {
    4: ['contractNumber', 'signedDate'],
 };
 
+const fixedCategoryLabels: Record<FixedServiceCategory, string> = {
+   ROOM: 'Phòng ở',
+   MEAL: 'Dịch vụ ăn',
+   CARE: 'Chăm sóc',
+};
+
 export const AdmissionWizard = ({
    onSave,
    onCancel,
    existingCodes = [],
    existingContractNumbers = [],
    allResidents = [],
+   servicePrices = [],
 }: AdmissionWizardProps) => {
    const [step, setStep] = useState(1);
    const [submitting, setSubmitting] = useState(false);
    const [downloading, setDownloading] = useState(false);
    const [skipBed, setSkipBed] = useState(false);
    const [files, setFiles] = useState<Partial<Record<ResidentDocKey, File>>>({});
+   const [selectedFixedServiceIds, setSelectedFixedServiceIds] = useState<Partial<Record<FixedServiceCategory, string>>>({});
 
    const setFile = (key: ResidentDocKey, file: File | undefined) =>
       setFiles((prev) => {
@@ -146,6 +164,7 @@ export const AdmissionWizard = ({
    const floor = watch('floor') ?? 'Tầng 2';
    const roomNumber = watch('roomNumber') ?? '';
    const bedId = watch('bedId') ?? '';
+   const signedDate = watch('signedDate') ?? today;
 
    const allRooms = useMemo(() => generateRooms(allResidents, [], configs), [allResidents, configs]);
 
@@ -159,6 +178,9 @@ export const AdmissionWizard = ({
       [roomsOnFloor, roomNumber],
    );
 
+   const roomTypeFromSelection: ResidentListItem['roomType'] =
+      (selectedRoom?.type as ResidentListItem['roomType']) || '2 Giường';
+
    const availableBeds = useMemo(
       () => (selectedRoom ? selectedRoom.beds.filter((b) => b.status === 'Available') : []),
       [selectedRoom],
@@ -166,12 +188,88 @@ export const AdmissionWizard = ({
 
    const floors = getFloorsForBuilding(building);
 
+   const fixedServiceOptions = useMemo(
+      () =>
+         REQUIRED_FIXED_SERVICE_CATEGORIES.reduce((acc, category) => {
+            acc[category] = servicePrices.filter(
+               (service) => service.billingType === 'FIXED' && service.category === category,
+            );
+            return acc;
+         }, {} as Record<FixedServiceCategory, ServicePrice[]>),
+      [servicePrices],
+   );
+
+   useEffect(() => {
+      if (servicePrices.length === 0) {
+         return;
+      }
+
+      const defaults = suggestDefaultFixedServices({
+         residentId: '__preview__',
+         roomType: roomTypeFromSelection,
+         careLevel,
+         servicePrices,
+         effectiveFrom: signedDate || today,
+      });
+
+      setSelectedFixedServiceIds((current) => {
+         let changed = false;
+         const next = { ...current };
+
+         REQUIRED_FIXED_SERVICE_CATEGORIES.forEach((category) => {
+            const currentServiceId = current[category];
+            const currentStillValid = currentServiceId
+               ? fixedServiceOptions[category]?.some((service) => service.id === currentServiceId)
+               : false;
+
+            if (!currentStillValid) {
+               const suggestion = defaults.find((assignment) => assignment.category === category);
+               if (suggestion) {
+                  next[category] = suggestion.serviceId;
+                  changed = true;
+               }
+            }
+         });
+
+         return changed ? next : current;
+      });
+   }, [careLevel, fixedServiceOptions, roomTypeFromSelection, servicePrices, signedDate, today]);
+
+   const buildFixedServiceAssignments = (residentId: string): ResidentFixedServiceAssignment[] =>
+      REQUIRED_FIXED_SERVICE_CATEGORIES.flatMap((category) => {
+         const serviceId = selectedFixedServiceIds[category];
+         const service = servicePrices.find((item) => item.id === serviceId);
+
+         return service
+            ? [
+                 createFixedServiceAssignment({
+                    residentId,
+                    service,
+                    effectiveFrom: signedDate || today,
+                 }),
+              ]
+            : [];
+      });
+
+   const validateFixedServiceSelection = () => {
+      const missing = getMissingRequiredFixedCategories(buildFixedServiceAssignments('__preview__'));
+      if (missing.length === 0) {
+         return true;
+      }
+
+      toast.error('Vui lòng chọn đủ dịch vụ cố định: phòng ở, ăn và chăm sóc.');
+      return false;
+   };
+
    const handleNext = async () => {
       const fields = STEP_FIELDS[step];
       const valid = await trigger(fields as any);
       if (!valid) return;
       if (step === 3 && !skipBed && (!roomNumber || !bedId)) {
          toast.error('Chọn phòng và giường, hoặc bấm "Bỏ qua xếp phòng".');
+         return;
+      }
+      if (step === 3 && !validateFixedServiceSelection()) {
          return;
       }
       setStep((s) => s + 1);
@@ -256,6 +354,12 @@ export const AdmissionWizard = ({
          const clinicCode = generateClinicCode(tempResident, existingCodes);
 
          const residentId = crypto.randomUUID();
+         const fixedServices = buildFixedServiceAssignments(residentId);
+
+         if (getMissingRequiredFixedCategories(fixedServices).length > 0) {
+            toast.error('Vui lòng chọn đủ dịch vụ cố định: phòng ở, ăn và chăm sóc.');
+            return;
+         }
 
          let docPaths: Partial<Record<ResidentDocKey, string>> = {};
          if (Object.keys(files).length > 0) {
@@ -271,9 +375,6 @@ export const AdmissionWizard = ({
          const bedLabel = skipBed
             ? ''
             : data.bedId.split('-')[2] || '';
-         const roomTypeFromSelection: ResidentListItem['roomType'] =
-            (selectedRoom?.type as ResidentListItem['roomType']) || '2 Giường';
-
          await onSave({
             id: residentId,
             name: data.name,
@@ -304,7 +405,7 @@ export const AdmissionWizard = ({
             status: 'Active',
             admissionDate: data.signedDate || today,
             balance: 0,
-         });
+         }, fixedServices);
       } finally {
          setSubmitting(false);
       }
@@ -615,6 +716,51 @@ export const AdmissionWizard = ({
                               </div>
                            </div>
                         )}
+                     </div>
+
+                     <div className="border-t border-slate-100 pt-4">
+                        <h4 className="font-semibold text-slate-700 mb-3">Gói dịch vụ cố định</h4>
+                        {servicePrices.length === 0 && (
+                           <div className="mb-3 rounded-lg border border-amber-100 bg-amber-50 p-3 text-sm text-amber-700">
+                              Chưa tải được bảng giá dịch vụ cố định.
+                           </div>
+                        )}
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                           {REQUIRED_FIXED_SERVICE_CATEGORIES.map((category) => {
+                              const selectedService = servicePrices.find(
+                                 (service) => service.id === selectedFixedServiceIds[category],
+                              );
+
+                              return (
+                                 <div key={category} className="rounded-lg border border-slate-200 bg-white p-3">
+                                    <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+                                       {fixedCategoryLabels[category]}
+                                    </label>
+                                    <select
+                                       aria-label={`fixed-service-${category}`}
+                                       value={selectedFixedServiceIds[category] || ''}
+                                       onChange={(event) =>
+                                          setSelectedFixedServiceIds((current) => ({
+                                             ...current,
+                                             [category]: event.target.value,
+                                          }))
+                                       }
+                                       className={inputClass()}
+                                    >
+                                       <option value="">Chọn dịch vụ</option>
+                                       {fixedServiceOptions[category]?.map((service) => (
+                                          <option key={service.id} value={service.id}>
+                                             {service.name} - {formatCurrency(service.price)}
+                                          </option>
+                                       ))}
+                                    </select>
+                                    <div className="mt-2 text-xs font-medium text-slate-500">
+                                       {selectedService ? formatCurrency(selectedService.price) : 'Chưa chọn'}
+                                    </div>
+                                 </div>
+                              );
+                           })}
+                        </div>
                      </div>
                   </div>
                )}
