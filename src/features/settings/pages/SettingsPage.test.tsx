@@ -19,11 +19,19 @@ vi.mock('@/src/stores/authStore', () => ({
   }),
 }));
 
+const financeStoreMocks = vi.hoisted(() => ({
+  fetchFinanceData: vi.fn().mockResolvedValue(undefined),
+  updateServicePrice: vi.fn(),
+  deleteServicePrice: vi.fn(),
+}));
+
 vi.mock('@/src/stores/financeStore', () => ({
   useFinanceStore: () => ({
     servicePrices: [],
-    updateServicePrice: vi.fn(),
-    deleteServicePrice: vi.fn(),
+    fetchFinanceData: financeStoreMocks.fetchFinanceData,
+    isLoaded: false,
+    updateServicePrice: financeStoreMocks.updateServicePrice,
+    deleteServicePrice: financeStoreMocks.deleteServicePrice,
   }),
 }));
 
@@ -74,6 +82,9 @@ describe('SettingsPage', () => {
   beforeEach(() => {
     getAddToastMock().mockClear();
     getSavePermissionsMock().mockClear();
+    financeStoreMocks.fetchFinanceData.mockClear();
+    financeStoreMocks.updateServicePrice.mockClear();
+    financeStoreMocks.deleteServicePrice.mockClear();
   });
 
   it('shows a warning toast to ADMIN when shared settings are running on defaults', async () => {
@@ -105,6 +116,20 @@ describe('SettingsPage', () => {
         expect.any(String),
         expect.any(String),
       );
+    });
+  });
+
+  it('loads finance data when opening the service price settings', async () => {
+    const user = userEvent.setup();
+
+    render(<SettingsPage />);
+
+    expect(financeStoreMocks.fetchFinanceData).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: /Bảng giá dịch vụ/i }));
+
+    await waitFor(() => {
+      expect(financeStoreMocks.fetchFinanceData).toHaveBeenCalledTimes(1);
     });
   });
 });

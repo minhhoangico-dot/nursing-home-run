@@ -22,6 +22,7 @@ import { useAppSettingsStore } from '@/src/stores/appSettingsStore';
 import { ReadOnlyBanner } from '@/src/components/ui/ReadOnlyBanner';
 import { RestrictedAccessPanel } from '@/src/components/ui/RestrictedAccessPanel';
 import { useModuleAccess } from '@/src/hooks/useModuleAccess';
+import { useDeferredStoreLoad } from '@/src/hooks/useDeferredStoreLoad';
 import type { RoleModulePermissionMatrix } from '@/src/types/appSettings';
 
 type SettingsView = 'menu' | 'users' | 'facility' | 'prices' | 'permissions';
@@ -81,7 +82,13 @@ export const SettingsPage = () => {
     resetPassword,
   } = useAuthStore();
 
-  const { servicePrices, updateServicePrice, deleteServicePrice } = useFinanceStore();
+  const {
+    servicePrices,
+    fetchFinanceData,
+    isLoaded: isFinanceLoaded,
+    updateServicePrice,
+    deleteServicePrice,
+  } = useFinanceStore();
   const financeAccess = useModuleAccess('finance');
   const {
     permissions,
@@ -90,6 +97,12 @@ export const SettingsPage = () => {
     usedFallbackDefaults,
     lastLoadError,
   } = useAppSettingsStore();
+
+  useDeferredStoreLoad(
+    fetchFinanceData,
+    isFinanceLoaded,
+    view === 'prices' && financeAccess.canViewFinance,
+  );
 
   useEffect(() => {
     if (currentUser?.role !== 'ADMIN' || !usedFallbackDefaults || hasShownFallbackWarning.current) {
