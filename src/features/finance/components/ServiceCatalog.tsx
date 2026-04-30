@@ -30,7 +30,7 @@ const ServiceForm = ({ defaultValues, onSave, onCancel }: ServiceFormProps) => {
             name: '',
             category: 'OTHER',
             price: 0,
-            unit: 'Lần',
+            unit: 'Tháng',
             billingType: 'FIXED'
         }
     });
@@ -127,12 +127,13 @@ export const ServiceCatalog = ({
     }, [readOnly]);
 
     const handleFormSave = (data: ServiceFormData) => {
+        const defaultUnit = data.billingType === 'FIXED' ? 'Tháng' : 'Lần';
         const newService: ServicePrice = {
             id: isEditing ? isEditing.id : `SVC-${Date.now()}`,
             name: data.name,
             category: data.category,
             price: data.price,
-            unit: data.unit || 'Lần',
+            unit: isEditing ? data.unit || defaultUnit : defaultUnit,
             billingType: data.billingType
         };
 
@@ -297,7 +298,7 @@ export const ServiceCatalog = ({
                         name: '',
                         category: 'OTHER',
                         price: 0,
-                        unit: 'Lần',
+                        unit: activeTab === 'FIXED' ? 'Tháng' : 'Lần',
                         billingType: activeTab
                     }}
                     onSave={handleFormSave}

@@ -1,6 +1,101 @@
 import { supabase } from '../lib/supabase';
 import { FinancialTransaction, ServicePrice, ServiceUsage } from '../types';
 
+const normalizeText = (value?: string) =>
+    (value || '')
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .toLowerCase();
+
+const isMonthlyUnit = (unit?: string) => {
+    const normalized = normalizeText(unit);
+    return normalized.includes('thang') || normalized.includes('month');
+};
+
+const toAdditionalServiceCategory = (category: ServicePrice['category']) => {
+    const categories: Record<ServicePrice['category'], string> = {
+        ROOM: 'room',
+        CARE: 'care',
+        MEAL: 'meal',
+        OTHER: 'other',
+    };
+
+    return categories[category];
+};
+
+const toCatalogCategory = (category?: string): ServicePrice['category'] => {
+    const normalized = (category || '').toLowerCase();
+
+    if (normalized === 'room') return 'ROOM';
+    if (normalized === 'meal') return 'MEAL';
+    if (['care', 'special_care', 'wound_care', 'therapy'].includes(normalized)) return 'CARE';
+
+    return 'OTHER';
+};
+
+const toAdditionalServiceCode = (p: ServicePrice) => {
+    const rawCode = p.code || (p.id.startsWith('SVC_') ? p.id.slice(4) : p.id);
+    return rawCode.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 20);
+};
+
+const toAdditionalServiceUnit = (p: ServicePrice) => {
+    if (p.billingType === 'FIXED' || isMonthlyUnit(p.unit)) {
+        return { unit: 'month', unitVi: 'Tháng' };
+    }
+
+    const normalized = normalizeText(p.unit);
+    if (normalized.includes('ngay') || normalized.includes('day')) {
+        return { unit: 'day', unitVi: p.unit || 'Ngày' };
+    }
+
+    return { unit: 'time', unitVi: p.unit || 'Lần' };
+};
+
+const updateById = async (table: string, id: number | string, payload: Record<string, unknown>) => {
+    const { error } = await supabase
+        .from(table)
+        .update({ ...payload, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+    if (error) throw error;
+};
+
+const deleteById = async (table: string, id: number | string) => {
+    const { error } = await supabase.from(table).delete().eq('id', id);
+
+    if (error) throw error;
+};
+
+const hasPersistedNumericId = (p: ServicePrice): p is ServicePrice & { originalId: number } =>
+    typeof p.originalId === 'number';
+
+const upsertAdditionalService = async (p: ServicePrice) => {
+    const code = toAdditionalServiceCode(p);
+    const { unit, unitVi } = toAdditionalServiceUnit(p);
+    const payload: Record<string, unknown> = {
+        code,
+        service_name: p.name,
+        service_name_vi: p.name,
+        unit,
+        unit_vi: unitVi,
+        price: p.price,
+        category: toAdditionalServiceCategory(p.category),
+        description: p.description,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+    };
+
+    if (hasPersistedNumericId(p)) {
+        payload.id = p.originalId;
+    }
+
+    const { error } = await supabase
+        .from('additional_services')
+        .upsert(payload, { onConflict: 'code' });
+
+    if (error) throw error;
+};
+
 export const financeService = {
     getTransactions: async () => {
         const { data, error } = await supabase.from('financial_transactions').select('*').order('date', { ascending: false });
@@ -27,7 +122,7 @@ export const financeService = {
             supabase.from('room_prices').select('*'),
             supabase.from('care_level_prices').select('*'),
             supabase.from('meal_prices').select('*'),
-            supabase.from('additional_services').select('*'),
+            supabase.from('additional_services').select('*').eq('is_active', true),
             supabase.from('absence_deductions').select('*'),
             supabase.from('holiday_surcharges').select('*')
         ]);
@@ -82,20 +177,14 @@ export const financeService = {
         });
 
         (additionalRes.data || []).forEach((s: any) => {
-            const isMonthly = s.unit_vi.toLowerCase().includes('tháng');
-            let cat: any = 'OTHER';
-            if (s.category === 'special_care') cat = 'CARE';
-            if (s.category === 'wound_care') cat = 'CARE';
-            if (s.category === 'therapy') cat = 'CARE';
-
             prices.push({
                 id: `SVC_${s.code}`,
                 originalId: s.id,
                 name: s.service_name_vi,
-                category: cat,
+                category: toCatalogCategory(s.category),
                 price: s.price,
                 unit: s.unit_vi,
-                billingType: 'ONE_OFF',
+                billingType: isMonthlyUnit(s.unit_vi) ? 'FIXED' : 'ONE_OFF',
                 code: s.code
             });
         });
@@ -128,9 +217,112 @@ export const financeService = {
 
         return prices;
     },
-    bulkUpsertPrices: async (list: ServicePrice[]) => { console.warn('Bulk upsert disabled in new schema', list); },
-    upsertPrice: async (p: ServicePrice) => { console.warn('Upsert disabled in new schema', p); },
-    deletePrice: async (id: string) => { console.warn('Delete disabled in new schema', id); },
+    bulkUpsertPrices: async (list: ServicePrice[]) => {
+        await Promise.all(list.map(p => financeService.upsertPrice(p)));
+    },
+    upsertPrice: async (p: ServicePrice) => {
+        if (p.id.startsWith('ROOM_') && hasPersistedNumericId(p)) {
+            await updateById('room_prices', p.originalId, {
+                room_type_vi: p.name,
+                price_monthly: p.price,
+                description: p.description,
+            });
+            return;
+        }
+
+        if (p.id.startsWith('CARE_') && hasPersistedNumericId(p)) {
+            await updateById('care_level_prices', p.originalId, {
+                care_level_vi: p.name,
+                price_monthly: p.price,
+            });
+            return;
+        }
+
+        if (p.id.startsWith('MEAL_') && hasPersistedNumericId(p)) {
+            await updateById('meal_prices', p.originalId, {
+                meal_type_vi: p.name,
+                price_monthly: p.price,
+                description: p.description,
+            });
+            return;
+        }
+
+        if (p.id.startsWith('ABS_') && hasPersistedNumericId(p)) {
+            await updateById('absence_deductions', p.originalId, {
+                absence_type_vi: p.name,
+                deduction_daily: p.price,
+                description: p.description,
+            });
+            return;
+        }
+
+        if (p.id.startsWith('HOL_') && hasPersistedNumericId(p)) {
+            await updateById('holiday_surcharges', p.originalId, {
+                holiday_type_vi: p.name.replace(/^Phụ thu\s+/i, ''),
+                surcharge_daily: p.price,
+                dates_description: p.description,
+            });
+            return;
+        }
+
+        await upsertAdditionalService(p);
+    },
+    deletePrice: async (id: string) => {
+        if (id.startsWith('SVC_') || id.startsWith('SVC-')) {
+            const code = id.startsWith('SVC_') ? id.slice(4) : id;
+            const { error } = await supabase
+                .from('additional_services')
+                .update({ is_active: false, updated_at: new Date().toISOString() })
+                .eq('code', code);
+
+            if (error) throw error;
+            return;
+        }
+
+        if (id.startsWith('ROOM_')) {
+            await deleteById('room_prices', Number(id.slice(5)));
+            return;
+        }
+
+        if (id.startsWith('MEAL_')) {
+            await deleteById('meal_prices', Number(id.slice(5)));
+            return;
+        }
+
+        if (id.startsWith('CARE_')) {
+            const [, careLevel, roomType] = id.split('_');
+            const { error } = await supabase
+                .from('care_level_prices')
+                .delete()
+                .eq('care_level', Number(careLevel))
+                .eq('room_type', roomType);
+
+            if (error) throw error;
+            return;
+        }
+
+        if (id.startsWith('ABS_')) {
+            const { error } = await supabase
+                .from('absence_deductions')
+                .delete()
+                .eq('absence_type', id.slice(4));
+
+            if (error) throw error;
+            return;
+        }
+
+        if (id.startsWith('HOL_')) {
+            const { error } = await supabase
+                .from('holiday_surcharges')
+                .delete()
+                .eq('holiday_type', id.slice(4));
+
+            if (error) throw error;
+            return;
+        }
+
+        throw new Error('Unsupported service price id');
+    },
     getUsage: async () => {
         const { data, error } = await supabase.from('service_usage').select('*').order('date', { ascending: false });
         if (error) throw error;
