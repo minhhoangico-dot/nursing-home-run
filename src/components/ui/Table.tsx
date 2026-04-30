@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronRight } from 'lucide-react';
 
 export interface Column<T> {
-  header: string;
+  header: React.ReactNode;
   accessor: keyof T | ((item: T) => React.ReactNode);
   className?: string; // Additional classes for the cell (th/td)
   align?: 'left' | 'center' | 'right';
@@ -10,7 +10,7 @@ export interface Column<T> {
 
   // Mobile display options
   mobileHidden?: boolean;  // Hide on mobile card view
-  mobileLabel?: string;    // Label for card view (defaults to header)
+  mobileLabel?: React.ReactNode;    // Label for card view (defaults to header)
   mobilePrimary?: boolean; // Show as card title/primary info
 }
 

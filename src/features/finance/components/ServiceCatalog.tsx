@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Plus, Edit2, Trash2, Tag, List, Save, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, Tag, List, Save, X, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { ServicePrice } from '@/src/types/index';
 import { formatCurrency } from '@/src/data/index';
 import { Table, Column } from '@/src/components/ui/Table';
@@ -16,6 +16,16 @@ const serviceSchema = z.object({
 });
 
 type ServiceFormData = z.infer<typeof serviceSchema>;
+
+type SortField = 'name' | 'category';
+type SortDirection = 'asc' | 'desc';
+type CategoryFilter = ServicePrice['category'] | 'ALL';
+
+const normalizeSearchValue = (value: string) =>
+    value
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .toLowerCase();
 
 interface ServiceFormProps {
     defaultValues?: ServiceFormData;
@@ -109,12 +119,47 @@ export const ServiceCatalog = ({
     const [activeTab, setActiveTab] = useState<'FIXED' | 'ONE_OFF'>('FIXED');
     const [isEditing, setIsEditing] = useState<ServicePrice | null>(null);
     const [isCreating, setIsCreating] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('ALL');
+    const [sortField, setSortField] = useState<SortField>('name');
+    const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
     const categories: Record<string, { label: string; color: string }> = {
         'ROOM': { label: 'Phòng ở', color: 'bg-blue-100 text-blue-800' },
         'CARE': { label: 'Chăm sóc', color: 'bg-green-100 text-green-800' },
         'MEAL': { label: 'Dinh dưỡng', color: 'bg-orange-100 text-orange-800' },
         'OTHER': { label: 'Dịch vụ khác', color: 'bg-purple-100 text-purple-800' },
+    };
+
+    const hasActiveCatalogFilter = searchTerm.trim() !== '' || categoryFilter !== 'ALL';
+
+    const getCategoryLabel = (category: ServicePrice['category']) => categories[category]?.label || category;
+
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
+            return;
+        }
+
+        setSortField(field);
+        setSortDirection('asc');
+    };
+
+    const SortHeader = ({ field, label, ariaLabel }: { field: SortField; label: string; ariaLabel: string }) => {
+        const isActive = sortField === field;
+        const Icon = !isActive ? ArrowUpDown : sortDirection === 'asc' ? ArrowUp : ArrowDown;
+
+        return (
+            <button
+                type="button"
+                onClick={() => handleSort(field)}
+                className="inline-flex items-center gap-1 font-medium text-slate-600 hover:text-teal-700"
+                aria-label={ariaLabel}
+            >
+                <span>{label}</span>
+                <Icon className="h-3.5 w-3.5" />
+            </button>
+        );
     };
 
     useEffect(() => {
@@ -147,25 +192,51 @@ export const ServiceCatalog = ({
         setIsCreating(false);
     };
 
-    const filteredServices = services.filter(s => {
-        const type = s.billingType || (['ROOM', 'CARE', 'MEAL'].includes(s.category) ? 'FIXED' : 'ONE_OFF');
-        return type === activeTab;
-    });
+    const filteredServices = useMemo(() => {
+        const normalizedSearch = normalizeSearchValue(searchTerm.trim());
+
+        return services
+            .filter(s => {
+                const type = s.billingType || (['ROOM', 'CARE', 'MEAL'].includes(s.category) ? 'FIXED' : 'ONE_OFF');
+                if (type !== activeTab) {
+                    return false;
+                }
+
+                if (categoryFilter !== 'ALL' && s.category !== categoryFilter) {
+                    return false;
+                }
+
+                if (!normalizedSearch) {
+                    return true;
+                }
+
+                const categoryLabel = getCategoryLabel(s.category);
+                return normalizeSearchValue(`${s.name} ${categoryLabel} ${s.category}`).includes(normalizedSearch);
+            })
+            .sort((a, b) => {
+                const aValue = sortField === 'name' ? a.name : getCategoryLabel(a.category);
+                const bValue = sortField === 'name' ? b.name : getCategoryLabel(b.category);
+                const result = aValue.localeCompare(bValue, 'vi', { sensitivity: 'base' }) || a.name.localeCompare(b.name, 'vi', { sensitivity: 'base' });
+
+                return sortDirection === 'asc' ? result : -result;
+            });
+    }, [activeTab, categoryFilter, searchTerm, services, sortDirection, sortField]);
 
     const columns: Column<ServicePrice>[] = [
         {
-            header: 'Tên dịch vụ',
+            header: <SortHeader field="name" label="Tên dịch vụ" ariaLabel="Sap xep theo ten dich vu" />,
             accessor: 'name',
             mobilePrimary: true,
+            mobileLabel: 'Tên dịch vụ',
             className: 'font-medium text-slate-700'
         },
         {
-            header: 'Danh mục',
+            header: <SortHeader field="category" label="Danh mục" ariaLabel="Sap xep theo danh muc" />,
             accessor: 'category',
             mobileLabel: 'Danh mục',
             render: (s) => (
                 <span className={`px-2 py-0.5 rounded text-xs font-semibold ${categories[s.category]?.color || 'bg-slate-100'}`}>
-                    {categories[s.category]?.label || s.category}
+                    {getCategoryLabel(s.category)}
                 </span>
             )
         },
@@ -283,6 +354,48 @@ export const ServiceCatalog = ({
                         <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Thêm dịch vụ</span>
                         <span className="sm:hidden">Thêm</span>
                     </button>
+                </div>
+            </div>
+
+            <div className="border-b border-slate-200 bg-white px-4 py-3">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="search"
+                            aria-label="Tim ten hoac danh muc"
+                            placeholder="Tìm tên hoặc danh mục..."
+                            value={searchTerm}
+                            onChange={(event) => setSearchTerm(event.target.value)}
+                            className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                        />
+                    </div>
+                    <select
+                        aria-label="Loc danh muc"
+                        value={categoryFilter}
+                        onChange={(event) => setCategoryFilter(event.target.value as CategoryFilter)}
+                        className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                    >
+                        <option value="ALL">Tất cả danh mục</option>
+                        <option value="ROOM">Phòng ở</option>
+                        <option value="CARE">Chăm sóc</option>
+                        <option value="MEAL">Dinh dưỡng</option>
+                        <option value="OTHER">Dịch vụ khác</option>
+                    </select>
+                    {hasActiveCatalogFilter && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setSearchTerm('');
+                                setCategoryFilter('ALL');
+                            }}
+                            className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:border-teal-200 hover:text-teal-700"
+                            aria-label="Xoa bo loc"
+                        >
+                            <X className="h-4 w-4" />
+                            Xóa lọc
+                        </button>
+                    )}
                 </div>
             </div>
 
