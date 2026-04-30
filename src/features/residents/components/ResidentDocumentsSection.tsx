@@ -28,6 +28,8 @@ const DocCard = ({ slot }: DocCardProps) => {
    const [error, setError] = useState(false);
 
    useEffect(() => {
+      setSignedUrl(undefined);
+      setError(false);
       if (!slot.path) return;
       let cancelled = false;
       getResidentDocSignedUrl(slot.path)
@@ -82,6 +84,26 @@ interface ResidentDocumentsSectionProps {
    resident: Resident;
 }
 
+interface ResidentDocumentsGridProps {
+   resident: Resident;
+   className?: string;
+}
+
+export const ResidentDocumentsGrid = ({
+   resident,
+   className = 'grid grid-cols-2 md:grid-cols-5 gap-3',
+}: ResidentDocumentsGridProps) => {
+   const slots = buildSlots(resident);
+
+   return (
+      <div className={className}>
+         {slots.map((slot) => (
+            <DocCard key={slot.key} slot={slot} />
+         ))}
+      </div>
+   );
+};
+
 export const ResidentDocumentsSection = ({ resident }: ResidentDocumentsSectionProps) => {
    const slots = buildSlots(resident);
    const hasAny = slots.some((s) => s.path);
@@ -90,11 +112,7 @@ export const ResidentDocumentsSection = ({ resident }: ResidentDocumentsSectionP
    return (
       <div className="rounded-2xl border border-slate-200 bg-white p-4 md:p-5">
          <h3 className="text-sm font-semibold text-slate-700 mb-3">Giấy tờ tùy thân</h3>
-         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {slots.map((slot) => (
-               <DocCard key={slot.key} slot={slot} />
-            ))}
-         </div>
+         <ResidentDocumentsGrid resident={resident} />
       </div>
    );
 };

@@ -1,7 +1,14 @@
 import { render, screen } from '@testing-library/react';
+import { waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
 
 import { ResidentDetail } from './ResidentDetail';
 import type { Resident, User } from '@/src/types';
+import { getResidentDocSignedUrl } from '@/src/services/residentDocumentsService';
+
+vi.mock('@/src/services/residentDocumentsService', () => ({
+  getResidentDocSignedUrl: vi.fn(),
+}));
 
 const residentFixture: Resident = {
   id: 'RES-DETAIL-1',
@@ -46,6 +53,10 @@ const userFixture: User = {
 };
 
 describe('ResidentDetail', () => {
+  beforeEach(() => {
+    vi.mocked(getResidentDocSignedUrl).mockResolvedValue('https://signed.example/id-card-front.jpg');
+  });
+
   it('renders personal information from the selected resident record', () => {
     render(
       <ResidentDetail
@@ -70,5 +81,35 @@ describe('ResidentDetail', () => {
     expect(screen.queryByText('123 Nguyễn Văn Linh, Q.7, TP.HCM')).not.toBeInTheDocument();
     expect(screen.queryByText('CCCD Mặt trước.jpg')).not.toBeInTheDocument();
     expect(screen.queryByText('BHYT.jpg')).not.toBeInTheDocument();
+  });
+
+  it('renders persisted identity documents in the attachment card', async () => {
+    render(
+      <ResidentDetail
+        user={userFixture}
+        resident={{
+          ...residentFixture,
+          idCardFrontPath: 'resident-1/id_card_front.jpg',
+        }}
+        onUpdateResident={() => {}}
+        onOpenAssessment={() => {}}
+        onEdit={() => {}}
+        servicePrices={[]}
+        usageRecords={[]}
+        onRecordUsage={() => {}}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: /Tài liệu đính kèm/i })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(getResidentDocSignedUrl).toHaveBeenCalledWith('resident-1/id_card_front.jpg');
+    });
+
+    expect(screen.getByAltText('CCCD NCT - mặt trước')).toHaveAttribute(
+      'src',
+      'https://signed.example/id-card-front.jpg',
+    );
+    expect(screen.queryByRole('button', { name: /Tải lên/i })).not.toBeInTheDocument();
   });
 });

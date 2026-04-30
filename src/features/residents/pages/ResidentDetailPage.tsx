@@ -7,7 +7,6 @@ import { Assessment } from '@/src/types/index';
 import { AssessmentWizard } from '@/src/features/assessments/components/AssessmentWizard';
 import { ResidentBasicInfo } from '../components/ResidentBasicInfo';
 import { ResidentDetail } from '../components/ResidentDetail';
-import { ResidentDocumentsSection } from '../components/ResidentDocumentsSection';
 import { EditResidentModal } from '../components/EditResidentModal';
 import { PrintMenuModal } from '../components/PrintMenuModal';
 import { TransferRoomModal } from '@/src/features/rooms/components/TransferRoomModal';
@@ -220,8 +219,6 @@ export const ResidentDetailPage = () => {
             onPrint={() => setShowPrintMenu(true)}
             readOnly={isReadOnly}
          />
-
-         <ResidentDocumentsSection resident={resident} />
 
          <ResidentDetail
             user={user}

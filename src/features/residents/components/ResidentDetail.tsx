@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Upload, FileText, Trash2, Eye, User as UserIcon, Calendar, CreditCard, Home, Bed, Activity, Clock } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Plus, FileText, User as UserIcon, Calendar, CreditCard, Home, Bed, Activity, Clock } from 'lucide-react';
 import { Tabs } from '@/src/components/ui';
 import { Resident, User, ServicePrice, ServiceUsage } from '@/src/types/index';
 import { MedicalHistorySection } from '@/src/features/medical/components/MedicalHistorySection';
@@ -10,6 +10,7 @@ import { MonitoringPlansSection } from '@/src/features/medical/components/Monito
 import { GuardianInfo } from './GuardianInfo';
 import { ResidentNutritionSection } from './ResidentNutritionSection';
 import { ResidentFinanceTab } from './ResidentFinanceTab';
+import { ResidentDocumentsGrid } from './ResidentDocumentsSection';
 import { useToast } from '@/src/app/providers';
 import { ReadOnlyBanner } from '@/src/components/ui/ReadOnlyBanner';
 import { useModuleAccess } from '@/src/hooks/useModuleAccess';
@@ -25,8 +26,6 @@ interface ResidentDetailProps {
    usageRecords: ServiceUsage[];
    onRecordUsage: (u: ServiceUsage) => void;
 }
-
-type DocumentPreview = { id: string; name: string; type: string };
 
 const missingValue = 'Chưa cập nhật';
 
@@ -53,14 +52,6 @@ const calculateAge = (dob: string, referenceDate = new Date()) => {
    return age >= 0 ? age : null;
 };
 
-const buildResidentDocuments = (resident: Resident): DocumentPreview[] => ([
-   { id: 'idCardFront', name: 'CCCD NCT - mặt trước', type: 'image', path: resident.idCardFrontPath },
-   { id: 'idCardBack', name: 'CCCD NCT - mặt sau', type: 'image', path: resident.idCardBackPath },
-   { id: 'guardianIdCardFront', name: 'CCCD bảo trợ - mặt trước', type: 'image', path: resident.guardianIdCardFrontPath },
-   { id: 'guardianIdCardBack', name: 'CCCD bảo trợ - mặt sau', type: 'image', path: resident.guardianIdCardBackPath },
-   { id: 'bhytCard', name: 'Thẻ BHYT', type: 'image', path: resident.bhytCardPath },
-].filter((document) => Boolean(document.path)).map(({ path: _path, ...document }) => document));
-
 export const ResidentDetail = ({
    user,
    resident,
@@ -73,26 +64,12 @@ export const ResidentDetail = ({
    readOnly = false,
 }: ResidentDetailProps) => {
    const [activeTab, setActiveTab] = useState('info');
-   const residentDocumentDefaults = useMemo(() => buildResidentDocuments(resident), [
-      resident.id,
-      resident.idCardFrontPath,
-      resident.idCardBackPath,
-      resident.guardianIdCardFrontPath,
-      resident.guardianIdCardBackPath,
-      resident.bhytCardPath,
-   ]);
-   const [documents, setDocuments] = useState<DocumentPreview[]>(() => residentDocumentDefaults);
-   const fileInputRef = useRef<HTMLInputElement>(null);
    const { addToast } = useToast();
    const financeAccess = useModuleAccess('finance');
    const canViewFinance = financeAccess.canViewFinance;
    const isFinanceReadOnly = canViewFinance && !financeAccess.canEditFinance;
    const residentAge = calculateAge(resident.dob);
    const healthInsuranceStatus = resident.bhytCardPath ? 'Đã có ảnh thẻ BHYT' : missingValue;
-
-   useEffect(() => {
-      setDocuments(residentDocumentDefaults);
-   }, [residentDocumentDefaults]);
 
    useEffect(() => {
       if (activeTab === 'finance' && !canViewFinance) {
@@ -117,25 +94,6 @@ export const ResidentDetail = ({
 
       onRecordUsage(usage);
       addToast('success', 'Đã ghi nhận dịch vụ', `Đã thêm ${service.name}`);
-   };
-
-   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (readOnly) {
-         return;
-      }
-
-      const files = e.target.files;
-      if (files && files.length > 0) {
-         const file = files[0];
-         setTimeout(() => {
-            setDocuments(prev => [...prev, {
-               id: Math.random().toString(36).substr(2, 9),
-               name: file.name,
-               type: file.type.includes('image') ? 'image' : 'file'
-            }]);
-            addToast('success', 'Tải lên thành công', `Đã lưu tệp ${file.name}`);
-         }, 1000);
-      }
    };
 
    const tabs = [
@@ -281,50 +239,11 @@ export const ResidentDetail = ({
                                  <p className="text-xs text-slate-500">CCCD, BHYT, Hợp đồng...</p>
                               </div>
                            </div>
-                           {!readOnly && (
-                              <>
-                                 <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
-                                 <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="text-xs bg-slate-100 text-slate-700 px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-200 transition-colors font-medium"
-                                 >
-                                    <Upload className="w-3 h-3" /> Tải lên
-                                 </button>
-                              </>
-                           )}
                         </div>
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                           {documents.map(doc => (
-                              <div key={doc.id} className="relative group aspect-[4/3] bg-slate-50 rounded-lg border border-slate-200 flex flex-col items-center justify-center p-3 text-center overflow-hidden hover:border-orange-200 transition-all cursor-pointer">
-                                 <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mb-2 shadow-sm">
-                                    <FileText className="w-5 h-5 text-orange-400" />
-                                 </div>
-                                 <span className="text-xs text-slate-600 font-medium truncate w-full px-1">{doc.name}</span>
-                                 <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center gap-2 transition-all backdrop-blur-[1px]">
-                                    <button className="p-2 bg-white text-slate-800 rounded-full hover:bg-orange-50 shadow-lg transform hover:scale-105 transition-all">
-                                       <Eye className="w-4 h-4" />
-                                    </button>
-                                    {!readOnly && (
-                                       <button
-                                          onClick={(e) => {
-                                             e.stopPropagation();
-                                             setDocuments(documents.filter(d => d.id !== doc.id));
-                                          }}
-                                          className="p-2 bg-white text-red-500 rounded-full hover:bg-red-50 shadow-lg transform hover:scale-105 transition-all"
-                                       >
-                                          <Trash2 className="w-4 h-4" />
-                                       </button>
-                                    )}
-                                 </div>
-                              </div>
-                           ))}
-                           {documents.length === 0 && (
-                              <div className="col-span-3 py-12 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-                                 <FileText className="w-8 h-8 mb-2 opacity-50" />
-                                 <span className="text-sm italic">Chưa có tài liệu nào</span>
-                              </div>
-                           )}
-                        </div>
+                        <ResidentDocumentsGrid
+                           resident={resident}
+                           className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
+                        />
                      </div>
                   </div>
                </div>
