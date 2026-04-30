@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { residentService } from './residentService';
+import { residentService, RESIDENT_LIST_COLUMNS } from './residentService';
 import { supabase } from '../lib/supabase';
 
 vi.mock('../lib/supabase', () => ({
@@ -9,31 +9,7 @@ vi.mock('../lib/supabase', () => ({
   },
 }));
 
-const LEAN_RESIDENT_COLUMNS = [
-  'id',
-  'name',
-  'dob',
-  'gender',
-  'room',
-  'bed',
-  'floor',
-  'building',
-  'care_level',
-  'status',
-  'admission_date',
-  'guardian_name',
-  'guardian_phone',
-  'balance',
-  'current_condition_note',
-  'last_medical_update',
-  'last_updated_by',
-  'is_diabetic',
-  'room_type',
-  'diet_type',
-  'clinic_code',
-  'diet_note',
-  'height',
-].join(',');
+const LEAN_RESIDENT_COLUMNS = RESIDENT_LIST_COLUMNS;
 
 describe('residentService', () => {
   beforeEach(() => {
@@ -73,6 +49,12 @@ describe('residentService', () => {
           clinic_code: 'NCT-001',
           diet_note: 'It duong',
           height: 1.58,
+          guardian_dob: '1980-05-10',
+          id_card_front_path: 'resident-1/id_card_front-1.jpg',
+          id_card_back_path: 'resident-1/id_card_back-1.jpg',
+          guardian_id_card_front_path: 'resident-1/guardian_id_card_front-1.jpg',
+          guardian_id_card_back_path: 'resident-1/guardian_id_card_back-1.jpg',
+          bhyt_card_path: 'resident-1/bhyt_card-1.jpg',
         },
       ],
       error: null,
@@ -110,6 +92,12 @@ describe('residentService', () => {
         clinicCode: 'NCT-001',
         dietNote: 'It duong',
         height: 1.58,
+        guardianDob: '1980-05-10',
+        idCardFrontPath: 'resident-1/id_card_front-1.jpg',
+        idCardBackPath: 'resident-1/id_card_back-1.jpg',
+        guardianIdCardFrontPath: 'resident-1/guardian_id_card_front-1.jpg',
+        guardianIdCardBackPath: 'resident-1/guardian_id_card_back-1.jpg',
+        bhytCardPath: 'resident-1/bhyt_card-1.jpg',
       },
     ]);
   });
@@ -174,5 +162,11 @@ describe('residentService', () => {
     expect(resident.medicalHistory).toEqual([{ id: 'condition-1', name: 'Tang huyet ap' }]);
     expect(resident.allergies).toEqual([{ id: 'allergy-1', allergen: 'Tom', severity: 'High' }]);
     expect(resident.prescriptions).toEqual([{ id: 'prescription-1' }]);
+  });
+
+  it('rejects an undefined resident id before querying Supabase', async () => {
+    await expect(residentService.getById('undefined')).rejects.toThrow('Invalid resident id');
+
+    expect(supabase.from).not.toHaveBeenCalled();
   });
 });

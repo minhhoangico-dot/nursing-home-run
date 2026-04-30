@@ -157,4 +157,10 @@ describe('useResidentsStore', () => {
     expect(fetchedResident).toEqual(resident);
     expect(useResidentsStore.getState().residentDetails['resident-2']).toEqual(resident);
   });
+
+  it('rejects an invalid resident detail id before querying the database', async () => {
+    await expect(useResidentsStore.getState().fetchResidentDetail('undefined')).rejects.toThrow('Invalid resident id');
+
+    expect(residentsDb.getById).not.toHaveBeenCalled();
+  });
 });

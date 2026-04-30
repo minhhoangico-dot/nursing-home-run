@@ -27,6 +27,11 @@ import {
    ContractContext,
 } from '../admission/contract/buildContractDocx';
 import { generateContractNumber } from '../admission/contract/generateContractNumber';
+import {
+   ResidentDocKey,
+   uploadResidentDocument,
+} from '../../../services/residentDocumentsService';
+import { FileUploadField } from './FileUploadField';
 
 const admissionSchema = z.object({
    // Step 1 — NCT
@@ -41,6 +46,7 @@ const admissionSchema = z.object({
    guardianPhone: z
       .string()
       .regex(/^(0|\+84)\d{9,10}$/, 'Số điện thoại không đúng định dạng'),
+   guardianDob: z.string().optional(),
    guardianAddress: z.string().optional(),
    guardianIdCard: z.string().optional(),
    guardianRelation: z.string().optional(),
@@ -92,6 +98,15 @@ export const AdmissionWizard = ({
    const [submitting, setSubmitting] = useState(false);
    const [downloading, setDownloading] = useState(false);
    const [skipBed, setSkipBed] = useState(false);
+   const [files, setFiles] = useState<Partial<Record<ResidentDocKey, File>>>({});
+
+   const setFile = (key: ResidentDocKey, file: File | undefined) =>
+      setFiles((prev) => {
+         const next = { ...prev };
+         if (file) next[key] = file;
+         else delete next[key];
+         return next;
+      });
 
    const today = new Date().toISOString().split('T')[0];
    const defaultContractNumber = generateContractNumber(existingContractNumbers);
@@ -172,6 +187,7 @@ export const AdmissionWizard = ({
          residentAddress: v.guardianAddress,
          residentIdCard: v.idCard,
          guardianName: v.guardianName,
+         guardianDob: v.guardianDob,
          guardianAddress: v.guardianAddress,
          guardianPhone: v.guardianPhone,
          guardianIdCard: v.guardianIdCard,
@@ -218,6 +234,17 @@ export const AdmissionWizard = ({
       }
    };
 
+   const uploadAllFiles = async (residentId: string) => {
+      const entries = Object.entries(files) as [ResidentDocKey, File][];
+      const uploaded: Partial<Record<ResidentDocKey, string>> = {};
+      await Promise.all(
+         entries.map(async ([key, file]) => {
+            uploaded[key] = await uploadResidentDocument(residentId, key, file);
+         }),
+      );
+      return uploaded;
+   };
+
    const onSubmit = async (data: FormData) => {
       setSubmitting(true);
       try {
@@ -228,6 +255,19 @@ export const AdmissionWizard = ({
          };
          const clinicCode = generateClinicCode(tempResident, existingCodes);
 
+         const residentId = crypto.randomUUID();
+
+         let docPaths: Partial<Record<ResidentDocKey, string>> = {};
+         if (Object.keys(files).length > 0) {
+            try {
+               docPaths = await uploadAllFiles(residentId);
+            } catch (error) {
+               console.error(error);
+               toast.error(`Lỗi tải ảnh giấy tờ: ${(error as Error).message}`);
+               throw error;
+            }
+         }
+
          const bedLabel = skipBed
             ? ''
             : data.bedId.split('-')[2] || '';
@@ -235,6 +275,7 @@ export const AdmissionWizard = ({
             (selectedRoom?.type as ResidentListItem['roomType']) || '2 Giường';
 
          await onSave({
+            id: residentId,
             name: data.name,
             dob: data.dob,
             gender: data.gender,
@@ -246,7 +287,13 @@ export const AdmissionWizard = ({
             guardianAddress: data.guardianAddress,
             guardianIdCard: data.guardianIdCard,
             guardianRelation: data.guardianRelation,
+            guardianDob: data.guardianDob || undefined,
             idCard: data.idCard,
+            idCardFrontPath: docPaths.idCardFront,
+            idCardBackPath: docPaths.idCardBack,
+            guardianIdCardFrontPath: docPaths.guardianIdCardFront,
+            guardianIdCardBackPath: docPaths.guardianIdCardBack,
+            bhytCardPath: docPaths.bhytCard,
             contractNumber: `${data.contractNumber}/${new Date(data.signedDate).getFullYear()}/DV-VDL`,
             contractSignedDate: data.signedDate,
             building: skipBed ? '' : data.building || '',
@@ -334,6 +381,31 @@ export const AdmissionWizard = ({
                         />
                         <span className="text-sm font-medium text-slate-700">Người cao tuổi có tiểu đường</span>
                      </label>
+
+                     <div className="border-t border-slate-100 pt-4 mt-2">
+                        <h4 className="text-sm font-semibold text-slate-700 mb-3">
+                           Giấy tờ tùy thân <span className="text-xs font-normal text-slate-400">(không bắt buộc)</span>
+                        </h4>
+                        <div className="grid grid-cols-2 gap-3">
+                           <FileUploadField
+                              label="CCCD / CMND - mặt trước"
+                              value={files.idCardFront}
+                              onChange={(f) => setFile('idCardFront', f)}
+                           />
+                           <FileUploadField
+                              label="CCCD / CMND - mặt sau"
+                              value={files.idCardBack}
+                              onChange={(f) => setFile('idCardBack', f)}
+                           />
+                        </div>
+                        <div className="mt-3">
+                           <FileUploadField
+                              label="Thẻ BHYT"
+                              value={files.bhytCard}
+                              onChange={(f) => setFile('bhytCard', f)}
+                           />
+                        </div>
+                     </div>
                   </div>
                )}
 
@@ -367,12 +439,36 @@ export const AdmissionWizard = ({
                            </select>
                         </Field>
                      </div>
-                     <Field label="Số CCCD/CMND người bảo trợ">
-                        <input {...register('guardianIdCard')} type="text" className={inputClass()} />
-                     </Field>
+                     <div className="grid grid-cols-2 gap-4">
+                        <Field label="Ngày sinh người bảo trợ">
+                           <input {...register('guardianDob')} type="date" className={inputClass()} />
+                        </Field>
+                        <Field label="Số CCCD/CMND người bảo trợ">
+                           <input {...register('guardianIdCard')} type="text" className={inputClass()} />
+                        </Field>
+                     </div>
                      <Field label="Địa chỉ liên hệ">
                         <textarea {...register('guardianAddress')} className={inputClass()} rows={2} />
                      </Field>
+
+                     <div className="border-t border-slate-100 pt-4 mt-2">
+                        <h4 className="text-sm font-semibold text-slate-700 mb-3">
+                           Giấy tờ tùy thân (bảo trợ){' '}
+                           <span className="text-xs font-normal text-slate-400">(không bắt buộc)</span>
+                        </h4>
+                        <div className="grid grid-cols-2 gap-3">
+                           <FileUploadField
+                              label="CCCD / CMND - mặt trước"
+                              value={files.guardianIdCardFront}
+                              onChange={(f) => setFile('guardianIdCardFront', f)}
+                           />
+                           <FileUploadField
+                              label="CCCD / CMND - mặt sau"
+                              value={files.guardianIdCardBack}
+                              onChange={(f) => setFile('guardianIdCardBack', f)}
+                           />
+                        </div>
+                     </div>
                   </div>
                )}
 
@@ -565,6 +661,7 @@ export const AdmissionWizard = ({
                         title="Người bảo trợ"
                         rows={[
                            ['Họ tên', watch('guardianName')],
+                           ['Ngày sinh', watch('guardianDob') || '—'],
                            ['SĐT', watch('guardianPhone')],
                            ['Mối quan hệ', watch('guardianRelation') || '—'],
                            ['CCCD', watch('guardianIdCard') || '—'],

@@ -7,6 +7,7 @@ import { Assessment } from '@/src/types/index';
 import { AssessmentWizard } from '@/src/features/assessments/components/AssessmentWizard';
 import { ResidentBasicInfo } from '../components/ResidentBasicInfo';
 import { ResidentDetail } from '../components/ResidentDetail';
+import { ResidentDocumentsSection } from '../components/ResidentDocumentsSection';
 import { EditResidentModal } from '../components/EditResidentModal';
 import { PrintMenuModal } from '../components/PrintMenuModal';
 import { TransferRoomModal } from '@/src/features/rooms/components/TransferRoomModal';
@@ -20,6 +21,7 @@ import { useAuthStore } from '@/src/stores/authStore';
 import { useResidentsStore } from '@/src/stores/residentsStore';
 import { useFinanceStore } from '@/src/stores/financeStore';
 import { useModuleAccess } from '@/src/hooks/useModuleAccess';
+import { normalizeResidentId } from '@/src/services/residentService';
 
 export const ResidentDetailPage = () => {
    const { id } = useParams();
@@ -37,27 +39,40 @@ export const ResidentDetailPage = () => {
    const [showPrintMenu, setShowPrintMenu] = useState(false);
    const [invoiceMonth, setInvoiceMonth] = useState<string | null>(null);
 
-   const resident = id ? residentDetails[id] : undefined;
-   const residentListItem = residents.find(r => r.id === id);
+   const residentId = normalizeResidentId(id);
+   const isInvalidResidentId = !residentId;
+   const resident = residentId ? residentDetails[residentId] : undefined;
+   const residentListItem = residents.find(r => r.id === residentId);
 
    useEffect(() => {
-      if (!id || resident) {
+      if (!user || !isInvalidResidentId) {
          return;
       }
 
-      void fetchResidentDetail(id).catch(() => undefined);
-   }, [fetchResidentDetail, id, resident]);
+      toast.error('Không tìm thấy thông tin NCT');
+      navigate('/residents', { replace: true });
+   }, [isInvalidResidentId, navigate, user]);
 
    useEffect(() => {
-      if (!id || resident || residentListItem || residents.length === 0) {
+      if (!residentId || resident) {
+         return;
+      }
+
+      void fetchResidentDetail(residentId).catch(() => undefined);
+   }, [fetchResidentDetail, residentId, resident]);
+
+   useEffect(() => {
+      if (!residentId || resident || residentListItem || residents.length === 0) {
          return;
       }
 
       toast.error('Không tìm thấy thông tin NCT');
       navigate('/residents');
-   }, [id, navigate, resident, residentListItem, residents.length]);
+   }, [residentId, navigate, resident, residentListItem, residents.length]);
 
    if (!user) return null;
+
+   if (isInvalidResidentId) return null;
 
    if (!resident) {
       return (
@@ -205,6 +220,8 @@ export const ResidentDetailPage = () => {
             onPrint={() => setShowPrintMenu(true)}
             readOnly={isReadOnly}
          />
+
+         <ResidentDocumentsSection resident={resident} />
 
          <ResidentDetail
             user={user}

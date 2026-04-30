@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Resident, ResidentListItem } from '../types';
 import { db } from '../services/databaseService';
-import { mapResidentToListItem } from '../services/residentService';
+import { mapResidentToListItem, normalizeResidentId } from '../services/residentService';
 
 type SelectedResident = ResidentListItem | Resident;
 
@@ -81,13 +81,18 @@ export const useResidentsStore = create<ResidentsState>((set, get) => {
         },
 
         fetchResidentDetail: async (id) => {
-            const cachedResident = get().residentDetails[id];
+            const residentId = normalizeResidentId(id);
+            if (!residentId) {
+                throw new Error('Invalid resident id');
+            }
+
+            const cachedResident = get().residentDetails[residentId];
             if (cachedResident) {
-                void loadResidentDetail(id).catch(() => undefined);
+                void loadResidentDetail(residentId).catch(() => undefined);
                 return cachedResident;
             }
 
-            return loadResidentDetail(id);
+            return loadResidentDetail(residentId);
         },
 
         addResident: async (resident) => {

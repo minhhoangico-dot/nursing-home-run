@@ -1,10 +1,17 @@
-import { render, screen } from '@testing-library/react';
-import { vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, vi } from 'vitest';
 import { ResidentDetailPage } from './ResidentDetailPage';
 
+const mocks = vi.hoisted(() => ({
+  navigate: vi.fn(),
+  fetchResidentDetail: vi.fn(),
+  updateResident: vi.fn(),
+  params: { id: 'RES-1' } as { id?: string },
+}));
+
 vi.mock('react-router-dom', () => ({
-  useNavigate: () => vi.fn(),
-  useParams: () => ({ id: 'RES-1' }),
+  useNavigate: () => mocks.navigate,
+  useParams: () => mocks.params,
 }));
 
 vi.mock('react-hot-toast', () => ({
@@ -60,8 +67,8 @@ vi.mock('@/src/stores/residentsStore', () => ({
       },
     ],
     residentDetails: {},
-    fetchResidentDetail: vi.fn().mockResolvedValue(undefined),
-    updateResident: vi.fn(),
+    fetchResidentDetail: mocks.fetchResidentDetail,
+    updateResident: mocks.updateResident,
   }),
 }));
 
@@ -90,9 +97,29 @@ vi.mock('@/src/features/assessments/components/AssessmentWizard', () => ({
 }));
 
 describe('ResidentDetailPage', () => {
-  it('renders the resident loading state in Vietnamese', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.params.id = 'RES-1';
+    mocks.fetchResidentDetail.mockResolvedValue(undefined);
+  });
+
+  it('renders the resident loading state in Vietnamese', async () => {
     render(<ResidentDetailPage />);
 
     expect(screen.getByText(/Đang tải hồ sơ NCT\.\.\./i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mocks.fetchResidentDetail).toHaveBeenCalledWith('RES-1');
+    });
+  });
+
+  it('redirects without fetching when the route id is the string undefined', async () => {
+    mocks.params.id = 'undefined';
+
+    render(<ResidentDetailPage />);
+
+    await waitFor(() => {
+      expect(mocks.navigate).toHaveBeenCalledWith('/residents', { replace: true });
+    });
+    expect(mocks.fetchResidentDetail).not.toHaveBeenCalled();
   });
 });

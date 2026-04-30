@@ -1,6 +1,24 @@
 import { supabase } from '../lib/supabase';
 import { Resident, ResidentListItem } from '../types';
 
+export const normalizeResidentId = (id: unknown): string | null => {
+    if (typeof id !== 'string') {
+        return null;
+    }
+
+    const residentId = id.trim();
+    if (!residentId) {
+        return null;
+    }
+
+    const lowerResidentId = residentId.toLowerCase();
+    if (lowerResidentId === 'undefined' || lowerResidentId === 'null') {
+        return null;
+    }
+
+    return residentId;
+};
+
 export const RESIDENT_LIST_COLUMNS = [
     'id',
     'name',
@@ -25,6 +43,12 @@ export const RESIDENT_LIST_COLUMNS = [
     'clinic_code',
     'diet_note',
     'height',
+    'guardian_dob',
+    'id_card_front_path',
+    'id_card_back_path',
+    'guardian_id_card_front_path',
+    'guardian_id_card_back_path',
+    'bhyt_card_path',
 ].join(',');
 
 export const mapResidentToListItem = (resident: Resident | ResidentListItem): ResidentListItem => ({
@@ -51,6 +75,12 @@ export const mapResidentToListItem = (resident: Resident | ResidentListItem): Re
     dietNote: resident.dietNote,
     isDiabetic: resident.isDiabetic || false,
     height: resident.height,
+    guardianDob: resident.guardianDob,
+    idCardFrontPath: resident.idCardFrontPath,
+    idCardBackPath: resident.idCardBackPath,
+    guardianIdCardFrontPath: resident.guardianIdCardFrontPath,
+    guardianIdCardBackPath: resident.guardianIdCardBackPath,
+    bhytCardPath: resident.bhytCardPath,
 });
 
 const mapResidentToDb = (resident: Resident) => ({
@@ -87,6 +117,12 @@ const mapResidentToDb = (resident: Resident) => ({
     height: resident.height,
     location_status: resident.locationStatus,
     absent_start_date: resident.absentStartDate,
+    guardian_dob: resident.guardianDob || null,
+    id_card_front_path: resident.idCardFrontPath || null,
+    id_card_back_path: resident.idCardBackPath || null,
+    guardian_id_card_front_path: resident.guardianIdCardFrontPath || null,
+    guardian_id_card_back_path: resident.guardianIdCardBackPath || null,
+    bhyt_card_path: resident.bhytCardPath || null,
 });
 
 const mapResidentListItemFromDb = (dbResident: any): ResidentListItem => ({
@@ -113,6 +149,12 @@ const mapResidentListItemFromDb = (dbResident: any): ResidentListItem => ({
     dietNote: dbResident.diet_note,
     isDiabetic: dbResident.is_diabetic || false,
     height: dbResident.height === null || dbResident.height === undefined ? undefined : Number(dbResident.height),
+    guardianDob: dbResident.guardian_dob || undefined,
+    idCardFrontPath: dbResident.id_card_front_path || undefined,
+    idCardBackPath: dbResident.id_card_back_path || undefined,
+    guardianIdCardFrontPath: dbResident.guardian_id_card_front_path || undefined,
+    guardianIdCardBackPath: dbResident.guardian_id_card_back_path || undefined,
+    bhytCardPath: dbResident.bhyt_card_path || undefined,
 });
 
 const mapResidentFromDb = (dbResident: any): Resident => ({
@@ -136,7 +178,12 @@ export const residentService = {
         return (data || []).map(mapResidentListItemFromDb);
     },
     getById: async (id: string): Promise<Resident> => {
-        const { data, error } = await supabase.from('residents').select('*').eq('id', id).single();
+        const residentId = normalizeResidentId(id);
+        if (!residentId) {
+            throw new Error('Invalid resident id');
+        }
+
+        const { data, error } = await supabase.from('residents').select('*').eq('id', residentId).single();
         if (error) throw error;
         return mapResidentFromDb(data);
     },

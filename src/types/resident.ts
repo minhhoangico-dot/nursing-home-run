@@ -27,7 +27,13 @@ export interface ResidentListItem {
   guardianAddress?: string;
   guardianIdCard?: string;
   guardianRelation?: string;
+  guardianDob?: string;
   idCard?: string;
+  idCardFrontPath?: string;
+  idCardBackPath?: string;
+  guardianIdCardFrontPath?: string;
+  guardianIdCardBackPath?: string;
+  bhytCardPath?: string;
   contractNumber?: string;
   contractSignedDate?: string;
   contractMonthlyFee?: number;
