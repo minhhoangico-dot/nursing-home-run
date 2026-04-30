@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Plus, Upload, FileText, Trash2, Eye, User as UserIcon, Calendar, CreditCard, Home, Bed, Activity, Clock } from 'lucide-react';
 import { Tabs } from '@/src/components/ui';
 import { Resident, User, ServicePrice, ServiceUsage } from '@/src/types/index';
@@ -26,6 +26,41 @@ interface ResidentDetailProps {
    onRecordUsage: (u: ServiceUsage) => void;
 }
 
+type DocumentPreview = { id: string; name: string; type: string };
+
+const missingValue = 'Chưa cập nhật';
+
+const displayValue = (value?: string | null) => {
+   const trimmed = value?.trim();
+   return trimmed || missingValue;
+};
+
+const calculateAge = (dob: string, referenceDate = new Date()) => {
+   const birthDate = new Date(dob);
+   if (Number.isNaN(birthDate.getTime())) {
+      return null;
+   }
+
+   let age = referenceDate.getFullYear() - birthDate.getFullYear();
+   const hasHadBirthdayThisYear =
+      referenceDate.getMonth() > birthDate.getMonth() ||
+      (referenceDate.getMonth() === birthDate.getMonth() && referenceDate.getDate() >= birthDate.getDate());
+
+   if (!hasHadBirthdayThisYear) {
+      age -= 1;
+   }
+
+   return age >= 0 ? age : null;
+};
+
+const buildResidentDocuments = (resident: Resident): DocumentPreview[] => ([
+   { id: 'idCardFront', name: 'CCCD NCT - mặt trước', type: 'image', path: resident.idCardFrontPath },
+   { id: 'idCardBack', name: 'CCCD NCT - mặt sau', type: 'image', path: resident.idCardBackPath },
+   { id: 'guardianIdCardFront', name: 'CCCD bảo trợ - mặt trước', type: 'image', path: resident.guardianIdCardFrontPath },
+   { id: 'guardianIdCardBack', name: 'CCCD bảo trợ - mặt sau', type: 'image', path: resident.guardianIdCardBackPath },
+   { id: 'bhytCard', name: 'Thẻ BHYT', type: 'image', path: resident.bhytCardPath },
+].filter((document) => Boolean(document.path)).map(({ path: _path, ...document }) => document));
+
 export const ResidentDetail = ({
    user,
    resident,
@@ -38,16 +73,26 @@ export const ResidentDetail = ({
    readOnly = false,
 }: ResidentDetailProps) => {
    const [activeTab, setActiveTab] = useState('info');
-   const [documents, setDocuments] = useState<{ id: string; name: string; type: string }[]>([
-      { id: '1', name: 'CCCD Mặt trước.jpg', type: 'image' },
-      { id: '2', name: 'CCCD Mặt sau.jpg', type: 'image' },
-      { id: '3', name: 'BHYT.jpg', type: 'image' }
+   const residentDocumentDefaults = useMemo(() => buildResidentDocuments(resident), [
+      resident.id,
+      resident.idCardFrontPath,
+      resident.idCardBackPath,
+      resident.guardianIdCardFrontPath,
+      resident.guardianIdCardBackPath,
+      resident.bhytCardPath,
    ]);
+   const [documents, setDocuments] = useState<DocumentPreview[]>(() => residentDocumentDefaults);
    const fileInputRef = useRef<HTMLInputElement>(null);
    const { addToast } = useToast();
    const financeAccess = useModuleAccess('finance');
    const canViewFinance = financeAccess.canViewFinance;
    const isFinanceReadOnly = canViewFinance && !financeAccess.canEditFinance;
+   const residentAge = calculateAge(resident.dob);
+   const healthInsuranceStatus = resident.bhytCardPath ? 'Đã có ảnh thẻ BHYT' : missingValue;
+
+   useEffect(() => {
+      setDocuments(residentDocumentDefaults);
+   }, [residentDocumentDefaults]);
 
    useEffect(() => {
       if (activeTab === 'finance' && !canViewFinance) {
@@ -151,7 +196,7 @@ export const ResidentDetail = ({
                               <Calendar className="w-3 h-3" /> Ngày sinh
                            </label>
                            <p className="font-medium text-slate-800">
-                              {resident.dob} <span className="text-slate-400 text-sm font-normal">(75 tuổi)</span>
+                              {resident.dob} <span className="text-slate-400 text-sm font-normal">{residentAge === null ? '' : `(${residentAge} tuổi)`}</span>
                            </p>
                         </div>
 
@@ -166,14 +211,14 @@ export const ResidentDetail = ({
                            <label className="text-xs text-slate-500 font-medium uppercase tracking-wide flex items-center gap-1">
                               <CreditCard className="w-3 h-3" /> CCCD / CMT
                            </label>
-                           <p className="font-medium text-slate-800">079145000XXX</p>
+                           <p className="font-medium text-slate-800">{displayValue(resident.idCard)}</p>
                         </div>
 
                         <div className="space-y-1">
                            <label className="text-xs text-slate-500 font-medium uppercase tracking-wide flex items-center gap-1">
                               <Activity className="w-3 h-3" /> Bảo hiểm Y tế
                            </label>
-                           <p className="font-medium text-teal-700 bg-teal-50 inline-block px-2 py-0.5 rounded">DN479000XXX</p>
+                           <p className="font-medium text-teal-700 bg-teal-50 inline-block px-2 py-0.5 rounded">{healthInsuranceStatus}</p>
                         </div>
                      </div>
                   </div>

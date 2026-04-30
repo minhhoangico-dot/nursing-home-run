@@ -5,6 +5,9 @@ import { useToast } from '@/src/app/providers';
 
 export const GuardianInfo = ({ resident }: { resident: Resident }) => {
     const { addToast } = useToast();
+    const missingValue = 'Chưa cập nhật';
+    const guardianRelation = resident.guardianRelation || missingValue;
+    const guardianAddress = resident.guardianAddress || missingValue;
 
     return (
         <div className="w-full h-full">
@@ -16,7 +19,7 @@ export const GuardianInfo = ({ resident }: { resident: Resident }) => {
                     </div>
                     <div>
                         <p className="font-bold text-lg text-slate-800">{resident.guardianName}</p>
-                        <p className="text-sm text-slate-500">Mối quan hệ: Con trai</p>
+                        <p className="text-sm text-slate-500">Mối quan hệ: {guardianRelation}</p>
                     </div>
                 </div>
                 <div className="space-y-4">
@@ -32,7 +35,7 @@ export const GuardianInfo = ({ resident }: { resident: Resident }) => {
                     </div>
                     <div className="flex items-center gap-3">
                         <MapPin className="w-4 h-4 text-slate-400" />
-                        <span className="text-slate-700 text-sm">123 Nguyễn Văn Linh, Q.7, TP.HCM</span>
+                        <span className="text-slate-700 text-sm">{guardianAddress}</span>
                     </div>
                 </div>
             </div>

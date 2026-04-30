@@ -47,6 +47,13 @@ describe('residentService', () => {
           room_type: '2 Giuong',
           diet_type: 'Normal',
           clinic_code: 'NCT-001',
+          id_card: '079111222333',
+          guardian_address: '45 Le Loi',
+          guardian_id_card: '079333222111',
+          guardian_relation: 'Con gai',
+          contract_number: '001/2026/DV-VDL',
+          contract_signed_date: '2026-01-15',
+          contract_monthly_fee: '12500000',
           diet_note: 'It duong',
           height: 1.58,
           guardian_dob: '1980-05-10',
@@ -90,6 +97,13 @@ describe('residentService', () => {
         roomType: '2 Giuong',
         dietType: 'Normal',
         clinicCode: 'NCT-001',
+        idCard: '079111222333',
+        guardianAddress: '45 Le Loi',
+        guardianIdCard: '079333222111',
+        guardianRelation: 'Con gai',
+        contractNumber: '001/2026/DV-VDL',
+        contractSignedDate: '2026-01-15',
+        contractMonthlyFee: 12500000,
         dietNote: 'It duong',
         height: 1.58,
         guardianDob: '1980-05-10',
@@ -127,6 +141,13 @@ describe('residentService', () => {
         admission_date: '2026-01-15',
         guardian_name: 'Nguyen Van B',
         guardian_phone: '0900000000',
+        id_card: '079111222333',
+        guardian_address: '45 Le Loi',
+        guardian_id_card: '079333222111',
+        guardian_relation: 'Con gai',
+        contract_number: '001/2026/DV-VDL',
+        contract_signed_date: '2026-01-15',
+        contract_monthly_fee: '12500000',
         balance: '125000',
         assessments: [{ id: 'assessment-1' }],
         prescriptions: [{ id: 'prescription-1' }],
@@ -158,6 +179,13 @@ describe('residentService', () => {
     expect(query.eq).toHaveBeenCalledWith('id', 'resident-1');
     expect(query.single).toHaveBeenCalled();
     expect(resident.clinicCode).toBe('NCT-001');
+    expect(resident.idCard).toBe('079111222333');
+    expect(resident.guardianAddress).toBe('45 Le Loi');
+    expect(resident.guardianIdCard).toBe('079333222111');
+    expect(resident.guardianRelation).toBe('Con gai');
+    expect(resident.contractNumber).toBe('001/2026/DV-VDL');
+    expect(resident.contractSignedDate).toBe('2026-01-15');
+    expect(resident.contractMonthlyFee).toBe(12500000);
     expect(resident.height).toBe(1.58);
     expect(resident.medicalHistory).toEqual([{ id: 'condition-1', name: 'Tang huyet ap' }]);
     expect(resident.allergies).toEqual([{ id: 'allergy-1', allergen: 'Tom', severity: 'High' }]);
@@ -168,5 +196,63 @@ describe('residentService', () => {
     await expect(residentService.getById('undefined')).rejects.toThrow('Invalid resident id');
 
     expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it('persists identity and contract fields when upserting a resident', async () => {
+    const query = {
+      upsert: vi.fn().mockResolvedValue({ error: null }),
+    };
+
+    vi.mocked(supabase.from).mockReturnValue(query as never);
+
+    await residentService.upsert({
+      id: 'resident-1',
+      clinicCode: 'NCT-001',
+      name: 'Nguyen Van A',
+      dob: '1950-01-01',
+      gender: 'Nam',
+      room: '101',
+      bed: 'A',
+      floor: 'Tang 1',
+      building: 'Toa A',
+      careLevel: 2,
+      status: 'Active',
+      admissionDate: '2026-01-15',
+      guardianName: 'Nguyen Van B',
+      guardianPhone: '0900000000',
+      guardianAddress: '45 Le Loi',
+      guardianIdCard: '079333222111',
+      guardianRelation: 'Con gai',
+      idCard: '079111222333',
+      contractNumber: '001/2026/DV-VDL',
+      contractSignedDate: '2026-01-15',
+      contractMonthlyFee: 12500000,
+      balance: 0,
+      assessments: [],
+      prescriptions: [],
+      medicalVisits: [],
+      specialMonitoring: [],
+      medicalHistory: [],
+      allergies: [],
+      vitalSigns: [],
+      careLogs: [],
+      currentConditionNote: '',
+      lastMedicalUpdate: '',
+      roomType: '2 Giường',
+      dietType: 'Normal',
+      isDiabetic: false,
+    });
+
+    expect(query.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id_card: '079111222333',
+        guardian_address: '45 Le Loi',
+        guardian_id_card: '079333222111',
+        guardian_relation: 'Con gai',
+        contract_number: '001/2026/DV-VDL',
+        contract_signed_date: '2026-01-15',
+        contract_monthly_fee: 12500000,
+      }),
+    );
   });
 });

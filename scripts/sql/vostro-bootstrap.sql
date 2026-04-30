@@ -40,6 +40,13 @@ CREATE TABLE IF NOT EXISTS public.residents (
     admission_date DATE,
     guardian_name TEXT,
     guardian_phone TEXT,
+    guardian_address TEXT,
+    guardian_id_card TEXT,
+    guardian_relation TEXT,
+    id_card TEXT,
+    contract_number TEXT,
+    contract_signed_date DATE,
+    contract_monthly_fee NUMERIC(12,2),
     balance NUMERIC DEFAULT 0,
     assessments JSONB DEFAULT '[]'::jsonb,
     prescriptions JSONB DEFAULT '[]'::jsonb,
@@ -62,6 +69,15 @@ CREATE TABLE IF NOT EXISTS public.residents (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE IF EXISTS public.residents
+    ADD COLUMN IF NOT EXISTS guardian_address TEXT,
+    ADD COLUMN IF NOT EXISTS guardian_id_card TEXT,
+    ADD COLUMN IF NOT EXISTS guardian_relation TEXT,
+    ADD COLUMN IF NOT EXISTS id_card TEXT,
+    ADD COLUMN IF NOT EXISTS contract_number TEXT,
+    ADD COLUMN IF NOT EXISTS contract_signed_date DATE,
+    ADD COLUMN IF NOT EXISTS contract_monthly_fee NUMERIC(12,2);
 
 CREATE TABLE IF NOT EXISTS public.inventory (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
