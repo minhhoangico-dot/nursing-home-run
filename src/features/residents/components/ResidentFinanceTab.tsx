@@ -1,19 +1,38 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, Calendar, CreditCard, DollarSign, Pill, TrendingUp } from 'lucide-react';
+import { AlertCircle, Calendar, CreditCard, DollarSign, Pill, Trash2, TrendingUp } from 'lucide-react';
 
 import { formatCurrency } from '@/src/data/index';
+import {
+  createFixedServiceAssignment,
+  getMissingRequiredFixedCategories,
+  REQUIRED_FIXED_SERVICE_CATEGORIES,
+} from '@/src/features/finance/utils/fixedServiceAssignments';
 import { calculateMedicationBillingRows } from '@/src/features/finance/utils/medicationBilling';
 import { usePrescriptionsStore } from '@/src/stores/prescriptionStore';
-import type { Resident, ServicePrice, ServiceUsage } from '@/src/types/index';
+import type {
+  FixedServiceCategory,
+  Resident,
+  ResidentFixedServiceAssignment,
+  ServicePrice,
+  ServiceUsage,
+} from '@/src/types/index';
 
 interface ResidentFinanceTabProps {
   resident: Resident;
   servicePrices: ServicePrice[];
   usageRecords: ServiceUsage[];
+  fixedServices: ResidentFixedServiceAssignment[];
   onRecordUsage: (usage: ServiceUsage) => void;
+  onReplaceFixedServices: (assignments: ResidentFixedServiceAssignment[]) => void;
   readOnly?: boolean;
 }
+
+const fixedCategoryLabels: Record<FixedServiceCategory, string> = {
+  ROOM: 'Phòng ở',
+  MEAL: 'Dịch vụ ăn',
+  CARE: 'Chăm sóc',
+};
 
 const isSameBillingMonth = (date: string, month: Date) => {
   const parsed = new Date(date);
@@ -28,54 +47,40 @@ export const ResidentFinanceTab: React.FC<ResidentFinanceTabProps> = ({
   resident,
   servicePrices,
   usageRecords,
+  fixedServices,
   onRecordUsage,
+  onReplaceFixedServices,
   readOnly = false,
 }) => {
   const { prescriptions, medicines } = usePrescriptionsStore();
+  const [fixedServiceMessage, setFixedServiceMessage] = useState<string | null>(null);
   const currentMonth = useMemo(() => new Date(), []);
   const billingMonth = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
   const currentMonthStr = `${currentMonth.getMonth() + 1}/${currentMonth.getFullYear()}`;
 
-  const fixedServices = useMemo(() => {
-    const billedFixed = usageRecords.filter((usage) => {
-      const service = servicePrices.find((item) => item.id === usage.serviceId);
+  const residentFixedServices = useMemo(
+    () =>
+      fixedServices.filter(
+        (assignment) => assignment.residentId === resident.id && assignment.status === 'Active',
+      ),
+    [fixedServices, resident.id],
+  );
 
-      return (
-        usage.residentId === resident.id &&
-        service?.billingType === 'FIXED' &&
-        isSameBillingMonth(usage.date, currentMonth)
-      );
-    });
+  const missingFixedCategories = useMemo(
+    () => getMissingRequiredFixedCategories(residentFixedServices),
+    [residentFixedServices],
+  );
 
-    if (billedFixed.length > 0) return billedFixed;
-
-    return [
-      {
-        id: 'estimated-room',
-        residentId: resident.id,
-        serviceId: 'estimated-room',
-        serviceName: `Phòng ${resident.room} (${resident.roomType || 'Tiêu chuẩn'})`,
-        unitPrice: 8_500_000,
-        quantity: 1,
-        totalAmount: 8_500_000,
-        date: new Date().toISOString(),
-        status: 'Unbilled' as const,
-        description: 'Giá tạm tính từ loại phòng, chưa chốt hóa đơn',
-      },
-      {
-        id: 'estimated-care',
-        residentId: resident.id,
-        serviceId: 'estimated-care',
-        serviceName: `Chăm sóc cấp độ ${resident.careLevel || 1}`,
-        unitPrice: 0,
-        quantity: 1,
-        totalAmount: 0,
-        date: new Date().toISOString(),
-        status: 'Unbilled' as const,
-        description: 'Chưa có bảng giá chăm sóc khớp hồ sơ',
-      },
-    ] satisfies ServiceUsage[];
-  }, [currentMonth, resident, servicePrices, usageRecords]);
+  const fixedServiceOptions = useMemo(
+    () =>
+      REQUIRED_FIXED_SERVICE_CATEGORIES.reduce((acc, category) => {
+        acc[category] = servicePrices.filter(
+          (service) => service.billingType === 'FIXED' && service.category === category,
+        );
+        return acc;
+      }, {} as Record<FixedServiceCategory, ServicePrice[]>),
+    [servicePrices],
+  );
 
   const incurredServices = useMemo(
     () =>
@@ -99,7 +104,7 @@ export const ResidentFinanceTab: React.FC<ResidentFinanceTabProps> = ({
     [billingMonth, medicines, prescriptions, resident.id],
   );
 
-  const totalFixed = fixedServices.reduce((sum, service) => sum + service.totalAmount, 0);
+  const totalFixed = residentFixedServices.reduce((sum, service) => sum + service.totalAmount, 0);
   const totalIncurred = incurredServices.reduce((sum, service) => sum + service.totalAmount, 0);
   const totalMedication = medicationCosts.reduce((sum, item) => sum + item.amount, 0);
   const totalEstimate = totalFixed + totalIncurred + totalMedication;
@@ -122,6 +127,44 @@ export const ResidentFinanceTab: React.FC<ResidentFinanceTabProps> = ({
       description: `Quick-add from resident finance tab using service ${service.id}`,
       status: 'Unbilled',
     });
+  };
+
+  const handleReplaceFixedService = (category: FixedServiceCategory, serviceId: string) => {
+    if (readOnly) return;
+
+    const service = servicePrices.find((item) => item.id === serviceId);
+    if (!service) return;
+
+    const current = residentFixedServices.find((assignment) => assignment.category === category);
+    const nextAssignment = createFixedServiceAssignment({
+      id: current?.id,
+      residentId: resident.id,
+      service,
+      effectiveFrom: current?.effectiveFrom || new Date().toISOString().slice(0, 10),
+    });
+    const nextAssignments = current
+      ? residentFixedServices.map((assignment) => (assignment.id === current.id ? nextAssignment : assignment))
+      : [...residentFixedServices, nextAssignment];
+
+    setFixedServiceMessage(null);
+    onReplaceFixedServices(nextAssignments);
+  };
+
+  const handleRemoveFixedService = (assignment: ResidentFixedServiceAssignment) => {
+    if (readOnly) return;
+
+    const isRequiredCategory = REQUIRED_FIXED_SERVICE_CATEGORIES.includes(assignment.category as FixedServiceCategory);
+    const activeCountForCategory = residentFixedServices.filter(
+      (item) => item.category === assignment.category,
+    ).length;
+
+    if (isRequiredCategory && activeCountForCategory <= 1) {
+      setFixedServiceMessage('Không thể xóa dịch vụ bắt buộc cuối cùng.');
+      return;
+    }
+
+    setFixedServiceMessage(null);
+    onReplaceFixedServices(residentFixedServices.filter((item) => item.id !== assignment.id));
   };
 
   return (
@@ -175,19 +218,71 @@ export const ResidentFinanceTab: React.FC<ResidentFinanceTabProps> = ({
               </h4>
               <span className="text-sm font-bold text-slate-900">{formatCurrency(totalFixed)}</span>
             </div>
-            {fixedServices.length > 0 ? (
+
+            {fixedServiceMessage && (
+              <div className="border-b border-amber-100 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700">
+                {fixedServiceMessage}
+              </div>
+            )}
+
+            {missingFixedCategories.length > 0 && (
+              <div className="border-b border-amber-100 bg-amber-50 px-4 py-2 text-sm text-amber-700">
+                Thiếu dịch vụ cố định bắt buộc: {missingFixedCategories.map((category) => fixedCategoryLabels[category]).join(', ')}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-3 border-b border-slate-100 bg-white p-4 md:grid-cols-3">
+              {REQUIRED_FIXED_SERVICE_CATEGORIES.map((category) => {
+                const selected = residentFixedServices.find((assignment) => assignment.category === category);
+
+                return (
+                  <div key={category}>
+                    <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+                      {fixedCategoryLabels[category]}
+                    </label>
+                    <select
+                      aria-label={`fixed-service-select-${category}`}
+                      value={selected?.serviceId || ''}
+                      onChange={(event) => handleReplaceFixedService(category, event.target.value)}
+                      disabled={readOnly}
+                      className="w-full rounded-lg border-slate-200 text-sm shadow-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <option value="">Chọn dịch vụ</option>
+                      {fixedServiceOptions[category].map((service) => (
+                        <option key={service.id} value={service.id}>
+                          {service.name} - {formatCurrency(service.price)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })}
+            </div>
+
+            {residentFixedServices.length > 0 ? (
               <table className="w-full text-sm">
                 <tbody className="divide-y divide-slate-100">
-                  {fixedServices.map((service) => (
+                  {residentFixedServices.map((service) => (
                     <tr key={service.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 text-slate-700">
                         {service.serviceName}
-                        {service.description && (
-                          <div className="mt-1 text-xs text-slate-500">{service.description}</div>
-                        )}
+                        <div className="mt-1 text-xs text-slate-500">
+                          {service.quantity} x {formatCurrency(service.unitPrice)}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-right font-medium text-slate-900">
                         {formatCurrency(service.totalAmount)}
+                      </td>
+                      <td className="w-10 px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          aria-label={`remove-fixed-service-${service.serviceId}`}
+                          onClick={() => handleRemoveFixedService(service)}
+                          disabled={readOnly}
+                          className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}
