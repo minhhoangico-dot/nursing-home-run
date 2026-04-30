@@ -23,6 +23,21 @@ export interface ServicePrice {
   description?: string;
 }
 
+export type FixedServiceCategory = 'ROOM' | 'MEAL' | 'CARE';
+
+export interface ResidentFixedServiceAssignment {
+  id: string;
+  residentId: string;
+  serviceId: string;
+  serviceName: string;
+  category: ServicePrice['category'];
+  unitPrice: number;
+  quantity: number;
+  totalAmount: number;
+  effectiveFrom: string;
+  status: 'Active' | 'Inactive';
+}
+
 // New specific types matching DB tables
 export interface RoomPrice {
   id: number;
