@@ -1,16 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { Search, ChevronRight, Printer, AlertCircle } from 'lucide-react';
-import { ResidentListItem, ServiceUsage } from '../../../types/index';
+import { Search, ChevronRight, Printer } from 'lucide-react';
+import { ResidentFixedServiceAssignment, ResidentListItem, ServiceUsage } from '../../../types/index';
 import { formatCurrency } from '../../../data/index';
 import { calculateFixedCosts, getMonthlyUsage } from '../utils/calculateMonthlyBilling';
 
 interface MonthlyBillingConfigProps {
     residents: ResidentListItem[];
     usageRecords: ServiceUsage[];
+    residentFixedServices: ResidentFixedServiceAssignment[];
     onPrintBill: (resident: ResidentListItem, month: string) => void;
 }
 
-export const MonthlyBillingConfig = ({ residents, usageRecords, onPrintBill }: MonthlyBillingConfigProps) => {
+export const MonthlyBillingConfig = ({ residents, usageRecords, residentFixedServices, onPrintBill }: MonthlyBillingConfigProps) => {
     const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedResidentId, setExpandedResidentId] = useState<string | null>(null);
@@ -21,7 +22,7 @@ export const MonthlyBillingConfig = ({ residents, usageRecords, onPrintBill }: M
 
     const billingData = useMemo(() => {
         return residents.map(resident => {
-            const fixed = calculateFixedCosts(resident);
+            const fixed = calculateFixedCosts(resident, residentFixedServices);
 
             const monthlyUsage = getMonthlyUsage(usageRecords, resident.id, selectedMonth);
             const incurredTotal = monthlyUsage.reduce((sum, u) => sum + u.totalAmount, 0);
@@ -39,7 +40,7 @@ export const MonthlyBillingConfig = ({ residents, usageRecords, onPrintBill }: M
             data.resident.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             data.resident.room.includes(searchTerm)
         );
-    }, [residents, usageRecords, selectedMonth, searchTerm]);
+    }, [residentFixedServices, residents, usageRecords, selectedMonth, searchTerm]);
 
     const totalExpectedRevenue = billingData.reduce((sum, item) => sum + item.totalDue, 0);
 
@@ -97,6 +98,9 @@ export const MonthlyBillingConfig = ({ residents, usageRecords, onPrintBill }: M
                                 <div className="text-center">
                                     <div className="text-xs text-slate-400 mb-1">Cố định</div>
                                     <div className="font-semibold text-slate-700">{formatCurrency(item.fixed.total)}</div>
+                                    {item.fixed.missingRequiredCategories.length > 0 && (
+                                        <div className="mt-1 text-[11px] font-medium text-amber-600">Thiếu gói cố định</div>
+                                    )}
                                 </div>
                                 <div className="text-center">
                                     <div className="text-xs text-slate-400 mb-1">Phát sinh</div>

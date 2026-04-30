@@ -3,16 +3,16 @@ import { useAuthStore } from '../../../stores/authStore';
 import { useResidentsStore } from '../../../stores/residentsStore';
 import { useFinanceStore } from '../../../stores/financeStore';
 import { ResidentListItem } from '../../../types/index';
-import { INITIAL_PRICES } from '../../../data/index';
 import { useDeferredStoreLoad } from '@/src/hooks/useDeferredStoreLoad';
 
 import { MonthlyBillingConfig } from '../components/MonthlyBillingConfig';
 import { InvoicePreview } from '../components/InvoicePreview';
+import { calculateFixedCosts, getMonthlyUsage } from '../utils/calculateMonthlyBilling';
 
 export const FinancePage = () => {
    const { user } = useAuthStore();
    const { residents } = useResidentsStore();
-   const { usageRecords, fetchFinanceData, isLoaded } = useFinanceStore();
+   const { usageRecords, residentFixedServices, fetchFinanceData, isLoaded } = useFinanceStore();
 
    const [previewData, setPreviewData] = useState<{
       resident: ResidentListItem;
@@ -26,32 +26,11 @@ export const FinancePage = () => {
    if (!user) return null;
 
    const handlePrintBill = (resident: ResidentListItem, month: string) => {
-      // Re-calculate fixed costs logic to pass to preview
-      // Ideally this helper logic should be shared or passed up, but for now duplicate the calculation or just trust the view.
-      // Wait, MonthlyBillingConfig does the calculation inside.
-      // To strictly pass data, I might need to move calculation up or just repeat it here for the printable.
-      // Repeating is safer for decoupling.
-
-      const fixedCosts = [];
-      const roomPrice = INITIAL_PRICES.find(p => p.category === 'ROOM' && p.name.includes(resident.roomType))?.price || 0;
-      if (roomPrice > 0) fixedCosts.push({ name: `Phòng ${resident.roomType}`, amount: roomPrice });
-
-      const carePrice = INITIAL_PRICES.find(p => p.category === 'CARE' && p.name.includes(`Cấp độ ${resident.careLevel}`))?.price || 0;
-      if (carePrice > 0) fixedCosts.push({ name: `CS Cấp độ ${resident.careLevel}`, amount: carePrice });
-
-      const mealPrice = INITIAL_PRICES.find(p => p.category === 'MEAL' && p.name.includes('Suất ăn tiêu chuẩn'))?.price || 0;
-      if (resident.dietType !== 'Tube') fixedCosts.push({ name: 'Suất ăn tiêu chuẩn', amount: mealPrice });
-
-      const monthlyUsage = usageRecords.filter(u =>
-         u.residentId === resident.id &&
-         u.date.startsWith(month)
-      );
-
       setPreviewData({
          resident,
          month,
-         fixedCosts,
-         incurredCosts: monthlyUsage
+         fixedCosts: calculateFixedCosts(resident, residentFixedServices).details,
+         incurredCosts: getMonthlyUsage(usageRecords, resident.id, month),
       });
    };
 
@@ -65,6 +44,7 @@ export const FinancePage = () => {
             <MonthlyBillingConfig
                residents={residents}
                usageRecords={usageRecords}
+               residentFixedServices={residentFixedServices}
                onPrintBill={handlePrintBill}
             />
          </div>

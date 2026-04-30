@@ -205,7 +205,7 @@ export const ResidentDetailPage = () => {
             <InvoicePreview
                resident={resident}
                month={invoiceMonth}
-               fixedCosts={calculateFixedCosts(resident).details}
+               fixedCosts={calculateFixedCosts(resident, residentFixedServices).details}
                incurredCosts={getMonthlyUsage(usageRecords, resident.id, invoiceMonth)}
                onClose={() => setInvoiceMonth(null)}
             />
