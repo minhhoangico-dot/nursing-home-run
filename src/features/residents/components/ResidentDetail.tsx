@@ -346,7 +346,12 @@ export const ResidentDetail = ({
 
             {activeTab === 'vital_signs' && (
                <div className="space-y-8">
-                  <VitalSignsSection user={user} resident={resident} readOnly={readOnly} />
+                  <VitalSignsSection
+                     user={user}
+                     resident={resident}
+                     readOnly={readOnly}
+                     onNavigateToMonitoring={() => setActiveTab('monitoring')}
+                  />
                </div>
             )}
 
